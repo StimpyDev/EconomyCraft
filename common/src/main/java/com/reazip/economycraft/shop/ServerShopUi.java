@@ -577,8 +577,8 @@ public final class ServerShopUi {
             boolean stored = giveToPlayer(base, amount);
 
             Component success = Component.literal(
-                    "Purchased " + amount + "x " + base.getHoverName().getString() +
-                            " for " + EconomyCraft.formatMoney(total))
+                    "Item gekocht " + amount + "x " + base.getHoverName().getString() +
+                            " voor " + EconomyCraft.formatMoney(total))
                     .withStyle(ChatFormatting.GREEN);
             viewer.sendSystemMessage(success);
 
