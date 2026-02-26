@@ -44,7 +44,7 @@ public final class SellCommand {
 
         ItemStack hand = player.getMainHandItem();
         if (hand.isEmpty()) {
-            source.sendFailure(Component.literal("You are not holding any item.").withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.literal("Je houdt geen item vast.").withStyle(ChatFormatting.RED));
             return 0;
         }
 
@@ -54,31 +54,31 @@ public final class SellCommand {
         ResolvedPrice resolved = prices.resolve(hand);
         Long unitSell = prices.getUnitSell(hand);
         if (resolved == null || unitSell == null) {
-            source.sendFailure(Component.literal("This item cannot be sold.").withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.literal("Dit item kan niet worden verkocht.").withStyle(ChatFormatting.RED));
             return 0;
         }
 
         if (prices.isSellBlockedByDamage(hand)) {
-            source.sendFailure(Component.literal("Damaged items cannot be sold.").withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.literal("Items die beschadigd zijn kan niet worden verkocht.").withStyle(ChatFormatting.RED));
             return 0;
         }
 
         if (prices.isSellBlockedByContents(hand)) {
-            source.sendFailure(Component.literal("Items with contents cannot be sold.").withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.literal("Items met inhoud mogen niet worden verkocht.").withStyle(ChatFormatting.RED));
             return 0;
         }
 
         int available = hand.getCount();
         int toSell = amount < 0 ? available : amount;
         if (toSell < 1 || toSell > available) {
-            source.sendFailure(Component.literal("Invalid amount.").withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.literal("Ongeldig bedrag.").withStyle(ChatFormatting.RED));
             return 0;
         }
 
         String itemName = hand.getHoverName().getString();
         Long total = safeMultiply(unitSell, toSell);
         if (total == null) {
-            source.sendFailure(Component.literal("Sale amount is too large.").withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.literal("Het verkoopbedrag is te hoog.").withStyle(ChatFormatting.RED));
             return 0;
         }
 
@@ -92,8 +92,8 @@ public final class SellCommand {
         }
 
         manager.addMoney(player.getUUID(), total);
-        Component msg = Component.literal("Successfully sold " + toSell + "x " + itemName +
-                        " for " + EconomyCraft.formatMoney(total) + ".")
+        Component msg = Component.literal("Succesvol verkocht " + toSell + "x " + itemName +
+                        " voor " + EconomyCraft.formatMoney(total) + ".")
                 .withStyle(ChatFormatting.GREEN);
         player.sendSystemMessage(msg);
         return toSell;
@@ -106,7 +106,7 @@ public final class SellCommand {
 
         ItemStack hand = player.getMainHandItem();
         if (hand.isEmpty()) {
-            source.sendFailure(Component.literal("You are not holding any item.").withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.literal("Je houdt geen item vast.").withStyle(ChatFormatting.RED));
             return 0;
         }
 
@@ -115,29 +115,29 @@ public final class SellCommand {
         ResolvedPrice resolved = prices.resolve(hand);
         Long unitSell = prices.getUnitSell(hand);
         if (resolved == null || unitSell == null) {
-            source.sendFailure(Component.literal("This item cannot be sold.").withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.literal("Dit item kan niet worden verkocht.").withStyle(ChatFormatting.RED));
             return 0;
         }
 
         if (prices.isSellBlockedByDamage(hand)) {
-            source.sendFailure(Component.literal("Damaged items cannot be sold.").withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.literal("Items die beschadigd zijn kan niet worden verkocht.").withStyle(ChatFormatting.RED));
             return 0;
         }
 
         if (prices.isSellBlockedByContents(hand)) {
-            source.sendFailure(Component.literal("Items with contents cannot be sold.").withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.literal("Items met inhoud mogen niet worden verkocht.").withStyle(ChatFormatting.RED));
             return 0;
         }
 
         int totalCount = countMatchingSellable(player, prices, resolved.key());
         if (totalCount <= 0) {
-            source.sendFailure(Component.literal("This item cannot be sold.").withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.literal("Dit item kan niet worden verkocht.").withStyle(ChatFormatting.RED));
             return 0;
         }
 
         Long total = safeMultiply(unitSell, totalCount);
         if (total == null) {
-            source.sendFailure(Component.literal("Sale amount is too large.").withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.literal("Het verkoopbedrag is te hoog.").withStyle(ChatFormatting.RED));
             return 0;
         }
 
@@ -193,13 +193,13 @@ public final class SellCommand {
         }
 
         if (prices.isSellBlockedByDamage(hand)) {
-            source.sendFailure(Component.literal("Damaged items cannot be sold.").withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.literal("Items die beschadigd zijn kan niet worden verkocht.").withStyle(ChatFormatting.RED));
             PENDING.remove(player.getUUID());
             return 0;
         }
 
         if (prices.isSellBlockedByContents(hand)) {
-            source.sendFailure(Component.literal("Items with contents cannot be sold.").withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.literal("Items met inhoud mogen niet worden verkocht.").withStyle(ChatFormatting.RED));
             PENDING.remove(player.getUUID());
             return 0;
         }
@@ -219,8 +219,8 @@ public final class SellCommand {
         removeMatching(player, prices, pending.key(), pending.count());
         manager.addMoney(player.getUUID(), pending.total());
 
-        Component msg = Component.literal("Successfully sold " + pending.count() + "x " +
-                        itemName + " for " + EconomyCraft.formatMoney(pending.total()) + ".")
+        Component msg = Component.literal("Succesvol verkocht " + pending.count() + "x " +
+                        itemName + " voor " + EconomyCraft.formatMoney(pending.total()) + ".")
                 .withStyle(ChatFormatting.GREEN);
         player.sendSystemMessage(msg);
         PENDING.remove(player.getUUID());
@@ -308,12 +308,12 @@ public final class SellCommand {
         long limit = EconomyConfig.get().dailySellLimit;
 
         if (remaining <= 0) {
-            source.sendFailure(Component.literal("Daily sell limit of " + EconomyCraft.formatMoney(limit) + " reached. Try again tomorrow.")
+            source.sendFailure(Component.literal("Dagelijkse verkooplimiet van " + EconomyCraft.formatMoney(limit) + " reached. Try again tomorrow.")
                     .withStyle(ChatFormatting.RED));
         } else {
-            source.sendFailure(Component.literal("This sale exceeds the daily sell limit of " +
-                            EconomyCraft.formatMoney(limit) + ". You can sell items worth " +
-                            EconomyCraft.formatMoney(remaining) + " more today.")
+            source.sendFailure(Component.literal("Deze verkoop overschrijdt de dagelijkse verkooplimiet van " +
+                            EconomyCraft.formatMoney(limit) + ". Je kunt spullen verkopen ter waarde van... " +
+                            EconomyCraft.formatMoney(remaining) + " meer vandaag.")
                     .withStyle(ChatFormatting.RED));
         }
         return 0;
