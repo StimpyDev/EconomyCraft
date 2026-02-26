@@ -35,8 +35,8 @@ public class ShopListing {
     public static ShopListing load(JsonObject obj, HolderLookup.Provider provider) {
         ShopListing l = new ShopListing();
         l.id = obj.get("id").getAsInt();
-        if (obj.has("seller")) l.seller = UUID.fromString(obj.get("Verkoper").getAsString());
-        l.price = obj.get("price").getAsLong();
+        if (obj.has("Verkoper")) l.seller = UUID.fromString(obj.get("Verkoper").getAsString());
+        l.price = obj.get("prijs").getAsLong();
         if (obj.has("stack")) {
             l.item = ItemStack.CODEC
                     .parse(RegistryOps.create(JsonOps.INSTANCE, provider), obj.get("stack"))
