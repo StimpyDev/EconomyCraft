@@ -38,7 +38,7 @@ public final class OrdersUi {
     private static final ChatFormatting BALANCE_VALUE_COLOR = ChatFormatting.DARK_PURPLE;
 
     public static void open(ServerPlayer player, EconomyManager eco) {
-        Component title = Component.literal("Orders");
+        Component title = Component.literal("Bestellingen");
         player.openMenu(new MenuProvider() {
             @Override
             public Component getDisplayName() {
@@ -59,7 +59,7 @@ public final class OrdersUi {
     private static Component createRewardLore(long reward, long tax) {
         StringBuilder value = new StringBuilder(EconomyCraft.formatMoney(reward));
         if (tax > 0) {
-            value.append(" (-").append(EconomyCraft.formatMoney(tax)).append(" tax)");
+            value.append(" (-").append(EconomyCraft.formatMoney(tax)).append(" belasting)");
         }
         return labeledValue("Reward", value.toString(), LABEL_PRIMARY_COLOR);
     }
@@ -94,7 +94,7 @@ public final class OrdersUi {
     public static void openClaims(ServerPlayer player, EconomyManager eco) {
         player.openMenu(new MenuProvider() {
             @Override
-            public Component getDisplayName() { return Component.literal("Deliveries"); }
+            public Component getDisplayName() { return Component.literal("Leveringen"); }
 
             @Override
             public AbstractContainerMenu createMenu(int id, Inventory inv, Player p) {
@@ -166,8 +166,8 @@ public final class OrdersUi {
                 display.set(net.minecraft.core.component.DataComponents.LORE,
                         new net.minecraft.world.item.component.ItemLore(List.of(
                                 createRewardLore(r.price, tax),
-                                labeledValue("Amount", String.valueOf(r.amount), LABEL_PRIMARY_COLOR),
-                                labeledValue("Requester", reqName, LABEL_SECONDARY_COLOR)
+                                labeledValue("Hoeveelheid", String.valueOf(r.amount), LABEL_PRIMARY_COLOR),
+                                labeledValue("Aanvrager", reqName, LABEL_SECONDARY_COLOR)
                         )));
                 display.setCount(1);
                 container.setItem(i, display);
@@ -175,13 +175,13 @@ public final class OrdersUi {
 
             if (page > 0) {
                 ItemStack prev = new ItemStack(Items.ARROW);
-                prev.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME, Component.literal("Previous page").withStyle(s -> s.withItalic(false)));
+                prev.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME, Component.literal("Vorige pagina").withStyle(s -> s.withItalic(false)));
                 container.setItem(navRowStart + 2, prev);
             }
 
             if (start + 45 < requests.size()) {
                 ItemStack next = new ItemStack(Items.ARROW);
-                next.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME, Component.literal("Next page").withStyle(s -> s.withItalic(false)));
+                next.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME, Component.literal("Volgende pagina").withStyle(s -> s.withItalic(false)));
                 container.setItem(navRowStart + 6, next);
             }
 
@@ -190,7 +190,7 @@ public final class OrdersUi {
 
             ItemStack paper = new ItemStack(Items.PAPER);
             paper.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME,
-                    Component.literal("Page " + (page + 1) + "/" + Math.max(1, totalPages)).withStyle(s -> s.withItalic(false)));
+                    Component.literal("Pagina " + (page + 1) + "/" + Math.max(1, totalPages)).withStyle(s -> s.withItalic(false)));
             container.setItem(navRowStart + 4, paper);
         }
 
@@ -284,7 +284,7 @@ public final class OrdersUi {
 
             ItemStack confirm = new ItemStack(Items.LIME_STAINED_GLASS_PANE);
             confirm.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME,
-                    Component.literal("Confirm").withStyle(s -> s.withItalic(false).withBold(true).withColor(ChatFormatting.GREEN)));
+                    Component.literal("Bevestig").withStyle(s -> s.withItalic(false).withBold(true).withColor(ChatFormatting.GREEN)));
             container.setItem(2, confirm);
 
             ItemStack item = req.item.copy();
@@ -302,14 +302,14 @@ public final class OrdersUi {
             item.set(net.minecraft.core.component.DataComponents.LORE,
                     new net.minecraft.world.item.component.ItemLore(List.of(
                             createRewardLore(req.price, tax),
-                            labeledValue("Amount", String.valueOf(req.amount), LABEL_PRIMARY_COLOR),
-                            labeledValue("Requester", requesterName, LABEL_SECONDARY_COLOR)
+                            labeledValue("Hoeveelheid", String.valueOf(req.amount), LABEL_PRIMARY_COLOR),
+                            labeledValue("Aanvrager", requesterName, LABEL_SECONDARY_COLOR)
                     )));
             container.setItem(4, item);
 
             ItemStack cancel = new ItemStack(Items.RED_STAINED_GLASS_PANE);
             cancel.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME,
-                    Component.literal("Cancel").withStyle(s -> s.withItalic(false).withBold(true).withColor(ChatFormatting.DARK_RED)));
+                    Component.literal("Annuleren").withStyle(s -> s.withItalic(false).withBold(true).withColor(ChatFormatting.DARK_RED)));
             container.setItem(6, cancel);
 
             for (int i = 0; i < 9; i++) {
@@ -338,14 +338,14 @@ public final class OrdersUi {
                     var server = serverPlayer.level().getServer();
 
                     if (current == null) {
-                        serverPlayer.sendSystemMessage(Component.literal("Request no longer available").withStyle(ChatFormatting.RED));
+                        serverPlayer.sendSystemMessage(Component.literal("Verzoek niet langer beschikbaar").withStyle(ChatFormatting.RED));
                     } else if (!parent.hasItems(serverPlayer, current.item, current.amount)) {
-                        serverPlayer.sendSystemMessage(Component.literal("Not enough items").withStyle(ChatFormatting.RED));
+                        serverPlayer.sendSystemMessage(Component.literal("Niet genoeg items.").withStyle(ChatFormatting.RED));
                     } else {
                         long cost = current.price;
                         long bal = parent.eco.getBalance(current.requester, true);
                         if (bal < cost) {
-                            serverPlayer.sendSystemMessage(Component.literal("Requester can't pay").withStyle(ChatFormatting.RED));
+                            serverPlayer.sendSystemMessage(Component.literal("Aanvrager kan niet betalen").withStyle(ChatFormatting.RED));
                         } else {
                             parent.removeItems(serverPlayer, current.item.copy(), current.amount);
                             long tax = Math.round(cost * EconomyConfig.get().taxRate);
@@ -431,20 +431,20 @@ public final class OrdersUi {
 
             ItemStack confirm = new ItemStack(Items.LIME_STAINED_GLASS_PANE);
             confirm.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME,
-                    Component.literal("Confirm").withStyle(s -> s.withItalic(false).withBold(true).withColor(ChatFormatting.GREEN)));
+                    Component.literal("Bevestig").withStyle(s -> s.withItalic(false).withBold(true).withColor(ChatFormatting.GREEN)));
             container.setItem(2, confirm);
 
             ItemStack item = req.item.copy();
             long tax = Math.round(req.price * EconomyConfig.get().taxRate);
             item.set(net.minecraft.core.component.DataComponents.LORE, new net.minecraft.world.item.component.ItemLore(java.util.List.of(
                     createRewardLore(req.price, tax),
-                    labeledValue("Amount", String.valueOf(req.amount), LABEL_PRIMARY_COLOR),
-                    Component.literal("This will remove the request").withStyle(s -> s.withItalic(false).withColor(ChatFormatting.RED)))));
+                    labeledValue("Hoeveelheid", String.valueOf(req.amount), LABEL_PRIMARY_COLOR),
+                    Component.literal("Hiermee wordt het verzoek verwijderd.").withStyle(s -> s.withItalic(false).withColor(ChatFormatting.RED)))));
             container.setItem(4, item);
 
             ItemStack cancel = new ItemStack(Items.RED_STAINED_GLASS_PANE);
             cancel.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME,
-                    Component.literal("Cancel").withStyle(s -> s.withItalic(false).withBold(true).withColor(ChatFormatting.DARK_RED)));
+                    Component.literal("Annuleren").withStyle(s -> s.withItalic(false).withBold(true).withColor(ChatFormatting.DARK_RED)));
             container.setItem(6, cancel);
 
             for (int i = 0; i < 9; i++) {
@@ -468,9 +468,9 @@ public final class OrdersUi {
                 if (slot == 2) {
                     OrderRequest removed = parent.orders.removeRequest(request.id);
                     if (removed != null) {
-                        ((ServerPlayer) player).sendSystemMessage(Component.literal("Request removed").withStyle(ChatFormatting.GREEN));
+                        ((ServerPlayer) player).sendSystemMessage(Component.literal("Verzoek verwijderd").withStyle(ChatFormatting.GREEN));
                     } else {
-                        ((ServerPlayer) player).sendSystemMessage(Component.literal("Request no longer available").withStyle(ChatFormatting.RED));
+                        ((ServerPlayer) player).sendSystemMessage(Component.literal("Verzoek niet langer beschikbaar").withStyle(ChatFormatting.RED));
                     }
                     player.closeContainer();
                     OrdersUi.open((ServerPlayer) player, parent.eco);
@@ -540,12 +540,12 @@ public final class OrdersUi {
             }
             if (page > 0) {
                 ItemStack prev = new ItemStack(Items.ARROW);
-                prev.set(DataComponents.CUSTOM_NAME, Component.literal("Previous page").withStyle(s -> s.withItalic(false)));
+                prev.set(DataComponents.CUSTOM_NAME, Component.literal("Vorige pagina").withStyle(s -> s.withItalic(false)));
                 container.setItem(navRowStart + 2, prev);
             }
             if (start + 45 < items.size()) {
                 ItemStack next = new ItemStack(Items.ARROW);
-                next.set(DataComponents.CUSTOM_NAME, Component.literal("Next page").withStyle(s -> s.withItalic(false)));
+                next.set(DataComponents.CUSTOM_NAME, Component.literal("Volgende pagina").withStyle(s -> s.withItalic(false)));
                 container.setItem(navRowStart + 6, next);
             }
             String name = null;
@@ -558,7 +558,7 @@ public final class OrdersUi {
             ItemStack balance = createBalanceItem(eco, owner, viewer, name);
             container.setItem(navRowStart, balance);
             ItemStack paper = new ItemStack(Items.PAPER);
-            paper.set(DataComponents.CUSTOM_NAME, Component.literal("Page " + (page + 1) + "/" + Math.max(1, totalPages)).withStyle(s -> s.withItalic(false)));
+            paper.set(DataComponents.CUSTOM_NAME, Component.literal("Pagina " + (page + 1) + "/" + Math.max(1, totalPages)).withStyle(s -> s.withItalic(false)));
             container.setItem(navRowStart + 4, paper);
         }
 
