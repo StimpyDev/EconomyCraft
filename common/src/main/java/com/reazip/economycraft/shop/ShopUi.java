@@ -37,7 +37,7 @@ public final class ShopUi {
     private static final ChatFormatting BALANCE_VALUE_COLOR = ChatFormatting.DARK_PURPLE;
 
     public static void open(ServerPlayer player, ShopManager shop) {
-        Component title = Component.literal("Shop");
+        Component title = Component.literal("Veilinghuis");
 
         player.openMenu(new MenuProvider() {
             @Override
