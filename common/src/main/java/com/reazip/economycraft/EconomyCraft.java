@@ -72,7 +72,7 @@ public final class EconomyCraft {
     public static Component createBalanceTitle(String baseTitle, ServerPlayer player) {
         EconomyManager eco = getManager(player.level().getServer());
         long balance = eco.getBalance(player.getUUID(), true);
-        return Component.literal(baseTitle + " - Balance: " + formatMoney(balance));
+        return Component.literal(baseTitle + " - Geld: " + formatMoney(balance));
     }
 
     public static String formatMoney(long amount) {
