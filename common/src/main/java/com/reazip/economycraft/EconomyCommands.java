@@ -47,7 +47,7 @@ public final class EconomyCommands {
         dispatcher.register(buildBalance().requires(s -> EconomyConfig.get().standaloneCommands));
         dispatcher.register(buildPay().requires(s -> EconomyConfig.get().standaloneCommands));
         dispatcher.register(SellCommand.register().requires(s -> EconomyConfig.get().standaloneCommands));
-        dispatcher.register(buildShop().requires(s -> EconomyConfig.get().standaloneCommands));
+        dispatcher.register(buildAH().requires(s -> EconomyConfig.get().standaloneCommands));
         dispatcher.register(buildOrders().requires(s -> EconomyConfig.get().standaloneCommands));
         dispatcher.register(buildDaily().requires(s -> EconomyConfig.get().standaloneCommands));
 
@@ -106,7 +106,7 @@ public final class EconomyCommands {
         root.then(buildBalance());
         root.then(buildPay());
         root.then(SellCommand.register());
-        root.then(buildShop());
+        root.then(buildAH());
         root.then(buildOrders());
         root.then(buildDaily());
 
@@ -117,7 +117,7 @@ public final class EconomyCommands {
         root.then(toggleScoreboard);
 
         if (EconomyConfig.get().serverShopEnabled) {
-            root.then(buildServerShop());
+            root.then(buildShop());
         }
 
         return root;
@@ -640,31 +640,31 @@ public final class EconomyCommands {
     }
 
     // =====================================================================
-    // === Shop commands ===================================================
+    // === Auction House ===================
     // =====================================================================
 
-    private static LiteralArgumentBuilder<CommandSourceStack> buildShop() {
-        return literal("shop")
-                .executes(ctx -> openShop(ctx.getSource().getPlayerOrException(), ctx.getSource()))
+    private static LiteralArgumentBuilder<CommandSourceStack> buildAH() {
+        return literal("ah")
+                .executes(ctx -> openAH(ctx.getSource().getPlayerOrException(), ctx.getSource()))
                 .then(literal("list")
                         .then(argument("price", LongArgumentType.longArg(1, EconomyManager.MAX))
-                                .executes(ctx -> listItem(ctx.getSource().getPlayerOrException(),
+                                .executes(ctx -> listItemAH(ctx.getSource().getPlayerOrException(),
                                         LongArgumentType.getLong(ctx, "price"),
                                         ctx.getSource()))));
     }
 
-    private static int openShop(ServerPlayer player, CommandSourceStack source) {
+    private static int openAH(ServerPlayer player, CommandSourceStack source) {
         try {
             ShopUi.open(player, EconomyCraft.getManager(source.getServer()).getShop());
             return 1;
         } catch (Exception e) {
-            LOGGER.error("[EconomyCraft] Failed to open /shop for {}", player.getDisplayName().getString(), e);
-            source.sendFailure(Component.literal("Failed to open shop. Check server logs."));
+            LOGGER.error("[EconomyCraft] Failed to open /ah for {}", player.getDisplayName().getString(), e);
+            source.sendFailure(Component.literal("Failed to open auction house. Check server logs."));
             return 0;
         }
     }
 
-    private static int listItem(ServerPlayer player, long price, CommandSourceStack source) {
+    private static int listItemAH(ServerPlayer player, long price, CommandSourceStack source) {
         if (player.getMainHandItem().isEmpty()) {
             source.sendFailure(Component.literal("Hold the item to list in your hand").withStyle(ChatFormatting.RED));
             return 0;
@@ -692,8 +692,12 @@ public final class EconomyCommands {
         return 1;
     }
 
-    private static LiteralArgumentBuilder<CommandSourceStack> buildServerShop() {
-        return literal("servershop")
+    // =====================================================================
+    // === Server Shop ============================================
+    // =====================================================================
+
+    private static LiteralArgumentBuilder<CommandSourceStack> buildShop() {
+        return literal("shop")
                 .requires(src -> EconomyConfig.get().serverShopEnabled)
                 .executes(ctx -> openServerShop(ctx.getSource().getPlayerOrException(), ctx.getSource(), null))
                 .then(argument("category", StringArgumentType.greedyString())
@@ -715,7 +719,7 @@ public final class EconomyCommands {
             ServerShopUi.open(player, manager, category);
             return 1;
         } catch (Exception e) {
-            LOGGER.error("[EconomyCraft] Failed to open /servershop for {} (category={})",
+            LOGGER.error("[EconomyCraft] Failed to open /shop for {} (category={})",
                     player.getDisplayName().getString(), category, e);
             source.sendFailure(Component.literal("Failed to open server shop. Check server logs."));
             return 0;
