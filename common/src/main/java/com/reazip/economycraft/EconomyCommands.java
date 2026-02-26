@@ -86,7 +86,7 @@ public final class EconomyCommands {
                 )
         );
 
-        var serverShop = buildServerShop();
+        var serverShop = buildShop();
         serverShop.requires(
                 serverShop.getRequirement()
                         .and(src -> EconomyConfig.get().standaloneCommands)
