@@ -471,16 +471,16 @@ public final class ServerShopUi {
 
                 int stackSize = Math.max(1, entry.stack());
                 List<Component> lore = new ArrayList<>();
-                lore.add(labeledValue("Buy", EconomyCraft.formatMoney(entry.unitBuy()), LABEL_PRIMARY_COLOR));
+                lore.add(labeledValue("Koop", EconomyCraft.formatMoney(entry.unitBuy()), LABEL_PRIMARY_COLOR));
 
                 Long stackPrice = safeMultiply(entry.unitBuy(), stackSize);
                 if (stackSize > 1 && stackPrice != null) {
                     lore.add(labeledValue("Stack (" + stackSize + ")", EconomyCraft.formatMoney(stackPrice), LABEL_PRIMARY_COLOR));
                 }
 
-                lore.add(labeledValue("Left click", "Buy 1", LABEL_SECONDARY_COLOR));
+                lore.add(labeledValue("Linker muis", "Koop 1", LABEL_SECONDARY_COLOR));
                 if (stackSize > 1) {
-                    lore.add(labeledValue("Shift-click", "Buy " + stackSize, LABEL_SECONDARY_COLOR));
+                    lore.add(labeledValue("Shift-klik", "Koop " + stackSize, LABEL_SECONDARY_COLOR));
                 }
 
                 display.set(DataComponents.LORE, new ItemLore(lore));
