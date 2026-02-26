@@ -671,7 +671,7 @@ map.put(normalizeCategoryKey("Aarde"), IdentifierCompat.withDefaultNamespace("di
 map.put(normalizeCategoryKey("Zand"), IdentifierCompat.withDefaultNamespace("sand"));
 map.put(normalizeCategoryKey("Hout"), IdentifierCompat.withDefaultNamespace("oak_log"));
 map.put(normalizeCategoryKey("Drops"), IdentifierCompat.withDefaultNamespace("gunpowder"));
-map.put(normalizeCategoryKey("Gereedschap"), IdentifierCompat.withDefaultNamespace("totem_of_undying"));
+map.put(normalizeCategoryKey("Hulpmiddelen"), IdentifierCompat.withDefaultNamespace("totem_of_undying"));
 map.put(normalizeCategoryKey("Vervoer"), IdentifierCompat.withDefaultNamespace("saddle"));
 map.put(normalizeCategoryKey("Licht"), IdentifierCompat.withDefaultNamespace("lantern"));
 map.put(normalizeCategoryKey("Planten"), IdentifierCompat.withDefaultNamespace("wheat"));
@@ -736,7 +736,7 @@ case "aarde" -> ChatFormatting.GREEN;
 case "zand" -> ChatFormatting.YELLOW;
 case "hout" -> ChatFormatting.DARK_GREEN;
 case "drops" -> ChatFormatting.GRAY;
-case "gereedschap" -> ChatFormatting.LIGHT_PURPLE;
+case "hulpmiddelen" -> ChatFormatting.LIGHT_PURPLE;
 case "vervoer" -> ChatFormatting.BLUE;
 case "licht" -> ChatFormatting.YELLOW;
 case "planten" -> ChatFormatting.GREEN;
