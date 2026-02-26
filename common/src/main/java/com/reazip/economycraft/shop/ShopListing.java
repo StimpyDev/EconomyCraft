@@ -23,7 +23,7 @@ public class ShopListing {
     public JsonObject save(HolderLookup.Provider provider) {
         JsonObject obj = new JsonObject();
         obj.addProperty("id", id);
-        if (seller != null) obj.addProperty("seller", seller.toString());
+        if (seller != null) obj.addProperty("Verkoper", seller.toString());
         obj.addProperty("price", price);
         obj.addProperty("item", BuiltInRegistries.ITEM.getKey(item.getItem()).toString());
         obj.addProperty("count", item.getCount());
@@ -35,7 +35,7 @@ public class ShopListing {
     public static ShopListing load(JsonObject obj, HolderLookup.Provider provider) {
         ShopListing l = new ShopListing();
         l.id = obj.get("id").getAsInt();
-        if (obj.has("seller")) l.seller = UUID.fromString(obj.get("seller").getAsString());
+        if (obj.has("seller")) l.seller = UUID.fromString(obj.get("Verkoper").getAsString());
         l.price = obj.get("price").getAsLong();
         if (obj.has("stack")) {
             l.item = ItemStack.CODEC
