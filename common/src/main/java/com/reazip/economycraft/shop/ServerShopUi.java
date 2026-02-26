@@ -85,7 +85,7 @@ public final class ServerShopUi {
     }
 
     private static void openRoot(ServerPlayer player, EconomyManager eco) {
-        Component title = Component.literal("Server Shop");
+        Component title = Component.literal("DIEGOTJUH SMP SHOP");
         player.openMenu(new MenuProvider() {
             @Override
             public Component getDisplayName() {
@@ -153,7 +153,7 @@ public final class ServerShopUi {
     }
 
     private static String formatCategoryTitle(String category) {
-        if (category == null || category.isBlank()) return "Server Shop";
+        if (category == null || category.isBlank()) return "DIEGOTJUH SMP SHOP";
         String[] parts = category.replace('.', '_').split("_");
         StringBuilder sb = new StringBuilder();
         for (String part : parts) {
@@ -229,7 +229,7 @@ public final class ServerShopUi {
                 if (icon.isEmpty()) continue;
 
                 icon.set(DataComponents.CUSTOM_NAME, Component.literal(formatCategoryTitle(cat)).withStyle(s -> s.withItalic(false).withColor(getCategoryColor(cat)).withBold(true)));
-                icon.set(DataComponents.LORE, new ItemLore(List.of(Component.literal("Click to view items").withStyle(s -> s.withItalic(false)))));
+                icon.set(DataComponents.LORE, new ItemLore(List.of(Component.literal("Klik om artikelen te bekijken").withStyle(s -> s.withItalic(false)))));
                 int slot = STAR_SLOT_ORDER.get(i);
                 container.setItem(slot, icon);
                 slotToIndex[slot] = idx;
@@ -239,13 +239,13 @@ public final class ServerShopUi {
 
             if (page > 0) {
                 ItemStack prev = new ItemStack(Items.ARROW);
-                prev.set(DataComponents.CUSTOM_NAME, Component.literal("Previous page").withStyle(s -> s.withItalic(false)));
+                prev.set(DataComponents.CUSTOM_NAME, Component.literal("Vorige pagina").withStyle(s -> s.withItalic(false)));
                 container.setItem(navRowStart + 3, prev);
             }
 
             if (start + itemsPerPage < categories.size()) {
                 ItemStack next = new ItemStack(Items.ARROW);
-                next.set(DataComponents.CUSTOM_NAME, Component.literal("Next page").withStyle(s -> s.withItalic(false)));
+                next.set(DataComponents.CUSTOM_NAME, Component.literal("Volgende pagina").withStyle(s -> s.withItalic(false)));
                 container.setItem(navRowStart + 5, next);
             }
 
@@ -253,7 +253,7 @@ public final class ServerShopUi {
             container.setItem(navRowStart, balance);
 
             ItemStack paper = new ItemStack(Items.PAPER);
-            paper.set(DataComponents.CUSTOM_NAME, Component.literal("Page " + (page + 1) + "/" + Math.max(1, totalPages)).withStyle(s -> s.withItalic(false)));
+            paper.set(DataComponents.CUSTOM_NAME, Component.literal("Pagina " + (page + 1) + "/" + Math.max(1, totalPages)).withStyle(s -> s.withItalic(false)));
             container.setItem(navRowStart + 4, paper);
         }
 
@@ -354,31 +354,31 @@ public final class ServerShopUi {
                 if (icon.isEmpty()) continue;
 
                 icon.set(DataComponents.CUSTOM_NAME, Component.literal(formatCategoryTitle(sub)).withStyle(s -> s.withItalic(false).withColor(ChatFormatting.WHITE).withBold(true)));
-                icon.set(DataComponents.LORE, new ItemLore(List.of(Component.literal("Click to view items").withStyle(s -> s.withItalic(false)))));
+                icon.set(DataComponents.LORE, new ItemLore(List.of(Component.literal("Klik om artikelen te bekijken").withStyle(s -> s.withItalic(false)))));
                 container.setItem(i, icon);
             }
 
             if (page > 0) {
                 ItemStack prev = new ItemStack(Items.ARROW);
-                prev.set(DataComponents.CUSTOM_NAME, Component.literal("Previous page").withStyle(s -> s.withItalic(false)));
+                prev.set(DataComponents.CUSTOM_NAME, Component.literal("Vorige pagina").withStyle(s -> s.withItalic(false)));
                 container.setItem(navRowStart + 3, prev);
             }
 
             if (start + itemsPerPage < subcategories.size()) {
                 ItemStack next = new ItemStack(Items.ARROW);
-                next.set(DataComponents.CUSTOM_NAME, Component.literal("Next page").withStyle(s -> s.withItalic(false)));
+                next.set(DataComponents.CUSTOM_NAME, Component.literal("Volgende pagina").withStyle(s -> s.withItalic(false)));
                 container.setItem(navRowStart + 5, next);
             }
 
             ItemStack back = new ItemStack(Items.BARRIER);
-            back.set(DataComponents.CUSTOM_NAME, Component.literal("Back").withStyle(s -> s.withItalic(false).withColor(ChatFormatting.DARK_RED).withBold(true)));
+            back.set(DataComponents.CUSTOM_NAME, Component.literal("Terug").withStyle(s -> s.withItalic(false).withColor(ChatFormatting.DARK_RED).withBold(true)));
             container.setItem(navRowStart + 8, back);
 
             ItemStack balance = createBalanceItem(viewer);
             container.setItem(navRowStart, balance);
 
             ItemStack paper = new ItemStack(Items.PAPER);
-            paper.set(DataComponents.CUSTOM_NAME, Component.literal("Page " + (page + 1) + "/" + Math.max(1, totalPages)).withStyle(s -> s.withItalic(false)));
+            paper.set(DataComponents.CUSTOM_NAME, Component.literal("Pagina " + (page + 1) + "/" + Math.max(1, totalPages)).withStyle(s -> s.withItalic(false)));
             container.setItem(navRowStart + 4, paper);
         }
 
@@ -490,25 +490,25 @@ public final class ServerShopUi {
 
             if (page > 0) {
                 ItemStack prev = new ItemStack(Items.ARROW);
-                prev.set(DataComponents.CUSTOM_NAME, Component.literal("Previous page").withStyle(s -> s.withItalic(false)));
+                prev.set(DataComponents.CUSTOM_NAME, Component.literal("Vorige pagina").withStyle(s -> s.withItalic(false)));
                 container.setItem(navRowStart + 3, prev);
             }
 
             if (start + itemsPerPage < entries.size()) {
                 ItemStack next = new ItemStack(Items.ARROW);
-                next.set(DataComponents.CUSTOM_NAME, Component.literal("Next page").withStyle(s -> s.withItalic(false)));
+                next.set(DataComponents.CUSTOM_NAME, Component.literal("Volgende pagina").withStyle(s -> s.withItalic(false)));
                 container.setItem(navRowStart + 5, next);
             }
 
             ItemStack back = new ItemStack(Items.BARRIER);
-            back.set(DataComponents.CUSTOM_NAME, Component.literal("Back").withStyle(s -> s.withItalic(false).withColor(ChatFormatting.DARK_RED).withBold(true)));
+            back.set(DataComponents.CUSTOM_NAME, Component.literal("Terug").withStyle(s -> s.withItalic(false).withColor(ChatFormatting.DARK_RED).withBold(true)));
             container.setItem(navRowStart + 8, back);
 
             ItemStack balance = createBalanceItem(viewer);
             container.setItem(navRowStart, balance);
 
             ItemStack paper = new ItemStack(Items.PAPER);
-            paper.set(DataComponents.CUSTOM_NAME, Component.literal("Page " + (page + 1) + "/" + Math.max(1, totalPages)).withStyle(s -> s.withItalic(false)));
+            paper.set(DataComponents.CUSTOM_NAME, Component.literal("Pagina " + (page + 1) + "/" + Math.max(1, totalPages)).withStyle(s -> s.withItalic(false)));
             container.setItem(navRowStart + 4, paper);
         }
 
@@ -539,14 +539,14 @@ public final class ServerShopUi {
 
         private void handlePurchase(PriceRegistry.PriceEntry entry, ClickType clickType) {
             if (entry.unitBuy() <= 0) {
-                viewer.sendSystemMessage(Component.literal("This item cannot be purchased.")
+                viewer.sendSystemMessage(Component.literal("Dit artikel kan niet worden gekocht.")
                         .withStyle(ChatFormatting.RED));
                 return;
             }
 
             ItemStack base = createDisplayStack(entry, viewer);
             if (base.isEmpty()) {
-                viewer.sendSystemMessage(Component.literal("Item unavailable.")
+                viewer.sendSystemMessage(Component.literal("Artikel niet beschikbaar.")
                         .withStyle(ChatFormatting.RED));
                 return;
             }
@@ -556,20 +556,20 @@ public final class ServerShopUi {
 
             Long total = safeMultiply(entry.unitBuy(), amount);
             if (total == null) {
-                viewer.sendSystemMessage(Component.literal("Price too large.")
+                viewer.sendSystemMessage(Component.literal("De prijs te groot.")
                         .withStyle(ChatFormatting.RED));
                 return;
             }
 
             long balance = eco.getBalance(viewer.getUUID(), true);
             if (balance < total) {
-                viewer.sendSystemMessage(Component.literal("Not enough balance.")
+                viewer.sendSystemMessage(Component.literal("Je hebt niet genoeg geld.")
                         .withStyle(ChatFormatting.RED));
                 return;
             }
 
             if (!eco.removeMoney(viewer.getUUID(), total)) {
-                viewer.sendSystemMessage(Component.literal("Not enough balance.")
+                viewer.sendSystemMessage(Component.literal("Je hebt niet genoeg geld.")
                         .withStyle(ChatFormatting.RED));
                 return;
             }
