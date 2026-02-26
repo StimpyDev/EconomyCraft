@@ -353,8 +353,8 @@ public final class ShopUi {
                                 }
                             } else {
                                 sp.sendSystemMessage(
-                                        Component.literal("Purchased " + count + "x " + name.getString() + " from " + sellerName +
-                                                        " for " + EconomyCraft.formatMoney(total))
+                                        Component.literal("Item gekocht " + count + "x " + name.getString() + " from " + sellerName +
+                                                        " voor " + EconomyCraft.formatMoney(total))
                                                 .withStyle(ChatFormatting.GREEN)
                                 );
                             }
