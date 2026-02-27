@@ -1,6 +1,5 @@
 package com.reazip.economycraft.shop;
 
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.mojang.serialization.JsonOps;
 import net.minecraft.core.HolderLookup;
@@ -22,7 +21,6 @@ public class ShopListing {
         if (seller != null) obj.addProperty("Verkoper", seller.toString());
         obj.addProperty("prijs", price);
 
-        // The Codec handles the item ID, count, and all NBT/Components automatically.
         var ops = RegistryOps.create(JsonOps.INSTANCE, provider);
         ItemStack.CODEC.encodeStart(ops, item)
                 .result()
@@ -33,13 +31,18 @@ public class ShopListing {
 
     public static ShopListing load(JsonObject obj, HolderLookup.Provider provider) {
         ShopListing l = new ShopListing();
-        l.id = obj.get("id").getAsInt();
+        
+        if (obj.has("id")) {
+            l.id = obj.get("id").getAsInt();
+        }
         
         if (obj.has("Verkoper")) {
             l.seller = UUID.fromString(obj.get("Verkoper").getAsString());
         }
         
-        l.price = obj.get("prijs").getAsLong();
+        if (obj.has("prijs")) {
+            l.price = obj.get("prijs").getAsLong();
+        }
 
         if (obj.has("stack")) {
             var ops = RegistryOps.create(JsonOps.INSTANCE, provider);
@@ -47,7 +50,6 @@ public class ShopListing {
                     .result()
                     .orElse(ItemStack.EMPTY);
         } else {
-            // Fallback for very old data formats if necessary
             l.item = ItemStack.EMPTY;
         }
         
