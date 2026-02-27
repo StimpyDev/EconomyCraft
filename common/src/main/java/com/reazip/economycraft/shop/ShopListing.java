@@ -4,12 +4,8 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.mojang.serialization.JsonOps;
 import net.minecraft.core.HolderLookup;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.RegistryOps;
-import com.reazip.economycraft.util.IdentifierCompat;
-import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-
 
 import java.util.UUID;
 
@@ -17,7 +13,7 @@ import java.util.UUID;
 public class ShopListing {
     public int id;
     public UUID seller;
-    public ItemStack item;
+    public ItemStack item = ItemStack.EMPTY;
     public long price;
 
     public JsonObject save(HolderLookup.Provider provider) {
@@ -25,34 +21,36 @@ public class ShopListing {
         obj.addProperty("id", id);
         if (seller != null) obj.addProperty("Verkoper", seller.toString());
         obj.addProperty("prijs", price);
-        obj.addProperty("item", BuiltInRegistries.ITEM.getKey(item.getItem()).toString());
-        obj.addProperty("count", item.getCount());
-        JsonElement stackEl = ItemStack.CODEC.encodeStart(RegistryOps.create(JsonOps.INSTANCE, provider), item).result().orElse(new JsonObject());
-        obj.add("stack", stackEl);
+
+        // The Codec handles the item ID, count, and all NBT/Components automatically.
+        var ops = RegistryOps.create(JsonOps.INSTANCE, provider);
+        ItemStack.CODEC.encodeStart(ops, item)
+                .result()
+                .ifPresent(stackEl -> obj.add("stack", stackEl));
+        
         return obj;
     }
 
     public static ShopListing load(JsonObject obj, HolderLookup.Provider provider) {
         ShopListing l = new ShopListing();
         l.id = obj.get("id").getAsInt();
-        if (obj.has("Verkoper")) l.seller = UUID.fromString(obj.get("Verkoper").getAsString());
+        
+        if (obj.has("Verkoper")) {
+            l.seller = UUID.fromString(obj.get("Verkoper").getAsString());
+        }
+        
         l.price = obj.get("prijs").getAsLong();
+
         if (obj.has("stack")) {
-            l.item = ItemStack.CODEC
-                    .parse(RegistryOps.create(JsonOps.INSTANCE, provider), obj.get("stack"))
+            var ops = RegistryOps.create(JsonOps.INSTANCE, provider);
+            l.item = ItemStack.CODEC.parse(ops, obj.get("stack"))
                     .result()
                     .orElse(ItemStack.EMPTY);
+        } else {
+            // Fallback for very old data formats if necessary
+            l.item = ItemStack.EMPTY;
         }
-        if (l.item == null || l.item.isEmpty()) {
-            String itemId = obj.get("item").getAsString();
-            int count = obj.get("count").getAsInt();
-            IdentifierCompat.Id rl = IdentifierCompat.tryParse(itemId);
-
-            if (rl != null) {
-                java.util.Optional<Item> opt = IdentifierCompat.registryGetOptional(BuiltInRegistries.ITEM, rl);
-                opt.ifPresent(item -> l.item = new ItemStack(item, count)); // directly set l.item
-            }
-        }
+        
         return l;
     }
 }
