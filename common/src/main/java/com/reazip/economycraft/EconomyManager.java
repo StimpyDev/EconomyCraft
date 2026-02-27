@@ -47,12 +47,8 @@ public class EconomyManager {
     public EconomyManager(MinecraftServer server) {
         this.server = server;
         
-        // FIX: Explicitly handle File to Path conversion to prevent "cannot find symbol"
-        File configFolder = server.getFile("config/economycraft/data");
-        if (!configFolder.exists()) {
-            configFolder.mkdirs();
-        }
-        Path dataDir = configFolder.toPath();
+        Path dataDir = server.getFile("config/economycraft/data");
+        try { Files.createDirectories(dataDir); } catch (IOException ignored) {}
 
         this.file = dataDir.resolve("balances.json");
         this.dailyFile = dataDir.resolve("daily.json");
