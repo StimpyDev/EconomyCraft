@@ -7,9 +7,7 @@ import com.google.gson.JsonObject;
 import com.mojang.serialization.JsonOps;
 import com.reazip.economycraft.EconomyCraft;
 import com.reazip.economycraft.util.IdentityCompat;
-import com.reazip.economycraft.util.IdentifierCompat;
 import net.minecraft.ChatFormatting;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.RegistryOps;
 import net.minecraft.server.MinecraftServer;
@@ -25,12 +23,10 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 /** Manages shop listings and deliveries. */
 public class ShopManager {
-    // Pretty printing makes manual file editing/debugging much easier
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private final MinecraftServer server;
     private final Path file;
     
-    // Concurrent maps prevent crashes during auto-saves or multi-threaded access
     private final Map<Integer, ShopListing> listings = new ConcurrentHashMap<>();
     private final Map<UUID, List<ItemStack>> deliveries = new ConcurrentHashMap<>();
     private final List<Runnable> listeners = new CopyOnWriteArrayList<>();
@@ -39,9 +35,12 @@ public class ShopManager {
 
     public ShopManager(MinecraftServer server) {
         this.server = server;
-        Path folder = server.getFile("config/economycraft/data");
-        try { Files.createDirectories(folder); } catch (IOException ignored) {}
-        this.file = folder.resolve("shop.json");
+        this.file = server.getFile("config/economycraft/data/shop.json");
+        
+        try { 
+            Files.createDirectories(file.getParent()); 
+        } catch (IOException ignored) {}
+        
         load();
     }
 
@@ -67,15 +66,27 @@ public class ShopManager {
 
     public void addDelivery(UUID player, ItemStack stack) {
         if (stack.isEmpty()) return;
-        // .copy() is essential to prevent original stack modification issues
         deliveries.computeIfAbsent(player, k -> new ArrayList<>()).add(stack.copy());
         save();
+    }
+
+    public List<ItemStack> getDeliveries(UUID player) {
+        return deliveries.getOrDefault(player, new ArrayList<>());
     }
 
     public List<ItemStack> claimDeliveries(UUID player) {
         List<ItemStack> list = deliveries.remove(player);
         if (list != null) save();
         return list;
+    }
+    
+    public void removeDelivery(UUID player, ItemStack stack) {
+        List<ItemStack> list = deliveries.get(player);
+        if (list != null) {
+            list.remove(stack);
+            if (list.isEmpty()) deliveries.remove(player);
+            save();
+        }
     }
 
     public boolean hasDeliveries(UUID player) {
@@ -114,7 +125,6 @@ public class ShopManager {
                     List<ItemStack> list = new ArrayList<>();
                     for (var sEl : dObj.getAsJsonArray(key)) {
                         JsonObject o = sEl.getAsJsonObject();
-                        // Modern Minecraft uses Codecs for ItemStacks to keep NBT/Components intact
                         ItemStack stack = ItemStack.CODEC.parse(ops, o.get("stack"))
                                 .result()
                                 .orElse(ItemStack.EMPTY);
@@ -171,7 +181,6 @@ public class ShopManager {
         String itemName = stack.isEmpty() ? "item" : stack.getHoverName().getString();
         String buyerName = IdentityCompat.of(buyer).name();
 
-        // Exact strings maintained from your original code
         Component msg = Component.literal(
                 "Verkocht " + amount + "x " + itemName +
                 " naar " + buyerName +
