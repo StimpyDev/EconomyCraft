@@ -39,7 +39,11 @@ public class ShopManager {
 
     public ShopManager(MinecraftServer server) {
         this.server = server;
-        this.file = server.getFile("config/economycraft/data/shop.json").toPath();
+        java.io.File folder = server.getFile("config/economycraft/data");
+        if (!folder.exists()) {
+            folder.mkdirs();
+        }
+        this.file = folder.toPath().resolve("shop.json");
         load();
     }
 
