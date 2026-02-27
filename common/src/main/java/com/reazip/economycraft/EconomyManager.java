@@ -29,7 +29,6 @@ public class EconomyManager {
     private static final Type DAILY_SELL_TYPE = new TypeToken<Map<UUID, DailySellData>>(){}.getType();
 
     private final MinecraftServer server;
-    private final Path dataDir;
     private final Path file, dailyFile, dailySellFile;
 
     private final Map<UUID, Long> balances = new ConcurrentHashMap<>();
@@ -46,7 +45,7 @@ public class EconomyManager {
 
     public EconomyManager(MinecraftServer server) {
         this.server = server;
-        this.dataDir = server.getFile("config/economycraft/data").toPath();
+        Path dataDir = server.getFile("config/economycraft/data").toPath();
         try { Files.createDirectories(dataDir); } catch (IOException ignored) {}
 
         this.file = dataDir.resolve("balances.json");
@@ -62,9 +61,31 @@ public class EconomyManager {
         initScoreboard();
     }
 
-    // =====================================================================
-    // === Core Logic =====================================================
-    // =====================================================================
+    // --- Core API ---
+
+    public Map<UUID, Long> getBalances() { return balances; }
+
+    @Nullable
+    public String getBestName(UUID id) {
+        ServerPlayer online = server.getPlayerList().getPlayer(id);
+        if (online != null) return IdentityCompat.of(online).name();
+        ensureDiskUserCacheLoaded();
+        String fromCache = diskUserCache.get(id);
+        return (fromCache != null) ? fromCache : id.toString();
+    }
+
+    public UUID tryResolveUuidByName(String name) {
+        if (name == null || name.isBlank()) return null;
+        ServerPlayer online = server.getPlayerList().getPlayerByName(name);
+        if (online != null) return online.getUUID();
+
+        ensureDiskUserCacheLoaded();
+        for (var e : diskUserCache.entrySet()) {
+            if (name.equalsIgnoreCase(e.getValue())) return e.getKey();
+        }
+        try { return UUID.fromString(name); } catch (Exception ignored) {}
+        return null;
+    }
 
     public Long getBalance(UUID player, boolean createIfMissing) {
         if (!balances.containsKey(player)) {
@@ -94,46 +115,59 @@ public class EconomyManager {
         return true;
     }
 
-    // =====================================================================
-    // === Scoreboard =========================================
-    // =====================================================================
+    // --- Daily Sell Logic ---
+
+    public boolean tryRecordDailySell(UUID player, long saleAmount) {
+        long limit = EconomyConfig.get().dailySellLimit;
+        if (limit <= 0) return false;
+
+        DailySellData data = getOrCreateTodaySellData(player);
+        long newTotal = data.amount() + saleAmount;
+        if (newTotal > limit) return true;
+
+        dailySells.put(player, new DailySellData(data.day(), newTotal));
+        save();
+        return false;
+    }
+
+    public long getDailySellRemaining(UUID player) {
+        long limit = EconomyConfig.get().dailySellLimit;
+        if (limit <= 0) return Long.MAX_VALUE;
+        return Math.max(0, limit - getOrCreateTodaySellData(player).amount());
+    }
+
+    private DailySellData getOrCreateTodaySellData(UUID player) {
+        long today = LocalDate.now().toEpochDay();
+        DailySellData data = dailySells.get(player);
+        if (data == null || data.day() != today) {
+            data = new DailySellData(today, 0L);
+            dailySells.put(player, data);
+        }
+        return data;
+    }
+
+    // --- Scoreboard ---
 
     private void initScoreboard() {
-        if (EconomyConfig.get().scoreboardEnabled) {
-            getOrCreateObjective();
-        }
+        if (EconomyConfig.get().scoreboardEnabled) getOrCreateObjective();
     }
 
     private void getOrCreateObjective() {
         Scoreboard board = server.getScoreboard();
         objective = board.getObjective("eco_balance");
         if (objective == null) {
-            objective = board.addObjective("eco_balance", ObjectiveCriteria.DUMMY, 
-                        Component.literal("Balance"), ObjectiveCriteria.RenderType.INTEGER, true, null);
+            objective = board.addObjective("eco_balance", ObjectiveCriteria.DUMMY, Component.literal("Balance"), ObjectiveCriteria.RenderType.INTEGER, true, null);
         }
         board.setDisplayObjective(DisplaySlot.SIDEBAR, objective);
-        refreshFullLeaderboard();
+        balances.forEach(this::updateScore);
     }
 
     private void updateScore(UUID player, long amount) {
         if (!EconomyConfig.get().scoreboardEnabled || objective == null) return;
-        
-        // We update the specific player's score without resetting the whole board
-        String name = resolveName(server, player);
-        server.getScoreboard().getOrCreatePlayerScore(ScoreHolder.forNameOnly(name), objective)
-              .set((int) amount);
+        String name = getBestName(player);
+        server.getScoreboard().getOrCreatePlayerScore(ScoreHolder.forNameOnly(name), objective).set((int) amount);
     }
-
-    private void refreshFullLeaderboard() {
-        if (objective == null) return;
-        // Clean old scores and set top 5
-        balances.forEach(this::updateScore);
-    }
-
-    // =====================================================================
-    // === Data Handling ===================================================
-    // =====================================================================
-
+    
     private void loadAll() {
         try {
             if (Files.exists(file)) {
@@ -159,43 +193,11 @@ public class EconomyManager {
         } catch (IOException ignored) {}
     }
 
-    // =====================================================================
-    // === PVP & Dailies =================================
-    // =====================================================================
-
-    public void handlePvpKill(ServerPlayer victim, ServerPlayer killer) {
-        double pct = EconomyConfig.get().pvpBalanceLossPercentage;
-        if (pct <= 0 || victim == null || killer == null || victim == killer) return;
-
-        long victimBal = getBalance(victim.getUUID(), true);
-        long loss = (long) Math.floor(pct * victimBal);
-        if (loss <= 0) return;
-
-        removeMoney(victim.getUUID(), loss);
-        addMoney(killer.getUUID(), loss);
-
-        victim.sendSystemMessage(Component.literal("Jij hebt verloren " + EconomyCraft.formatMoney(loss) + 
-                " omdat je vermoord bent door " + killer.getName().getString()).withStyle(ChatFormatting.RED));
-
-        killer.sendSystemMessage(Component.literal("Jij hebt ontvangen " + EconomyCraft.formatMoney(loss) + 
-                " voor het killen van: " + victim.getName().getString()).withStyle(ChatFormatting.GREEN));
-    }
-
-    private long clamp(long value) { return Math.max(0, Math.min(MAX, value)); }
-
-    // Helper methods (Name resolution, etc)
-    private String resolveName(MinecraftServer server, UUID id) {
-        ServerPlayer online = server.getPlayerList().getPlayer(id);
-        if (online != null) return IdentityCompat.of(online).name();
-        ensureDiskUserCacheLoaded();
-        return diskUserCache.getOrDefault(id, id.toString());
-    }
-
     private void ensureDiskUserCacheLoaded() {
         if (diskUserCache != null) return;
         diskUserCache = new HashMap<>();
         try {
-            Path uc = server.getFile("usercache.json");
+            Path uc = server.getFile("usercache.json").toPath();
             if (Files.exists(uc)) {
                 UserCacheEntry[] entries = GSON.fromJson(Files.readString(uc), UserCacheEntry[].class);
                 if (entries != null) {
@@ -207,11 +209,22 @@ public class EconomyManager {
         } catch (Exception ignored) {}
     }
 
-    // Getters for other managers
+    public void handlePvpKill(ServerPlayer victim, ServerPlayer killer) {
+        double pct = EconomyConfig.get().pvpBalanceLossPercentage;
+        if (pct <= 0 || victim == null || killer == null || victim == killer) return;
+        long victimBal = getBalance(victim.getUUID(), true);
+        long loss = (long) Math.floor(pct * victimBal);
+        if (loss <= 0) return;
+        removeMoney(victim.getUUID(), loss);
+        addMoney(killer.getUUID(), loss);
+        victim.sendSystemMessage(Component.literal("Jij hebt verloren " + EconomyCraft.formatMoney(loss) + " omdat je vermoord bent door " + killer.getName().getString()).withStyle(ChatFormatting.RED));
+        killer.sendSystemMessage(Component.literal("Jij hebt ontvangen " + EconomyCraft.formatMoney(loss) + " voor het killen van: " + victim.getName().getString()).withStyle(ChatFormatting.GREEN));
+    }
+
+    private long clamp(long value) { return Math.max(0, Math.min(MAX, value)); }
     public com.reazip.economycraft.shop.ShopManager getShop() { return shop; }
     public com.reazip.economycraft.orders.OrderManager getOrders() { return orders; }
     public PriceRegistry getPrices() { return prices; }
-
     private static final class UserCacheEntry { String name; String uuid; }
     private record DailySellData(long day, long amount) {}
 }
