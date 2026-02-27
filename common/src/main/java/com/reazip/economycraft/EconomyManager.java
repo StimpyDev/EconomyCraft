@@ -15,6 +15,7 @@ import net.minecraft.world.scores.ScoreHolder;
 import net.minecraft.world.scores.criteria.ObjectiveCriteria;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.nio.file.Files;
@@ -45,8 +46,13 @@ public class EconomyManager {
 
     public EconomyManager(MinecraftServer server) {
         this.server = server;
-        Path dataDir = server.getFile("config/economycraft/data").toPath();
-        try { Files.createDirectories(dataDir); } catch (IOException ignored) {}
+        
+        // FIX: Explicitly handle File to Path conversion to prevent "cannot find symbol"
+        File configFolder = server.getFile("config/economycraft/data");
+        if (!configFolder.exists()) {
+            configFolder.mkdirs();
+        }
+        Path dataDir = configFolder.toPath();
 
         this.file = dataDir.resolve("balances.json");
         this.dailyFile = dataDir.resolve("daily.json");
@@ -167,7 +173,9 @@ public class EconomyManager {
         String name = getBestName(player);
         server.getScoreboard().getOrCreatePlayerScore(ScoreHolder.forNameOnly(name), objective).set((int) amount);
     }
-    
+
+    // --- File IO ---
+
     private void loadAll() {
         try {
             if (Files.exists(file)) {
@@ -197,9 +205,9 @@ public class EconomyManager {
         if (diskUserCache != null) return;
         diskUserCache = new HashMap<>();
         try {
-            Path uc = server.getFile("usercache.json").toPath();
-            if (Files.exists(uc)) {
-                UserCacheEntry[] entries = GSON.fromJson(Files.readString(uc), UserCacheEntry[].class);
+            File cacheFile = server.getFile("usercache.json");
+            if (cacheFile.exists()) {
+                UserCacheEntry[] entries = GSON.fromJson(Files.readString(cacheFile.toPath()), UserCacheEntry[].class);
                 if (entries != null) {
                     for (UserCacheEntry e : entries) {
                         if (e.uuid != null && e.name != null) diskUserCache.put(UUID.fromString(e.uuid), e.name);
