@@ -416,11 +416,11 @@ public class EconomyManager {
         addMoney(killer.getUUID(), loss);
 
         victim.sendSystemMessage(Component.literal(
-                "You lost " + EconomyCraft.formatMoney(loss) + " for being killed by " + killer.getName().getString())
+                "Jij hebt verloren " + EconomyCraft.formatMoney(loss) + " omdat je vermoord bent door " + killer.getName().getString())
                 .withStyle(net.minecraft.ChatFormatting.RED));
 
         killer.sendSystemMessage(Component.literal(
-                "You received " + EconomyCraft.formatMoney(loss) + " for killing " + victim.getName().getString())
+                "Jij hebt ontvangen " + EconomyCraft.formatMoney(loss) + " voor het killen van: " + victim.getName().getString())
                 .withStyle(net.minecraft.ChatFormatting.GREEN));
     }
 
