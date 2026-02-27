@@ -159,7 +159,6 @@ public class EconomyManager {
     lastDaily.put(playerId, today);
     
     save();
-    saveDailies();
     
     return true;
 }
