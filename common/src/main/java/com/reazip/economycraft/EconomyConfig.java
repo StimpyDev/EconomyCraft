@@ -24,6 +24,9 @@ public class EconomyConfig {
 
     @SerializedName("daily_amount")
     public long dailyReward;
+    
+    // Alias for compatibility with EconomyCommands.java
+    public transient long dailyAmount; 
 
     @SerializedName("daily_sell_limit")
     public long dailySellLimit;
@@ -49,6 +52,8 @@ public class EconomyConfig {
     private static Path file;
 
     public static EconomyConfig get() {
+        // Sync the alias whenever get() is called to prevent null/zero errors in commands
+        INSTANCE.dailyAmount = INSTANCE.dailyReward;
         return INSTANCE;
     }
 
@@ -70,6 +75,8 @@ public class EconomyConfig {
                 throw new IllegalStateException("config.json parsed to null");
             }
             INSTANCE = parsed;
+            // Sync initial load
+            INSTANCE.dailyAmount = INSTANCE.dailyReward;
         } catch (Exception e) {
             throw new IllegalStateException("[EconomyCraft] Failed to read/parse config.json at " + file, e);
         }
