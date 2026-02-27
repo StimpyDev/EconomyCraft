@@ -146,8 +146,8 @@ public final class SellCommand {
                 System.currentTimeMillis() + CONFIRM_EXPIRY_MS, heldItemId));
 
         String itemName = hand.getHoverName().getString();
-        MutableComponent base = Component.literal("This will sell " + totalCount + "x " + itemName +
-                        " for " + EconomyCraft.formatMoney(total) + ". ")
+        MutableComponent base = Component.literal("Dit item kan worden verkocht " + totalCount + "x " + itemName +
+                        " voor " + EconomyCraft.formatMoney(total) + ". ")
                 .withStyle(ChatFormatting.YELLOW);
 
         ClickEvent ev = ChatCompat.runCommandEvent("/sell all confirm");
@@ -169,7 +169,7 @@ public final class SellCommand {
 
         PendingSale pending = PENDING.get(player.getUUID());
         if (pending == null || pending.expiresAt() < System.currentTimeMillis()) {
-            source.sendFailure(Component.literal("No pending sale. Run /sell all again.").withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.literal("Geen lopende verkoop. Alles opnieuw verkopen.").withStyle(ChatFormatting.RED));
             PENDING.remove(player.getUUID());
             return 0;
         }
@@ -180,7 +180,7 @@ public final class SellCommand {
         ItemStack hand = player.getMainHandItem();
         ResolvedPrice current = prices.resolve(hand);
         if (current == null || !pending.key().equals(current.key())) {
-            source.sendFailure(Component.literal("Held item changed. Run /sell all again.").withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.literal("Het vastgehouden item is gewijzigd. Voer /sell all opnieuw uit.").withStyle(ChatFormatting.RED));
             PENDING.remove(player.getUUID());
             return 0;
         }
