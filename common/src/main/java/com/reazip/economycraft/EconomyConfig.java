@@ -30,7 +30,7 @@ public class EconomyConfig {
     @SerializedName("standalone_admin_commands")
     public boolean standaloneAdminCommands;
     @SerializedName("scoreboard_enabled")
-    public boolean scoreboardEnabled;
+    public boolean scoreboardEnabled = false;
     @SerializedName("server_shop_enabled")
     public boolean serverShopEnabled = true;
 
