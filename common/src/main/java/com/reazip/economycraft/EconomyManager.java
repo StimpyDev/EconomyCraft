@@ -15,7 +15,6 @@ import net.minecraft.world.scores.ScoreHolder;
 import net.minecraft.world.scores.criteria.ObjectiveCriteria;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.nio.file.Files;
@@ -48,7 +47,9 @@ public class EconomyManager {
         this.server = server;
         
         Path dataDir = server.getFile("config/economycraft/data");
-        try { Files.createDirectories(dataDir); } catch (IOException ignored) {}
+        try { 
+            Files.createDirectories(dataDir); 
+        } catch (IOException ignored) {}
 
         this.file = dataDir.resolve("balances.json");
         this.dailyFile = dataDir.resolve("daily.json");
@@ -61,6 +62,10 @@ public class EconomyManager {
         this.prices = new PriceRegistry(server);
 
         initScoreboard();
+    }
+
+    public MinecraftServer getServer() {
+        return server;
     }
 
     // --- Core API ---
@@ -100,6 +105,13 @@ public class EconomyManager {
         return balances.get(player);
     }
 
+    public void setMoney(UUID player, long amount) {
+        long newVal = clamp(amount);
+        balances.put(player, newVal);
+        updateScore(player, newVal);
+        save();
+    }
+
     public void addMoney(UUID player, long amount) {
         long newVal = clamp(getBalance(player, true) + amount);
         balances.put(player, newVal);
@@ -117,7 +129,33 @@ public class EconomyManager {
         return true;
     }
 
-    // --- Daily Sell Logic ---
+    public boolean pay(UUID from, UUID to, long amount) {
+        if (amount <= 0) return false;
+        if (removeMoney(from, amount)) {
+            addMoney(to, amount);
+            return true;
+        }
+        return false;
+    }
+
+    public void removePlayer(UUID player) {
+        balances.remove(player);
+        lastDaily.remove(player);
+        dailySells.remove(player);
+        save();
+    }
+
+    // --- Daily Reward/Sell Logic ---
+
+    public boolean claimDaily(UUID player) {
+        long today = LocalDate.now().toEpochDay();
+        if (lastDaily.getOrDefault(player, 0L) >= today) return false;
+        
+        lastDaily.put(player, today);
+        addMoney(player, EconomyConfig.get().dailyReward);
+        save();
+        return true;
+    }
 
     public boolean tryRecordDailySell(UUID player, long saleAmount) {
         long limit = EconomyConfig.get().dailySellLimit;
@@ -149,6 +187,20 @@ public class EconomyManager {
     }
 
     // --- Scoreboard ---
+
+    public boolean toggleScoreboard() {
+        boolean newState = !EconomyConfig.get().scoreboardEnabled;
+        EconomyConfig.get().scoreboardEnabled = newState;
+        // EconomyConfig.save();
+        
+        if (!newState && objective != null) {
+            server.getScoreboard().removeObjective(objective);
+            objective = null;
+        } else if (newState) {
+            getOrCreateObjective();
+        }
+        return newState;
+    }
 
     private void initScoreboard() {
         if (EconomyConfig.get().scoreboardEnabled) getOrCreateObjective();
@@ -201,9 +253,9 @@ public class EconomyManager {
         if (diskUserCache != null) return;
         diskUserCache = new HashMap<>();
         try {
-            File cacheFile = server.getFile("usercache.json");
-            if (cacheFile.exists()) {
-                UserCacheEntry[] entries = GSON.fromJson(Files.readString(cacheFile.toPath()), UserCacheEntry[].class);
+            Path cachePath = server.getFile("usercache.json");
+            if (Files.exists(cachePath)) {
+                UserCacheEntry[] entries = GSON.fromJson(Files.readString(cachePath), UserCacheEntry[].class);
                 if (entries != null) {
                     for (UserCacheEntry e : entries) {
                         if (e.uuid != null && e.name != null) diskUserCache.put(UUID.fromString(e.uuid), e.name);
