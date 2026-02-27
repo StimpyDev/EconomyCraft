@@ -147,21 +147,20 @@ public class EconomyManager {
 
     // --- Daily Reward/Sell Logic ---
 
-        public boolean claimDaily(ServerPlayer player) {
-    UUID id = player.getUUID();
-    long today = LocalDate.now().toEpochDay();
-    
-    if (lastDaily.getOrDefault(id, 0L) >= today) {
-        return false; // Already claimed
+        public boolean claimDaily(UUID playerId) {
+    long today = java.time.LocalDate.now().toEpochDay();
+            
+    if (lastDaily.getOrDefault(playerId, 0L) >= today) {
+        return false; 
     }
 
-    long amount = EconomyConfig.get().dailyReward;
+    addMoney(playerId, EconomyConfig.get().dailyReward);
     
-    addMoney(id, amount);
+    lastDaily.put(playerId, today);
     
-    lastDaily.put(id, today);
+    save();
+    saveDailies();
     
-    save(); 
     return true;
 }
 
