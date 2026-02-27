@@ -170,10 +170,10 @@ public final class EconomyCommands {
 
         Component msg;
         if (executor != null && executor.getUUID().equals(target.id())) {
-            msg = Component.literal("Balance: " + EconomyCraft.formatMoney(bal))
+            msg = Component.literal("Geld: " + EconomyCraft.formatMoney(bal))
                     .withStyle(ChatFormatting.YELLOW);
         } else {
-            msg = Component.literal(target.name() + "'s balance: " + EconomyCraft.formatMoney(bal))
+            msg = Component.literal(target.name() + "'s geld: " + EconomyCraft.formatMoney(bal))
                     .withStyle(ChatFormatting.YELLOW);
         }
 
@@ -305,7 +305,7 @@ public final class EconomyCommands {
                 );
             }
         } else {
-            source.sendFailure(Component.literal("Not enough balance").withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.literal("Niet genoeg geld.").withStyle(ChatFormatting.RED));
         }
         return 1;
     }
@@ -446,7 +446,7 @@ public final class EconomyCommands {
         int count = profiles.size();
 
         Component msg = Component.literal(
-                        "Set balance to " + EconomyCraft.formatMoney(amount) + " for " + count + " player" + (count > 1 ? "s" : ""))
+                        "Stel het saldo in op " + EconomyCraft.formatMoney(amount) + " for " + count + " player" + (count > 1 ? "s" : ""))
                 .withStyle(ChatFormatting.GREEN);
 
         if (executor != null) {
@@ -647,9 +647,9 @@ public final class EconomyCommands {
         return literal("ah")
                 .executes(ctx -> openAH(ctx.getSource().getPlayerOrException(), ctx.getSource()))
                 .then(literal("list")
-                        .then(argument("price", LongArgumentType.longArg(1, EconomyManager.MAX))
+                        .then(argument("prijs", LongArgumentType.longArg(1, EconomyManager.MAX))
                                 .executes(ctx -> listItemAH(ctx.getSource().getPlayerOrException(),
-                                        LongArgumentType.getLong(ctx, "price"),
+                                        LongArgumentType.getLong(ctx, "prijs"),
                                         ctx.getSource()))));
     }
 
@@ -666,7 +666,7 @@ public final class EconomyCommands {
 
     private static int listItemAH(ServerPlayer player, long price, CommandSourceStack source) {
         if (player.getMainHandItem().isEmpty()) {
-            source.sendFailure(Component.literal("Hold the item to list in your hand").withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.literal("Houd het item in uw hand.").withStyle(ChatFormatting.RED));
             return 0;
         }
 
@@ -683,8 +683,8 @@ public final class EconomyCommands {
 
         long tax = Math.round(price * EconomyConfig.get().taxRate);
 
-        Component msg = Component.literal("Listed item for " + EconomyCraft.formatMoney(price) +
-                        (tax > 0 ? " (buyers pay " + EconomyCraft.formatMoney(price + tax) + ")" : ""))
+        Component msg = Component.literal("Aangeboden item voor " + EconomyCraft.formatMoney(price) +
+                        (tax > 0 ? " (kopers betalen " + EconomyCraft.formatMoney(price + tax) + ")" : ""))
                 .withStyle(ChatFormatting.GREEN);
 
         player.sendSystemMessage(msg);
@@ -735,8 +735,8 @@ public final class EconomyCommands {
                 .executes(ctx -> openOrders(ctx.getSource().getPlayerOrException(), ctx.getSource()))
                 .then(literal("request")
                         .then(argument("item", StringArgumentType.word())
-                                .then(argument("amount", LongArgumentType.longArg(1, EconomyManager.MAX))
-                                        .then(argument("price", LongArgumentType.longArg(1, EconomyManager.MAX))
+                                .then(argument("hoeveelheid", LongArgumentType.longArg(1, EconomyManager.MAX))
+                                        .then(argument("prijs", LongArgumentType.longArg(1, EconomyManager.MAX))
                                                 .executes(ctx -> requestItem(ctx.getSource().getPlayerOrException(),
                                                         StringArgumentType.getString(ctx, "item"),
                                                         (int) Math.min(LongArgumentType.getLong(ctx, "amount"), EconomyManager.MAX),
@@ -806,7 +806,7 @@ public final class EconomyCommands {
                     .withStyle(ChatFormatting.GREEN);
             player.sendSystemMessage(msg);
         } else {
-            source.sendFailure(Component.literal("Already claimed today").withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.literal("Vandaag al geclaimd").withStyle(ChatFormatting.RED));
         }
         return 1;
     }
