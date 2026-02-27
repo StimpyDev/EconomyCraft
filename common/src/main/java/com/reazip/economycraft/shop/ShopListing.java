@@ -24,7 +24,7 @@ public class ShopListing {
         JsonObject obj = new JsonObject();
         obj.addProperty("id", id);
         if (seller != null) obj.addProperty("Verkoper", seller.toString());
-        obj.addProperty("price", price);
+        obj.addProperty("prijs", price);
         obj.addProperty("item", BuiltInRegistries.ITEM.getKey(item.getItem()).toString());
         obj.addProperty("count", item.getCount());
         JsonElement stackEl = ItemStack.CODEC.encodeStart(RegistryOps.create(JsonOps.INSTANCE, provider), item).result().orElse(new JsonObject());
