@@ -19,18 +19,29 @@ public class EconomyConfig {
             .setPrettyPrinting()
             .create();
 
+    @SerializedName("starting_balance")
     public long startingBalance;
-    public long dailyAmount;
+
+    @SerializedName("daily_amount")
+    public long dailyReward;
+
+    @SerializedName("daily_sell_limit")
     public long dailySellLimit;
+
     public double taxRate;
+
     @SerializedName("pvp_balance_loss_percentage")
     public double pvpBalanceLossPercentage;
+
     @SerializedName("standalone_commands")
     public boolean standaloneCommands;
+
     @SerializedName("standalone_admin_commands")
     public boolean standaloneAdminCommands;
+
     @SerializedName("scoreboard_enabled")
     public boolean scoreboardEnabled = false;
+
     @SerializedName("server_shop_enabled")
     public boolean serverShopEnabled = true;
 
