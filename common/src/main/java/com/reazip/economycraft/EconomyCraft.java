@@ -45,7 +45,7 @@ public final class EconomyCraft {
             ClickEvent ev = ChatCompat.runCommandEvent("/eco orders claim");
 
             if (ev != null) {
-                Component msg = Component.literal("You have unclaimed items: ")
+                Component msg = Component.literal("Je hebt ongeclaimede items: ")
                         .withStyle(ChatFormatting.YELLOW)
                         .append(Component.literal("[Claim]")
                                 .withStyle(s -> s.withUnderlined(true).withColor(ChatFormatting.GREEN).withClickEvent(ev)));
