@@ -10,7 +10,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
-import java.util.Map;
 
 public class EconomyConfig {
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -21,12 +20,6 @@ public class EconomyConfig {
 
     @SerializedName("starting_balance")
     public long startingBalance;
-
-    @SerializedName("daily_amount")
-    public long dailyReward;
-    
-    // Alias for compatibility with EconomyCommands.java
-    public transient long dailyAmount; 
 
     @SerializedName("daily_sell_limit")
     public long dailySellLimit;
@@ -49,11 +42,9 @@ public class EconomyConfig {
     public boolean serverShopEnabled = true;
 
     private static EconomyConfig INSTANCE = new EconomyConfig();
-    private static Path file;
+    private static Path configPath;
 
     public static EconomyConfig get() {
-        // Sync the alias whenever get() is called to prevent null/zero errors in commands
-        INSTANCE.dailyAmount = INSTANCE.dailyReward;
         return INSTANCE;
     }
 
