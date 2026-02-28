@@ -1,14 +1,13 @@
 package com.reazip.economycraft;
 
 import com.mojang.brigadier.CommandDispatcher;
-import com.mojang.brigadier.arguments.IntegerArgumentType;
-import com.mojang.brigadier.arguments.LongArgumentType;
-import com.mojang.brigadier.arguments.StringArgumentType;
+import com.mojang.brigadier.arguments.*;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
-import com.reazip.economycraft.util.IdentityCompat;
-import com.reazip.economycraft.util.PermissionCompat;
+import com.reazip.economycraft.shop.*;
+import com.reazip.economycraft.orders.OrdersUi;
+import com.reazip.economycraft.util.*;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.SharedSuggestionProvider;
@@ -24,17 +23,8 @@ import net.minecraft.world.item.ItemStack;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
-import com.reazip.economycraft.shop.ShopManager;
-import com.reazip.economycraft.shop.ShopListing;
-import com.reazip.economycraft.shop.ShopUi;
-import com.reazip.economycraft.shop.ServerShopUi;
-import com.reazip.economycraft.orders.OrdersUi;
-
 import static net.minecraft.commands.Commands.argument;
 import static net.minecraft.commands.Commands.literal;
-
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 public final class EconomyCommands {
     private static final org.slf4j.Logger LOGGER = com.mojang.logging.LogUtils.getLogger();
@@ -54,14 +44,14 @@ public final class EconomyCommands {
         dispatcher.register(buildAH().requires(s -> EconomyConfig.get().standaloneCommands));
         dispatcher.register(buildOrders().requires(s -> EconomyConfig.get().standaloneCommands));
 
-        dispatcher.register(buildAddMoney().requires(src -> PermissionCompat.gamemaster().test(src) && EconomyConfig.get().standaloneAdminCommands));
-        dispatcher.register(buildSetMoney().requires(src -> PermissionCompat.gamemaster().test(src) && EconomyConfig.get().standaloneAdminCommands));
-        dispatcher.register(buildRemoveMoney().requires(src -> PermissionCompat.gamemaster().test(src) && EconomyConfig.get().standaloneAdminCommands));
-        dispatcher.register(buildRemovePlayer().requires(src -> PermissionCompat.gamemaster().test(src) && EconomyConfig.get().standaloneAdminCommands));
-        dispatcher.register(buildToggleScoreboard().requires(src -> PermissionCompat.gamemaster().test(src) && EconomyConfig.get().standaloneAdminCommands));
+        dispatcher.register(buildAddMoney().requires(src -> PermissionCompat.gamemaster() && EconomyConfig.get().standaloneAdminCommands));
+        dispatcher.register(buildSetMoney().requires(src -> PermissionCompat.gamemaster() && EconomyConfig.get().standaloneAdminCommands));
+        dispatcher.register(buildRemoveMoney().requires(src -> PermissionCompat.gamemaster() && EconomyConfig.get().standaloneAdminCommands));
+        dispatcher.register(buildRemovePlayer().requires(src -> PermissionCompat.gamemaster() && EconomyConfig.get().standaloneAdminCommands));
+        dispatcher.register(buildToggleScoreboard().requires(src -> PermissionCompat.gamemaster() && EconomyConfig.get().standaloneAdminCommands));
 
         var serverShop = buildShop();
-        serverShop.requires(serverShop.getRequirement().and(src -> EconomyConfig.get().standaloneCommands));
+        serverShop.requires(src -> EconomyConfig.get().serverShopEnabled);
         dispatcher.register(serverShop);
     }
 
@@ -190,237 +180,21 @@ public final class EconomyCommands {
         }
 
         if (manager.pay(from.getUUID(), toId, amount)) {
-            source.sendSuccess(() -> Component.literal("Betaald " + EconomyCraft.formatMoney(amount) + " aan " + target).withStyle(ChatFormatting.GREEN), false);
-            return 1;
-        } else {
-            source.sendFailure(Component.literal("Niet genoeg geld.").withStyle(ChatFormatting.RED));
-            return 0;
-        }
-    }
+            ServerPlayer toPlayer = source.getServer().getPlayerList().getPlayerByUUID(toId);
+            String displayName = (toPlayer != null) ? IdentityCompat.of(toPlayer).name() : getDisplayName(manager, toId);
 
-    private static LiteralArgumentBuilder<CommandSourceStack> buildAddMoney() {
-        return literal("addmoney").requires(PermissionCompat.gamemaster())
-                .then(argument("targets", GameProfileArgument.gameProfile())
-                        .then(argument("amount", LongArgumentType.longArg(1, EconomyManager.MAX))
-                                .executes(ctx -> addMoney(IdentityCompat.getArgAsPlayerRefs(ctx, "targets"), LongArgumentType.getLong(ctx, "amount"), ctx.getSource()))));
-    }
-
-    private static int addMoney(Collection<IdentityCompat.PlayerRef> profiles, long amount, CommandSourceStack source) {
-        EconomyManager manager = EconomyCraft.getManager(source.getServer());
-        profiles.forEach(p -> manager.addMoney(p.id(), amount));
-        source.sendSuccess(() -> Component.literal("Toegevoegd " + EconomyCraft.formatMoney(amount) + " aan " + profiles.size() + " speler(s)."), true);
-        return profiles.size();
-    }
-
-    private static LiteralArgumentBuilder<CommandSourceStack> buildSetMoney() {
-        return literal("setmoney").requires(PermissionCompat.gamemaster())
-                .then(argument("targets", GameProfileArgument.gameProfile())
-                        .then(argument("amount", LongArgumentType.longArg(0, EconomyManager.MAX))
-                                .executes(ctx -> setMoney(IdentityCompat.getArgAsPlayerRefs(ctx, "targets"), LongArgumentType.getLong(ctx, "amount"), ctx.getSource()))));
-    }
-
-    private static int setMoney(Collection<IdentityCompat.PlayerRef> profiles, long amount, CommandSourceStack source) {
-        EconomyManager manager = EconomyCraft.getManager(source.getServer());
-        profiles.forEach(p -> manager.setMoney(p.id(), amount));
-        source.sendSuccess(() -> Component.literal("Saldo ingesteld op " + EconomyCraft.formatMoney(amount)), true);
-        return profiles.size();
-    }
-
-    private static LiteralArgumentBuilder<CommandSourceStack> buildRemoveMoney() {
-        return literal("removemoney").requires(PermissionCompat.gamemaster())
-                .then(argument("targets", GameProfileArgument.gameProfile())
-                        .then(argument("amount", LongArgumentType.longArg(1, EconomyManager.MAX))
-                                .executes(ctx -> removeMoney(IdentityCompat.getArgAsPlayerRefs(ctx, "targets"), LongArgumentType.getLong(ctx, "amount"), ctx.getSource()))));
-    }
-
-    private static int removeMoney(Collection<IdentityCompat.PlayerRef> profiles, Long amount, CommandSourceStack source) {
-        EconomyManager manager = EconomyCraft.getManager(source.getServer());
-        int success = 0;
-        for (var p : profiles) {
-            if (amount == null) { manager.setMoney(p.id(), 0L); success++; }
-            else if (manager.removeMoney(p.id(), amount)) success++;
-        }
-        source.sendSuccess(() -> Component.literal("Geld verwijderd van " + success + " speler(s)."), true);
-        return success;
-    }
-
-    private static LiteralArgumentBuilder<CommandSourceStack> buildRemovePlayer() {
-        return literal("removeplayer").requires(PermissionCompat.gamemaster())
-                .then(argument("targets", GameProfileArgument.gameProfile())
-                        .executes(ctx -> removePlayers(IdentityCompat.getArgAsPlayerRefs(ctx, "targets"), ctx.getSource())));
-    }
-
-    private static int removePlayers(Collection<IdentityCompat.PlayerRef> profiles, CommandSourceStack source) {
-        EconomyManager manager = EconomyCraft.getManager(source.getServer());
-        profiles.forEach(p -> manager.removePlayer(p.id()));
-        source.sendSuccess(() -> Component.literal("Verwijderd " + profiles.size() + " speler(s)."), true);
-        return profiles.size();
-    }
-
-    private static LiteralArgumentBuilder<CommandSourceStack> buildToggleScoreboard() {
-        return literal("toggleScoreboard").requires(PermissionCompat.gamemaster())
-                .executes(ctx -> toggleScoreboard(ctx.getSource()));
-    }
-
-    private static int toggleScoreboard(CommandSourceStack source) {
-        boolean enabled = EconomyCraft.getManager(source.getServer()).toggleScoreboard();
-        source.sendSuccess(() -> Component.literal("Scoreboard " + (enabled ? "aan" : "uit")), true);
-        return 1;
-    }
-
-    private static LiteralArgumentBuilder<CommandSourceStack> buildAH() {
-        return literal("ah")
-                .executes(ctx -> openAH(ctx.getSource().getPlayerOrException(), ctx.getSource()))
-                .then(literal("list")
-                        .then(argument("prijs", LongArgumentType.longArg(1, EconomyManager.MAX))
-                                .executes(ctx -> listItemAH(ctx.getSource().getPlayerOrException(), LongArgumentType.getLong(ctx, "prijs"), ctx.getSource()))));
-    }
-
-    private static int openAH(ServerPlayer player, CommandSourceStack source) {
-        ShopUi.open(player, EconomyCraft.getManager(source.getServer()).getShop());
-        return 1;
-    }
-
-    private static int listItemAH(ServerPlayer player, long price, CommandSourceStack source) {
-        ItemStack hand = player.getMainHandItem();
-        if (hand.isEmpty()) { source.sendFailure(Component.literal("Houd een item vast.")); return 0; }
-        ShopManager shop = EconomyCraft.getManager(source.getServer()).getShop();
-        ShopListing listing = new ShopListing();
-        listing.seller = player.getUUID();
-        listing.price = price;
-        listing.item = hand.copy();
-        hand.setCount(0);
-        shop.addListing(listing);
-        player.sendSystemMessage(Component.literal("Item aangeboden voor " + EconomyCraft.formatMoney(price)).withStyle(ChatFormatting.GREEN));
-        return 1;
-    }
-
-    private static LiteralArgumentBuilder<CommandSourceStack> buildShop() {
-        return literal("shop")
-                .requires(src -> EconomyConfig.get().serverShopEnabled)
-                .executes(ctx -> openServerShop(ctx.getSource().getPlayerOrException(), ctx.getSource(), null))
-                .then(argument("category", StringArgumentType.greedyString())
-                        .suggests((ctx, builder) -> suggestServerShopCategories(ctx.getSource(), builder))
-                        .executes(ctx -> openServerShop(ctx.getSource().getPlayerOrException(), ctx.getSource(), StringArgumentType.getString(ctx, "category"))));
-    }
-
-    private static int openServerShop(ServerPlayer player, CommandSourceStack source, @Nullable String category) {
-        EconomyManager manager = EconomyCraft.getManager(source.getServer());
-        if (category != null && !manager.getPrices().buyCategories().contains(category)) {
-            source.sendFailure(Component.literal("Categorie niet gevonden."));
-            return 0;
-        }
-        ServerShopUi.open(player, manager, category);
-        return 1;
-    }
-
-    private static CompletableFuture<Suggestions> suggestServerShopCategories(CommandSourceStack source, SuggestionsBuilder builder) {
-        return SharedSuggestionProvider.suggest(EconomyCraft.getManager(source.getServer()).getPrices().buyCategories(), builder);
-    }
-
-    private static LiteralArgumentBuilder<CommandSourceStack> buildOrders() {
-        return literal("orders")
-                .executes(ctx -> openOrders(ctx.getSource().getPlayerOrException(), ctx.getSource()))
-                .then(literal("request")
-                        .then(argument("item", ItemArgument.item(null))
-                                .then(argument("amount", LongArgumentType.longArg(1, EconomyManager.MAX))
-                                        .then(argument("price", LongArgumentType.longArg(1, EconomyManager.MAX))
-                                                .executes(ctx -> {
-                                                    var input = ItemArgument.getItem(ctx, "item");
-                                                    String key = BuiltInRegistries.ITEM.getKey(input.getItem()).toString();
-                                                    return requestItem(ctx.getSource().getPlayerOrException(), key, (int)LongArgumentType.getLong(ctx, "amount"), LongArgumentType.getLong(ctx, "price"), ctx.getSource());
-                                                })))))
-                .then(literal("claim").executes(ctx -> claimOrders(ctx.getSource().getPlayerOrException(), ctx.getSource())));
-    }
-
-    private static int openOrders(ServerPlayer player, CommandSourceStack source) {
-        OrdersUi.open(player, EconomyCraft.getManager(source.getServer()));
-        return 1;
-    }
-
-    private static int requestItem(ServerPlayer player, String itemString, int amount, long price, CommandSourceStack source) {
-        EconomyCraft.getManager(source.getServer()).getOrderManager().createRequest(player, itemString, amount, price);
-        source.sendSuccess(() -> Component.literal("Verzoek geplaatst."), false);
-        return 1;
-    }
-
-    private static int claimOrders(ServerPlayer player, CommandSourceStack source) {
-        EconomyCraft.getManager(source.getServer()).getOrderManager().claim(player);
-        return 1;
-    }
-
-    private static CompletableFuture<Suggestions> suggestPlayers(CommandSourceStack source, SuggestionsBuilder builder) {
-        return SharedSuggestionProvider.suggest(source.getServer().getPlayerList().getPlayers().stream().map(p -> p.getName().getString()), builder);
-    }
-
-    private static @NotNull ArrayList<Map.Entry<UUID, Long>> getSortedEntries(Map<UUID, Long> balances, EconomyManager manager) {
-        var sorted = new ArrayList<>(balances.entrySet());
-        sorted.sort((a, b) -> {
-            int c = Long.compare(b.getValue(), a.getValue());
-            if (c != 0) return c;
-            String an = manager.getBestName(a.getKey());
-            String bn = manager.getBestName(b.getKey());
-            return String.CASE_INSENSITIVE_ORDER.compare(an == null ? "" : an, bn == null ? "" : bn);
-        });
-        return sorted;
-    }
-
-    private static int pay(ServerPlayer from, String target, long amount, CommandSourceStack source) {
-        var server = source.getServer();
-        EconomyManager manager = EconomyCraft.getManager(server);
-
-        ServerPlayer toOnline = server.getPlayerList().getPlayerByName(target);
-        UUID toId = (toOnline != null) ? toOnline.getUUID() : null;
-
-        if (toId == null) {
-            try { toId = java.util.UUID.fromString(target); } catch (IllegalArgumentException ignored) {}
-        }
-
-        if (toId == null) {
-            toId = manager.tryResolveUuidByName(target);
-        }
-
-        if (toId == null) {
-            source.sendFailure(Component.literal("Unknown player").withStyle(ChatFormatting.RED));
-            return 0;
-        }
-
-        if (from.getUUID().equals(toId)) {
-            source.sendFailure(Component.literal("You cannot pay yourself").withStyle(ChatFormatting.RED));
-            return 0;
-        }
-
-        if (!manager.getBalances().containsKey(toId)) {
-            source.sendFailure(Component.literal("Unknown player").withStyle(ChatFormatting.RED));
-            return 0;
-        }
-
-        if (manager.pay(from.getUUID(), toId, amount)) {
-            String displayName = (toOnline != null)
-                    ? IdentityCompat.of(toOnline).name()
-                    : getDisplayName(manager, toId);
-
-            ServerPlayer executor;
+            Component msg = Component.literal("Betaald " + EconomyCraft.formatMoney(amount) + " aan " + target).withStyle(ChatFormatting.GREEN);
             try {
-                executor = source.getPlayerOrException();
-            } catch (Exception e) {
-                executor = null;
-            }
-
-            Component msg = Component.literal("Paid " + EconomyCraft.formatMoney(amount) + " to " + displayName)
-                    .withStyle(ChatFormatting.GREEN);
-
-            if (executor != null) {
+                ServerPlayer executor = source.getPlayerOrException();
                 executor.sendSystemMessage(msg);
-            } else {
+            } catch (Exception e) {
                 source.sendSuccess(() -> msg, false);
             }
 
-            if (toOnline != null) {
-                toOnline.sendSystemMessage(
+            if (toPlayer != null) {
+                toPlayer.sendSystemMessage(
                         Component.literal(from.getName().getString() + " sent you " + EconomyCraft.formatMoney(amount))
-                                .withStyle(ChatFormatting.GREEN)
-                );
+                                .withStyle(ChatFormatting.GREEN));
             }
         } else {
             source.sendFailure(Component.literal("Niet genoeg geld.").withStyle(ChatFormatting.RED));
@@ -429,7 +203,7 @@ public final class EconomyCommands {
     }
 
     // =====================================================================
-    // === Admin commands ==================================================
+    // === Admin commands with duplication cleaned =========================
     // =====================================================================
 
     private static LiteralArgumentBuilder<CommandSourceStack> buildAddMoney() {
@@ -442,6 +216,30 @@ public final class EconomyCommands {
                                         ctx.getSource()))));
     }
 
+    private static int addMoney(Collection<IdentityCompat.PlayerRef> profiles, long amount, CommandSourceStack source) {
+        if (profiles.isEmpty()) {
+            source.sendFailure(Component.literal("No targets matched").withStyle(ChatFormatting.RED));
+            return 0;
+        }
+
+        EconomyManager manager = EconomyCraft.getManager(source.getServer());
+        ServerPlayer executor;
+        try { executor = source.getPlayerOrException(); } catch (Exception e) { executor = null; }
+
+        for (var p : profiles) {
+            manager.addMoney(p.id(), amount);
+        }
+
+        int count = profiles.size();
+        Component msg = Component.literal("Toegevoegd " + EconomyCraft.formatMoney(amount) + " aan " + count + " speler(s).").withStyle(ChatFormatting.GREEN);
+        if (executor != null) {
+            executor.sendSystemMessage(msg);
+        } else {
+            source.sendSuccess(() -> msg, true);
+        }
+        return count;
+    }
+
     private static LiteralArgumentBuilder<CommandSourceStack> buildSetMoney() {
         return literal("setmoney").requires(PermissionCompat.gamemaster())
                 .then(argument("targets", GameProfileArgument.gameProfile())
@@ -452,79 +250,6 @@ public final class EconomyCommands {
                                         ctx.getSource()))));
     }
 
-    private static LiteralArgumentBuilder<CommandSourceStack> buildRemoveMoney() {
-        return literal("removemoney").requires(PermissionCompat.gamemaster())
-                .then(argument("targets", GameProfileArgument.gameProfile())
-                        .executes(ctx -> removeMoney(
-                                IdentityCompat.getArgAsPlayerRefs(ctx, "targets"),
-                                null,
-                                ctx.getSource()))
-                        .then(argument("amount", LongArgumentType.longArg(1, EconomyManager.MAX))
-                                .executes(ctx -> removeMoney(
-                                        IdentityCompat.getArgAsPlayerRefs(ctx, "targets"),
-                                        LongArgumentType.getLong(ctx, "amount"),
-                                        ctx.getSource()))));
-    }
-
-    private static LiteralArgumentBuilder<CommandSourceStack> buildRemovePlayer() {
-        return literal("removeplayer").requires(PermissionCompat.gamemaster())
-                .then(argument("targets", GameProfileArgument.gameProfile())
-                        .executes(ctx -> removePlayers(
-                                IdentityCompat.getArgAsPlayerRefs(ctx, "targets"),
-                                ctx.getSource())));
-    }
-
-    private static int addMoney(Collection<IdentityCompat.PlayerRef> profiles, long amount, CommandSourceStack source) {
-        if (profiles.isEmpty()) {
-            source.sendFailure(Component.literal("No targets matched").withStyle(ChatFormatting.RED));
-            return 0;
-        }
-
-        EconomyManager manager = EconomyCraft.getManager(source.getServer());
-
-        ServerPlayer executor;
-        try {
-            executor = source.getPlayerOrException();
-        } catch (Exception e) {
-            executor = null;
-        }
-
-        if (profiles.size() == 1) {
-            var p = profiles.iterator().next();
-            manager.addMoney(p.id(), amount);
-
-            Component msg = Component.literal(
-                            "Added " + EconomyCraft.formatMoney(amount) + " to " + p.name() + "'s balance.")
-                    .withStyle(ChatFormatting.GREEN);
-
-            if (executor != null) {
-                executor.sendSystemMessage(msg);
-            } else {
-                source.sendSuccess(() -> msg, true);
-            }
-
-            return 1;
-        }
-
-        for (var p : profiles) {
-            manager.addMoney(p.id(), amount);
-        }
-
-        int count = profiles.size();
-
-        Component msg = Component.literal(
-                        "Added " + EconomyCraft.formatMoney(amount) + " to " + count + " player" + (count > 1 ? "s" : ""))
-                .withStyle(ChatFormatting.GREEN);
-
-        if (executor != null) {
-            executor.sendSystemMessage(msg);
-        } else {
-            source.sendSuccess(() -> msg, true);
-        }
-
-        return count;
-    }
-
     private static int setMoney(Collection<IdentityCompat.PlayerRef> profiles, long amount, CommandSourceStack source) {
         if (profiles.isEmpty()) {
             source.sendFailure(Component.literal("No targets matched").withStyle(ChatFormatting.RED));
@@ -532,48 +257,31 @@ public final class EconomyCommands {
         }
 
         EconomyManager manager = EconomyCraft.getManager(source.getServer());
-
         ServerPlayer executor;
-        try {
-            executor = source.getPlayerOrException();
-        } catch (Exception e) {
-            executor = null;
-        }
-
-        if (profiles.size() == 1) {
-            var p = profiles.iterator().next();
-            manager.setMoney(p.id(), amount);
-
-            Component msg = Component.literal(
-                            "Set balance of " + p.name() + " to " + EconomyCraft.formatMoney(amount))
-                    .withStyle(ChatFormatting.GREEN);
-
-            if (executor != null) {
-                executor.sendSystemMessage(msg);
-            } else {
-                source.sendSuccess(() -> msg, true);
-            }
-
-            return 1;
-        }
+        try { executor = source.getPlayerOrException(); } catch (Exception e) { executor = null; }
 
         for (var p : profiles) {
             manager.setMoney(p.id(), amount);
         }
 
         int count = profiles.size();
-
-        Component msg = Component.literal(
-                        "Stel het saldo in op " + EconomyCraft.formatMoney(amount) + " for " + count + " player" + (count > 1 ? "s" : ""))
-                .withStyle(ChatFormatting.GREEN);
-
+        Component msg = Component.literal("Stel het saldo in op " + EconomyCraft.formatMoney(amount) + " voor " + count + " speler(s).").withStyle(ChatFormatting.GREEN);
         if (executor != null) {
             executor.sendSystemMessage(msg);
         } else {
             source.sendSuccess(() -> msg, true);
         }
-
         return count;
+    }
+
+    private static LiteralArgumentBuilder<CommandSourceStack> buildRemoveMoney() {
+        return literal("removemoney").requires(PermissionCompat.gamemaster())
+                .then(argument("targets", GameProfileArgument.gameProfile())
+                        .then(argument("amount", LongArgumentType.longArg(1, EconomyManager.MAX))
+                                .executes(ctx -> removeMoney(
+                                        IdentityCompat.getArgAsPlayerRefs(ctx, "targets"),
+                                        LongArgumentType.getLong(ctx, "amount"),
+                                        ctx.getSource()))));
     }
 
     private static int removeMoney(Collection<IdentityCompat.PlayerRef> profiles, Long amount, CommandSourceStack source) {
@@ -584,62 +292,15 @@ public final class EconomyCommands {
 
         EconomyManager manager = EconomyCraft.getManager(source.getServer());
         ServerPlayer executor;
-        try {
-            executor = source.getPlayerOrException();
-        } catch (Exception e) {
-            executor = null;
-        }
+        try { executor = source.getPlayerOrException(); } catch (Exception e) { executor = null; }
 
         int success = 0;
-
-        if (profiles.size() == 1) {
-            var p = profiles.iterator().next();
-            UUID id = p.id();
-
-            if (amount == null) {
-                if (!manager.getBalances().containsKey(id)) {
-                    source.sendFailure(Component.literal(
-                                    "Failed to remove all money from " + p.name() + "'s balance. Unknown player.")
-                            .withStyle(ChatFormatting.RED));
-                    return 1;
-                }
-                manager.setMoney(id, 0L);
-                Component msg = Component.literal(
-                                "Removed all money from " + p.name() + "'s balance.")
-                        .withStyle(ChatFormatting.GREEN);
-                if (executor != null) {
-                    executor.sendSystemMessage(msg);
-                } else {
-                    source.sendSuccess(() -> msg, true);
-                }
-                return 1;
-            }
-
-            if (!manager.removeMoney(id, amount)) {
-                source.sendFailure(Component.literal(
-                                "Failed to remove " + EconomyCraft.formatMoney(amount) + " from " + p.name() + "'s balance due to insufficient funds.")
-                        .withStyle(ChatFormatting.RED));
-                return 1;
-            }
-
-            Component msg = Component.literal(
-                            "Successfully removed " + EconomyCraft.formatMoney(amount) + " from " + p.name() + "'s balance.")
-                    .withStyle(ChatFormatting.GREEN);
-            if (executor != null) {
-                executor.sendSystemMessage(msg);
-            } else {
-                source.sendSuccess(() -> msg, true);
-            }
-            return 1;
-        }
 
         for (var p : profiles) {
             UUID id = p.id();
             if (amount == null) {
                 if (!manager.getBalances().containsKey(id)) {
-                    source.sendFailure(Component.literal(
-                                    "Failed to remove all money from " + p.name() + "'s balance. Unknown player.")
-                            .withStyle(ChatFormatting.RED));
+                    source.sendFailure(Component.literal("Failed to remove all money from " + p.name() + "'s balance. Unknown player.").withStyle(ChatFormatting.RED));
                     continue;
                 }
                 manager.setMoney(id, 0L);
@@ -648,25 +309,15 @@ public final class EconomyCommands {
                 if (manager.removeMoney(id, amount)) {
                     success++;
                 } else {
-                    source.sendFailure(Component.literal(
-                                    "Failed to remove " + EconomyCraft.formatMoney(amount) + " from " + p.name() + "'s balance due to insufficient funds.")
-                            .withStyle(ChatFormatting.RED));
+                    source.sendFailure(Component.literal("Failed to remove " + EconomyCraft.formatMoney(amount) + " from " + p.name() + "'s balance due to insufficient funds.").withStyle(ChatFormatting.RED));
                 }
             }
         }
 
         if (success > 0) {
-            int finalSuccess = success;
-            Component msg;
-            if (amount == null) {
-                msg = Component.literal(
-                                "Removed all money from " + finalSuccess + " player" + (finalSuccess > 1 ? "s" : "") + ".")
-                        .withStyle(ChatFormatting.GREEN);
-            } else {
-                msg = Component.literal(
-                                "Successfully removed " + EconomyCraft.formatMoney(amount) + " from " + finalSuccess + " player" + (finalSuccess > 1 ? "s" : "") + ".")
-                        .withStyle(ChatFormatting.GREEN);
-            }
+            Component msg = (amount == null)
+                    ? Component.literal("Removed all money from " + success + " player(s).").withStyle(ChatFormatting.GREEN)
+                    : Component.literal("Successfully removed " + EconomyCraft.formatMoney(amount) + " from " + success + " player(s).").withStyle(ChatFormatting.GREEN);
             if (executor != null) {
                 executor.sendSystemMessage(msg);
             } else {
@@ -677,6 +328,12 @@ public final class EconomyCommands {
         return profiles.size();
     }
 
+    private static LiteralArgumentBuilder<CommandSourceStack> buildRemovePlayer() {
+        return literal("removeplayer").requires(PermissionCompat.gamemaster())
+                .then(argument("targets", GameProfileArgument.gameProfile())
+                        .executes(ctx -> removePlayers(IdentityCompat.getArgAsPlayerRefs(ctx, "targets"), ctx.getSource())));
+    }
+
     private static int removePlayers(Collection<IdentityCompat.PlayerRef> profiles, CommandSourceStack source) {
         if (profiles.isEmpty()) {
             source.sendFailure(Component.literal("No targets matched").withStyle(ChatFormatting.RED));
@@ -685,44 +342,19 @@ public final class EconomyCommands {
 
         EconomyManager manager = EconomyCraft.getManager(source.getServer());
         ServerPlayer executor;
-        try {
-            executor = source.getPlayerOrException();
-        } catch (Exception e) {
-            executor = null;
-        }
-
-        if (profiles.size() == 1) {
-            var p = profiles.iterator().next();
-            manager.removePlayer(p.id());
-
-            Component msg = Component.literal("Removed " + p.name() + " from economy")
-                    .withStyle(ChatFormatting.GREEN);
-
-            if (executor != null) {
-                executor.sendSystemMessage(msg);
-            } else {
-                source.sendSuccess(() -> msg, true);
-            }
-
-            return 1;
-        }
+        try { executor = source.getPlayerOrException(); } catch (Exception e) { executor = null; }
 
         for (var p : profiles) {
             manager.removePlayer(p.id());
         }
 
         int count = profiles.size();
-
-        Component msg = Component.literal(
-                        "Removed " + count + " player" + (count > 1 ? "s" : "") + " from economy")
-                .withStyle(ChatFormatting.GREEN);
-
+        Component msg = Component.literal("Verwijderd " + count + " speler(s) uit de economie").withStyle(ChatFormatting.GREEN);
         if (executor != null) {
             executor.sendSystemMessage(msg);
         } else {
             source.sendSuccess(() -> msg, true);
         }
-
         return count;
     }
 
@@ -745,7 +377,7 @@ public final class EconomyCommands {
             executor = null;
         }
 
-        Component msg = Component.literal("Scoreboard " + (enabled ? "enabled" : "disabled"))
+        Component msg = Component.literal("Scoreboard " + (enabled ? "aan" : "uit"))
                 .withStyle(enabled ? ChatFormatting.GREEN : ChatFormatting.RED);
 
         if (executor != null) {
@@ -753,12 +385,11 @@ public final class EconomyCommands {
         } else {
             source.sendSuccess(() -> msg, false);
         }
-
         return 1;
     }
 
     // =====================================================================
-    // === Auction House ===================
+    // === Auction House commands ==========================================
     // =====================================================================
 
     private static LiteralArgumentBuilder<CommandSourceStack> buildAH() {
@@ -766,9 +397,7 @@ public final class EconomyCommands {
                 .executes(ctx -> openAH(ctx.getSource().getPlayerOrException(), ctx.getSource()))
                 .then(literal("list")
                         .then(argument("prijs", LongArgumentType.longArg(1, EconomyManager.MAX))
-                                .executes(ctx -> listItemAH(ctx.getSource().getPlayerOrException(),
-                                        LongArgumentType.getLong(ctx, "prijs"),
-                                        ctx.getSource()))));
+                                .executes(ctx -> listItemAH(ctx.getSource().getPlayerOrException(), LongArgumentType.getLong(ctx, "prijs"), ctx.getSource()))));
     }
 
     private static int openAH(ServerPlayer player, CommandSourceStack source) {
@@ -806,12 +435,11 @@ public final class EconomyCommands {
                 .withStyle(ChatFormatting.GREEN);
 
         player.sendSystemMessage(msg);
-
         return 1;
     }
 
     // =====================================================================
-    // === Server Shop ============================================
+    // === Server Shop commands ============================================
     // =====================================================================
 
     private static LiteralArgumentBuilder<CommandSourceStack> buildShop() {
@@ -827,34 +455,32 @@ public final class EconomyCommands {
                         )));
     }
 
-private static int openServerShop(ServerPlayer player, CommandSourceStack source, @Nullable String category) {
-    if (!EconomyConfig.get().serverShopEnabled) {
-        source.sendFailure(Component.literal("Server shop is disabled.").withStyle(ChatFormatting.RED));
-        return 0;
-    }
+    private static int openServerShop(ServerPlayer player, CommandSourceStack source, @Nullable String category) {
+        if (!EconomyConfig.get().serverShopEnabled) {
+            source.sendFailure(Component.literal("Server shop is disabled.").withStyle(ChatFormatting.RED));
+            return 0;
+        }
 
-    EconomyManager manager = EconomyCraft.getManager(source.getServer());
+        EconomyManager manager = EconomyCraft.getManager(source.getServer());
 
-    // --- Validation Check ---
-    if (category != null) {
-        Collection<String> availableCategories = manager.getPrices().buyCategories();
-        if (!availableCategories.contains(category)) {
-            source.sendFailure(Component.literal("Categorie '" + category + "' is niet gevonden.")
-                    .withStyle(ChatFormatting.RED));
+        // --- Validation Check ---
+        if (category != null) {
+            Collection<String> availableCategories = manager.getPrices().buyCategories();
+            if (!availableCategories.contains(category)) {
+                source.sendFailure(Component.literal("Categorie '" + category + "' is niet gevonden.").withStyle(ChatFormatting.RED));
+                return 0;
+            }
+        }
+
+        try {
+            ServerShopUi.open(player, manager, category);
+            return 1;
+        } catch (Exception e) {
+            LOGGER.error("[EconomyCraft] Failed to open /shop for {} (category={})", player.getDisplayName().getString(), category, e);
+            source.sendFailure(Component.literal("Failed to open server shop. Check server logs."));
             return 0;
         }
     }
-
-    try {
-        ServerShopUi.open(player, manager, category);
-        return 1;
-    } catch (Exception e) {
-        LOGGER.error("[EconomyCraft] Failed to open /shop for {} (category={})",
-                player.getDisplayName().getString(), category, e);
-        source.sendFailure(Component.literal("Failed to open server shop. Check server logs."));
-        return 0;
-    }
-}
 
     // =====================================================================
     // === Orders commands =================================================
@@ -911,33 +537,11 @@ private static int openServerShop(ServerPlayer player, CommandSourceStack source
                 (tax > 0 ? " (fulfiller receives " + EconomyCraft.formatMoney(price - tax) + ")" : ""))
                 .withStyle(ChatFormatting.GREEN);
         player.sendSystemMessage(msg);
-
         return 1;
     }
 
     private static int claimOrders(ServerPlayer player, CommandSourceStack source) {
         OrdersUi.openClaims(player, EconomyCraft.getManager(source.getServer()));
-        return 1;
-    }
-
-    // =====================================================================
-    // === Daily reward ====================================================
-    // =====================================================================
-
-    private static LiteralArgumentBuilder<CommandSourceStack> buildDaily() {
-        return literal("daily")
-                .executes(ctx -> daily(ctx.getSource().getPlayerOrException(), ctx.getSource()));
-    }
-
-    private static int daily(ServerPlayer player, CommandSourceStack source) {
-        EconomyManager manager = EconomyCraft.getManager(source.getServer());
-        if (manager.claimDaily(player.getUUID())) {
-            Component msg = Component.literal("Claimed " + EconomyCraft.formatMoney(EconomyConfig.get().dailyAmount))
-                    .withStyle(ChatFormatting.GREEN);
-            player.sendSystemMessage(msg);
-        } else {
-            source.sendFailure(Component.literal("Vandaag al geclaimd").withStyle(ChatFormatting.RED));
-        }
         return 1;
     }
 
@@ -957,7 +561,7 @@ private static int openServerShop(ServerPlayer player, CommandSourceStack source
     private static CompletableFuture<Suggestions> suggestPlayers(CommandSourceStack source, SuggestionsBuilder builder) {
         var server = source.getServer();
         var manager = EconomyCraft.getManager(server);
-        Set<String> suggestions = new java.util.HashSet<>();
+        Set<String> suggestions = new HashSet<>();
 
         for (ServerPlayer p : server.getPlayerList().getPlayers()) {
             suggestions.add(IdentityCompat.of(p).name());
