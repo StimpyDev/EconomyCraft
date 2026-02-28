@@ -981,3 +981,4 @@ private static int openServerShop(ServerPlayer player, CommandSourceStack source
         }
         return builder.buildFuture();
     }
+}
