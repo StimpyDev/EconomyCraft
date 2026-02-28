@@ -49,7 +49,6 @@ public final class EconomyCommands {
         dispatcher.register(SellCommand.register().requires(s -> EconomyConfig.get().standaloneCommands));
         dispatcher.register(buildAH().requires(s -> EconomyConfig.get().standaloneCommands));
         dispatcher.register(buildOrders().requires(s -> EconomyConfig.get().standaloneCommands));
-        dispatcher.register(buildDaily().requires(s -> EconomyConfig.get().standaloneCommands));
 
         dispatcher.register(
                 buildAddMoney().requires(src ->
@@ -108,7 +107,6 @@ public final class EconomyCommands {
         root.then(SellCommand.register());
         root.then(buildAH());
         root.then(buildOrders());
-        root.then(buildDaily());
 
         root.then(addMoney);
         root.then(setMoney);
@@ -735,8 +733,8 @@ public final class EconomyCommands {
                 .executes(ctx -> openOrders(ctx.getSource().getPlayerOrException(), ctx.getSource()))
                 .then(literal("request")
                         .then(argument("item", StringArgumentType.word())
-                                .then(argument("hoeveelheid", LongArgumentType.longArg(1, EconomyManager.MAX))
-                                        .then(argument("prijs", LongArgumentType.longArg(1, EconomyManager.MAX))
+                                .then(argument("amount", LongArgumentType.longArg(1, EconomyManager.MAX))
+                                        .then(argument("price", LongArgumentType.longArg(1, EconomyManager.MAX))
                                                 .executes(ctx -> requestItem(ctx.getSource().getPlayerOrException(),
                                                         StringArgumentType.getString(ctx, "item"),
                                                         (int) Math.min(LongArgumentType.getLong(ctx, "amount"), EconomyManager.MAX),
