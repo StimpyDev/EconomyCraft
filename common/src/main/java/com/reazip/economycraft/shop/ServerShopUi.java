@@ -85,7 +85,7 @@ public final class ServerShopUi {
     }
 
     private static void openRoot(ServerPlayer player, EconomyManager eco) {
-        Component title = Component.literal("DIEGOTJUH SMP SHOP");
+        Component title = Component.literal("DIEGOTJUH SHOP");
         player.openMenu(new MenuProvider() {
             @Override
             public Component getDisplayName() {
@@ -153,7 +153,7 @@ public final class ServerShopUi {
     }
 
     private static String formatCategoryTitle(String category) {
-        if (category == null || category.isBlank()) return "DIEGOTJUH SMP SHOP";
+        if (category == null || category.isBlank()) return "DIEGOTJUH SHOP";
         String[] parts = category.replace('.', '_').split("_");
         StringBuilder sb = new StringBuilder();
         for (String part : parts) {
