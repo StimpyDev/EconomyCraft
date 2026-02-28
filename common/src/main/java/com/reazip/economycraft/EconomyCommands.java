@@ -733,8 +733,8 @@ public final class EconomyCommands {
                 .executes(ctx -> openOrders(ctx.getSource().getPlayerOrException(), ctx.getSource()))
                 .then(literal("request")
                         .then(argument("item", StringArgumentType.word())
-                                .then(argument("hoeveelheid", LongArgumentType.longArg(1, EconomyManager.MAX))
-                                        .then(argument("prijs", LongArgumentType.longArg(1, EconomyManager.MAX))
+                                .then(argument("amount", LongArgumentType.longArg(1, EconomyManager.MAX))
+                                        .then(argument("price", LongArgumentType.longArg(1, EconomyManager.MAX))
                                                 .executes(ctx -> requestItem(ctx.getSource().getPlayerOrException(),
                                                         StringArgumentType.getString(ctx, "item"),
                                                         (int) Math.min(LongArgumentType.getLong(ctx, "amount"), EconomyManager.MAX),
