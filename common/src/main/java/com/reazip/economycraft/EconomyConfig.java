@@ -42,7 +42,7 @@ public class EconomyConfig {
     public boolean serverShopEnabled = true;
 
     private static EconomyConfig INSTANCE = new EconomyConfig();
-    private static Path configPath;
+    private static Path file;
 
     public static EconomyConfig get() {
         return INSTANCE;
