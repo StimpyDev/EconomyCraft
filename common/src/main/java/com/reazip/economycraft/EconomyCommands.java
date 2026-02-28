@@ -49,7 +49,6 @@ public final class EconomyCommands {
         dispatcher.register(SellCommand.register().requires(s -> EconomyConfig.get().standaloneCommands));
         dispatcher.register(buildAH().requires(s -> EconomyConfig.get().standaloneCommands));
         dispatcher.register(buildOrders().requires(s -> EconomyConfig.get().standaloneCommands));
-        dispatcher.register(buildDaily().requires(s -> EconomyConfig.get().standaloneCommands));
 
         dispatcher.register(
                 buildAddMoney().requires(src ->
@@ -108,7 +107,6 @@ public final class EconomyCommands {
         root.then(SellCommand.register());
         root.then(buildAH());
         root.then(buildOrders());
-        root.then(buildDaily());
 
         root.then(addMoney);
         root.then(setMoney);
@@ -787,27 +785,6 @@ public final class EconomyCommands {
 
     private static int claimOrders(ServerPlayer player, CommandSourceStack source) {
         OrdersUi.openClaims(player, EconomyCraft.getManager(source.getServer()));
-        return 1;
-    }
-
-    // =====================================================================
-    // === Daily reward ====================================================
-    // =====================================================================
-
-    private static LiteralArgumentBuilder<CommandSourceStack> buildDaily() {
-        return literal("daily")
-                .executes(ctx -> daily(ctx.getSource().getPlayerOrException(), ctx.getSource()));
-    }
-
-    private static int daily(ServerPlayer player, CommandSourceStack source) {
-        EconomyManager manager = EconomyCraft.getManager(source.getServer());
-        if (manager.claimDaily(player.getUUID())) {
-            Component msg = Component.literal("Claimed " + EconomyCraft.formatMoney(EconomyConfig.get().dailyAmount))
-                    .withStyle(ChatFormatting.GREEN);
-            player.sendSystemMessage(msg);
-        } else {
-            source.sendFailure(Component.literal("Vandaag al geclaimd").withStyle(ChatFormatting.RED));
-        }
         return 1;
     }
 
