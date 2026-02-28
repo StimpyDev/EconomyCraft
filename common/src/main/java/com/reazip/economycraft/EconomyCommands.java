@@ -364,7 +364,6 @@ public final class EconomyCommands {
         });
         return sorted;
     }
-}
 
     private static int pay(ServerPlayer from, String target, long amount, CommandSourceStack source) {
         var server = source.getServer();
@@ -982,4 +981,3 @@ private static int openServerShop(ServerPlayer player, CommandSourceStack source
         }
         return builder.buildFuture();
     }
-}
