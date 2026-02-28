@@ -645,9 +645,9 @@ public final class EconomyCommands {
         return literal("ah")
                 .executes(ctx -> openAH(ctx.getSource().getPlayerOrException(), ctx.getSource()))
                 .then(literal("list")
-                        .then(argument("prijs", LongArgumentType.longArg(1, EconomyManager.MAX))
+                        .then(argument("price", LongArgumentType.longArg(1, EconomyManager.MAX))
                                 .executes(ctx -> listItemAH(ctx.getSource().getPlayerOrException(),
-                                        LongArgumentType.getLong(ctx, "prijs"),
+                                        LongArgumentType.getLong(ctx, "price"),
                                         ctx.getSource()))));
     }
 
@@ -708,21 +708,32 @@ public final class EconomyCommands {
     }
 
     private static int openServerShop(ServerPlayer player, CommandSourceStack source, @Nullable String category) {
-        if (!EconomyConfig.get().serverShopEnabled) {
-            source.sendFailure(Component.literal("Server shop is disabled.").withStyle(ChatFormatting.RED));
-            return 0;
-        }
-        EconomyManager manager = EconomyCraft.getManager(source.getServer());
-        try {
-            ServerShopUi.open(player, manager, category);
-            return 1;
-        } catch (Exception e) {
-            LOGGER.error("[EconomyCraft] Failed to open /shop for {} (category={})",
-                    player.getDisplayName().getString(), category, e);
-            source.sendFailure(Component.literal("Failed to open server shop. Check server logs."));
+    if (!EconomyConfig.get().serverShopEnabled) {
+        source.sendFailure(Component.literal("Server shop is disabled.").withStyle(ChatFormatting.RED));
+        return 0;
+    }
+
+    EconomyManager manager = EconomyCraft.getManager(source.getServer());
+    
+    if (category != null) {
+        Collection<String> validCategories = manager.getPrices().buyCategories();
+        if (!validCategories.contains(category)) {
+            source.sendFailure(Component.literal("Categorie: '" + category + "' bestaat niet, probeer een andere.")
+                    .withStyle(ChatFormatting.RED));
             return 0;
         }
     }
+
+    try {
+        ServerShopUi.open(player, manager, category);
+        return 1;
+    } catch (Exception e) {
+        LOGGER.error("[EconomyCraft] Failed to open /shop for {} (category={})",
+                player.getDisplayName().getString(), category, e);
+        source.sendFailure(Component.literal("Failed to open server shop. Check server logs."));
+        return 0;
+    }
+}
 
     // =====================================================================
     // === Orders commands =================================================
