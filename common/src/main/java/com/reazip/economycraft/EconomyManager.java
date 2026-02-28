@@ -29,10 +29,9 @@ public class EconomyManager {
     private static final Type DAILY_SELL_TYPE = new TypeToken<Map<UUID, DailySellData>>(){}.getType();
 
     private final MinecraftServer server;
-    private final Path file, dailyFile, dailySellFile;
+    private final Path file, dailySellFile;
 
     private final Map<UUID, Long> balances = new ConcurrentHashMap<>();
-    private final Map<UUID, Long> lastDaily = new ConcurrentHashMap<>();
     private final Map<UUID, DailySellData> dailySells = new ConcurrentHashMap<>();
     private Map<UUID, String> diskUserCache = null;
 
@@ -52,7 +51,6 @@ public class EconomyManager {
         } catch (IOException ignored) {}
 
         this.file = dataDir.resolve("balances.json");
-        this.dailyFile = dataDir.resolve("daily.json");
         this.dailySellFile = dataDir.resolve("daily_sells.json");
 
         loadAll();
@@ -140,28 +138,11 @@ public class EconomyManager {
 
     public void removePlayer(UUID player) {
         balances.remove(player);
-        lastDaily.remove(player);
         dailySells.remove(player);
         save();
     }
 
-    // --- Daily Reward/Sell Logic ---
-
-        public boolean claimDaily(UUID playerId) {
-    long today = java.time.LocalDate.now().toEpochDay();
-            
-    if (lastDaily.getOrDefault(playerId, 0L) >= today) {
-        return false; 
-    }
-
-    addMoney(playerId, EconomyConfig.get().dailyReward);
-    
-    lastDaily.put(playerId, today);
-    
-    save();
-    
-    return true;
-}
+    // --- Daily Sell Logic ---
 
     public boolean tryRecordDailySell(UUID player, long saleAmount) {
         long limit = EconomyConfig.get().dailySellLimit;
@@ -197,7 +178,6 @@ public class EconomyManager {
     public boolean toggleScoreboard() {
         boolean newState = !EconomyConfig.get().scoreboardEnabled;
         EconomyConfig.get().scoreboardEnabled = newState;
-        // EconomyConfig.save();
         
         if (!newState && objective != null) {
             server.getScoreboard().removeObjective(objective);
@@ -236,10 +216,6 @@ public class EconomyManager {
                 Map<UUID, Long> map = GSON.fromJson(Files.readString(file), TYPE);
                 if (map != null) balances.putAll(map);
             }
-            if (Files.exists(dailyFile)) {
-                Map<UUID, Long> map = GSON.fromJson(Files.readString(dailyFile), TYPE);
-                if (map != null) lastDaily.putAll(map);
-            }
             if (Files.exists(dailySellFile)) {
                 Map<UUID, DailySellData> map = GSON.fromJson(Files.readString(dailySellFile), DAILY_SELL_TYPE);
                 if (map != null) dailySells.putAll(map);
@@ -250,7 +226,6 @@ public class EconomyManager {
     public void save() {
         try {
             Files.writeString(file, GSON.toJson(balances, TYPE));
-            Files.writeString(dailyFile, GSON.toJson(lastDaily, TYPE));
             Files.writeString(dailySellFile, GSON.toJson(dailySells, DAILY_SELL_TYPE));
         } catch (IOException ignored) {}
     }
