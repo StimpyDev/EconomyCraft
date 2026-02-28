@@ -90,10 +90,6 @@ public final class EconomyCommands {
         return root;
     }
 
-    // =====================================================================
-    // === Balance & payments ==============================================
-    // =====================================================================
-
     private static LiteralArgumentBuilder<CommandSourceStack> buildBalance() {
         return literal("bal")
                 .then(literal("top")
@@ -116,7 +112,7 @@ public final class EconomyCommands {
         EconomyManager manager = EconomyCraft.getManager(source.getServer());
         Long bal = manager.getBalance(target.id(), false);
         if (bal == null) {
-            source.sendFailure(Component.literal("Unknown player").withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.literal("Onbekende speler").withStyle(ChatFormatting.RED));
             return 0;
         }
 
@@ -135,15 +131,11 @@ public final class EconomyCommands {
         return 1;
     }
 
-    private static int balTop(CommandSourceStack source) {
-        return balTop(source, 1);
-    }
-
     private static int balTop(CommandSourceStack source, int page) {
         EconomyManager manager = EconomyCraft.getManager(source.getServer());
         Map<UUID, Long> balances = manager.getBalances();
         if (balances.isEmpty()) {
-            source.sendFailure(Component.literal("No balances found").withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.literal("Geen balansen gevonden").withStyle(ChatFormatting.RED));
             return 0;
         }
 
@@ -205,10 +197,6 @@ public final class EconomyCommands {
             return 0;
         }
     }
-
-    // =====================================================================
-    // === Admin commands ==================================================
-    // =====================================================================
 
     private static LiteralArgumentBuilder<CommandSourceStack> buildAddMoney() {
         return literal("addmoney").requires(PermissionCompat.gamemaster())
@@ -280,15 +268,11 @@ public final class EconomyCommands {
         return 1;
     }
 
-    // =====================================================================
-    // === AH & Shop =======================================================
-    // =====================================================================
-
     private static LiteralArgumentBuilder<CommandSourceStack> buildAH() {
         return literal("ah")
                 .executes(ctx -> openAH(ctx.getSource().getPlayerOrException(), ctx.getSource()))
                 .then(literal("list")
-                        .then(argument("price", LongArgumentType.longArg(1, EconomyManager.MAX))
+                        .then(argument("prijs", LongArgumentType.longArg(1, EconomyManager.MAX))
                                 .executes(ctx -> listItemAH(ctx.getSource().getPlayerOrException(), LongArgumentType.getLong(ctx, "prijs"), ctx.getSource()))));
     }
 
@@ -334,10 +318,6 @@ public final class EconomyCommands {
         return SharedSuggestionProvider.suggest(EconomyCraft.getManager(source.getServer()).getPrices().buyCategories(), builder);
     }
 
-    // =====================================================================
-    // === Orders ==========================================================
-    // =====================================================================
-
     private static LiteralArgumentBuilder<CommandSourceStack> buildOrders() {
         return literal("orders")
                 .executes(ctx -> openOrders(ctx.getSource().getPlayerOrException(), ctx.getSource()))
@@ -369,10 +349,6 @@ public final class EconomyCommands {
         return 1;
     }
 
-    // =====================================================================
-    // === Helpers =========================================================
-    // =====================================================================
-
     private static CompletableFuture<Suggestions> suggestPlayers(CommandSourceStack source, SuggestionsBuilder builder) {
         return SharedSuggestionProvider.suggest(source.getServer().getPlayerList().getPlayers().stream().map(p -> p.getName().getString()), builder);
     }
@@ -388,7 +364,6 @@ public final class EconomyCommands {
         });
         return sorted;
     }
-}
 
     private static int pay(ServerPlayer from, String target, long amount, CommandSourceStack source) {
         var server = source.getServer();
