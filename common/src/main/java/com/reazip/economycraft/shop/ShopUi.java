@@ -114,7 +114,7 @@ public final class ShopUi {
     }
 
     private static Component balanceLore(long balance) {
-        return Component.literal("Geld: ")
+        return Component.literal("Saldo: ")
                 .withStyle(s -> s.withItalic(false).withColor(BALANCE_LABEL_COLOR))
                 .append(Component.literal(EconomyCraft.formatMoney(balance))
                         .withStyle(s -> s.withItalic(false).withColor(BALANCE_VALUE_COLOR)));
@@ -316,7 +316,7 @@ public final class ShopUi {
                         long bal = eco.getBalance(player.getUUID(), true);
 
                         if (bal < total) {
-                            sp.sendSystemMessage(Component.literal("Je hebt niet genoeg geld.").withStyle(ChatFormatting.RED));
+                            sp.sendSystemMessage(Component.literal("Je hebt geen genoepg saldo.").withStyle(ChatFormatting.RED));
                         } else {
                             eco.removeMoney(player.getUUID(), total);
                             eco.addMoney(current.seller, cost);
