@@ -66,8 +66,6 @@ public class EconomyConfig {
                 throw new IllegalStateException("config.json parsed to null");
             }
             INSTANCE = parsed;
-            // Sync initial load
-            INSTANCE.dailyAmount = INSTANCE.dailyReward;
         } catch (Exception e) {
             throw new IllegalStateException("[EconomyCraft] Failed to read/parse config.json at " + file, e);
         }
