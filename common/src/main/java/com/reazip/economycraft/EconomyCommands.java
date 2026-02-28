@@ -707,22 +707,34 @@ public final class EconomyCommands {
                         )));
     }
 
-    private static int openServerShop(ServerPlayer player, CommandSourceStack source, @Nullable String category) {
-        if (!EconomyConfig.get().serverShopEnabled) {
-            source.sendFailure(Component.literal("Server shop is disabled.").withStyle(ChatFormatting.RED));
-            return 0;
-        }
-        EconomyManager manager = EconomyCraft.getManager(source.getServer());
-        try {
-            ServerShopUi.open(player, manager, category);
-            return 1;
-        } catch (Exception e) {
-            LOGGER.error("[EconomyCraft] Failed to open /shop for {} (category={})",
-                    player.getDisplayName().getString(), category, e);
-            source.sendFailure(Component.literal("Failed to open server shop. Check server logs."));
+private static int openServerShop(ServerPlayer player, CommandSourceStack source, @Nullable String category) {
+    if (!EconomyConfig.get().serverShopEnabled) {
+        source.sendFailure(Component.literal("Server shop is disabled.").withStyle(ChatFormatting.RED));
+        return 0;
+    }
+
+    EconomyManager manager = EconomyCraft.getManager(source.getServer());
+
+    // --- Validation Check ---
+    if (category != null) {
+        Collection<String> availableCategories = manager.getPrices().buyCategories();
+        if (!availableCategories.contains(category)) {
+            source.sendFailure(Component.literal("Categorie '" + category + "' is niet gevonden.")
+                    .withStyle(ChatFormatting.RED));
             return 0;
         }
     }
+
+    try {
+        ServerShopUi.open(player, manager, category);
+        return 1;
+    } catch (Exception e) {
+        LOGGER.error("[EconomyCraft] Failed to open /shop for {} (category={})",
+                player.getDisplayName().getString(), category, e);
+        source.sendFailure(Component.literal("Failed to open server shop. Check server logs."));
+        return 0;
+    }
+}
 
     // =====================================================================
     // === Orders commands =================================================
