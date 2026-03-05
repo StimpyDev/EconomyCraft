@@ -10,7 +10,6 @@ import com.reazip.economycraft.util.IdentifierCompat;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.core.Holder;
-import net.minecraft.resources.ResourceKey;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.component.BundleContents;
@@ -87,7 +86,7 @@ public final class PriceRegistry {
 
                 boolean isRealItem = IdentifierCompat.registryContainsKey(BuiltInRegistries.ITEM, id);
                 boolean isVirtual = isVirtualPriceId(id);
-
+                
                 if (!isRealItem && !isVirtual) {
                     missingItemCount++;
                     continue;
@@ -131,6 +130,7 @@ public final class PriceRegistry {
     public ResolvedPrice resolve(ItemStack stack) {
         if (stack == null || stack.isEmpty()) return null;
 
+        // Try every resolved key (specific -> generic)
         for (IdentifierCompat.Id key : resolvePriceKeys(stack)) {
             PriceEntry p = prices.get(key);
             if (p != null) return new ResolvedPrice(key, p);
@@ -138,6 +138,7 @@ public final class PriceRegistry {
         return null;
     }
 
+    // --- Price Getters ---
     public Long getUnitBuy(ItemStack stack) {
         PriceEntry p = get(stack);
         return (p != null && p.unitBuy() > 0) ? p.unitBuy() : null;
@@ -175,6 +176,7 @@ public final class PriceRegistry {
         return bundle != null && !bundle.isEmpty();
     }
 
+    // --- Category Helpers ---
     public Collection<PriceEntry> all() {
         return Collections.unmodifiableCollection(prices.values());
     }
@@ -188,9 +190,7 @@ public final class PriceRegistry {
     public Set<String> buyCategories() {
         Set<String> out = new LinkedHashSet<>();
         for (PriceEntry p : prices.values()) {
-            if (p.unitBuy() > 0) {
-                out.add(p.category());
-            }
+            if (p.unitBuy() > 0) out.add(p.category());
         }
         return out;
     }
@@ -198,7 +198,6 @@ public final class PriceRegistry {
     public List<PriceEntry> byCategory(String category) {
         if (category == null) return List.of();
         String c = category.trim().toLowerCase(Locale.ROOT);
-
         List<PriceEntry> out = new ArrayList<>();
         for (PriceEntry p : prices.values()) {
             if (p.category() != null && p.category().trim().toLowerCase(Locale.ROOT).equals(c)) {
@@ -211,7 +210,6 @@ public final class PriceRegistry {
     public List<PriceEntry> buyableByCategory(String category) {
         if (category == null) return List.of();
         String c = category.trim().toLowerCase(Locale.ROOT);
-
         List<PriceEntry> out = new ArrayList<>();
         for (PriceEntry p : prices.values()) {
             if (p.unitBuy() <= 0) continue;
@@ -228,11 +226,7 @@ public final class PriceRegistry {
             if (p.unitBuy() <= 0 || p.category() == null) continue;
             String cat = p.category();
             int dot = cat.indexOf('.');
-            if (dot > 0) {
-                out.add(cat.substring(0, dot));
-            } else {
-                out.add(cat);
-            }
+            out.add(dot > 0 ? cat.substring(0, dot) : cat);
         }
         return new ArrayList<>(out);
     }
@@ -246,85 +240,53 @@ public final class PriceRegistry {
             String cat = p.category().trim();
             int dot = cat.indexOf('.');
             if (dot <= 0 || dot >= cat.length() - 1) continue;
-            String base = cat.substring(0, dot).toLowerCase(Locale.ROOT);
-            String sub = cat.substring(dot + 1);
-            if (base.equals(root)) {
-                out.add(sub);
+            if (cat.substring(0, dot).toLowerCase(Locale.ROOT).equals(root)) {
+                out.add(cat.substring(dot + 1));
             }
         }
         return new ArrayList<>(out);
     }
 
+    // --- File Handling ---
     private void createFromBundledDefault() {
         try (InputStream in = PriceRegistry.class.getResourceAsStream(DEFAULT_RESOURCE_PATH)) {
             if (in == null) {
-                LOGGER.error("[EconomyCraft] Default prices resource not found at {}. Creating empty {}",
-                        DEFAULT_RESOURCE_PATH, file);
+                LOGGER.error("[EconomyCraft] Default prices resource not found. Creating empty {}", file);
                 Files.writeString(file, "{}", StandardCharsets.UTF_8);
                 return;
             }
-
             Files.copy(in, file, StandardCopyOption.REPLACE_EXISTING);
-            LOGGER.info("[EconomyCraft] Created {} from bundled default {}", file, DEFAULT_RESOURCE_PATH);
         } catch (IOException e) {
-            LOGGER.error("[EconomyCraft] Failed to create prices.json at {}", file, e);
+            LOGGER.error("[EconomyCraft] Failed to create prices.json", e);
         }
     }
 
     private void mergeNewDefaultsFromBundledDefault() {
         JsonObject defaults = readBundledDefaultJson();
-        if (defaults == null) {
-            LOGGER.warn("[EconomyCraft] No bundled defaults found; skipping merge.");
-            return;
-        }
-
-        JsonObject userRoot;
+        if (defaults == null) return;
         try {
             String json = Files.readString(file, StandardCharsets.UTF_8);
-            userRoot = GSON.fromJson(json, JsonObject.class);
+            JsonObject userRoot = GSON.fromJson(json, JsonObject.class);
             if (userRoot == null) userRoot = new JsonObject();
+            int added = 0;
+            for (Map.Entry<String, JsonElement> e : defaults.entrySet()) {
+                if (!userRoot.has(e.getKey())) {
+                    userRoot.add(e.getKey(), e.getValue().deepCopy());
+                    added++;
+                }
+            }
+            if (added > 0) Files.writeString(file, GSON.toJson(userRoot), StandardCharsets.UTF_8);
         } catch (Exception ex) {
             backupBrokenConfig();
             createFromBundledDefault();
-            return;
-        }
-
-        int added = 0;
-        for (Map.Entry<String, JsonElement> e : defaults.entrySet()) {
-            String key = e.getKey();
-
-            if (IdentifierCompat.tryParse(key) == null) {
-                LOGGER.warn("[EconomyCraft] Bundled default contains invalid key '{}', skipping.", key);
-                continue;
-            }
-
-            if (!userRoot.has(key)) {
-                JsonElement value = e.getValue();
-                userRoot.add(key, value == null ? null : value.deepCopy());
-                added++;
-            }
-        }
-
-        if (added > 0) {
-            try {
-                Files.writeString(file, GSON.toJson(userRoot), StandardCharsets.UTF_8);
-            } catch (IOException ex) {
-                LOGGER.error("[EconomyCraft] Failed to write merged prices.json at {}", file, ex);
-            }
         }
     }
 
     private JsonObject readBundledDefaultJson() {
         try (InputStream in = PriceRegistry.class.getResourceAsStream(DEFAULT_RESOURCE_PATH)) {
             if (in == null) return null;
-
-            byte[] bytes = in.readAllBytes();
-            String json = new String(bytes, StandardCharsets.UTF_8);
-            JsonObject root = GSON.fromJson(json, JsonObject.class);
-            return root != null ? root : null;
-
+            return GSON.fromJson(new String(in.readAllBytes(), StandardCharsets.UTF_8), JsonObject.class);
         } catch (Exception ex) {
-            LOGGER.error("[EconomyCraft] Failed to read bundled default prices.json from {}", DEFAULT_RESOURCE_PATH, ex);
             return null;
         }
     }
@@ -334,85 +296,58 @@ public final class PriceRegistry {
             if (Files.exists(file)) {
                 Path backup = file.resolveSibling("prices.json.broken-" + System.currentTimeMillis());
                 Files.copy(file, backup, StandardCopyOption.REPLACE_EXISTING);
-                LOGGER.warn("[EconomyCraft] Backed up broken prices.json to {}", backup);
             }
-        } catch (IOException e) {
-            LOGGER.error("[EconomyCraft] Failed to backup broken prices.json at {}", file, e);
-        }
+        } catch (IOException ignored) {}
     }
+
+    // --- Virtual ID Logic ---
 
     private static boolean isVirtualPriceId(IdentifierCompat.Id id) {
         if (!"minecraft".equals(id.namespace())) return false;
-
         String p = id.path();
-
-        if (p.equals("potion") || p.equals("splash_potion") || p.equals("lingering_potion") || p.equals("tipped_arrow")) {
-            return false;
-        }
-
-        // Potions / Arrows
-        if (p.equals("water_bottle") || p.equals("splash_water_bottle") || p.equals("lingering_water_bottle")) return true;
-        if (p.endsWith("_potion")) return true; // awkward_potion, mundane_potion, ...
-        if (p.startsWith("potion_of_")) return true;
-        if (p.startsWith("splash_potion_of_")) return true;
-        if (p.startsWith("lingering_potion_of_")) return true;
-        if (p.startsWith("arrow_of_")) return true;
-
-        // Enchanted books
-        if (p.startsWith("enchanted_book_") && looksLikeEnchantedBookKey(p)) return true;
-
-        return false;
+        return p.contains("_potion") || 
+               p.contains("arrow_of_") || 
+               p.contains("water_bottle") || 
+               p.startsWith("enchanted_book_");
     }
 
     private static boolean looksLikeEnchantedBookKey(String path) {
         String rest = path.substring("enchanted_book_".length());
         int lastUnderscore = rest.lastIndexOf('_');
         if (lastUnderscore <= 0 || lastUnderscore >= rest.length() - 1) return false;
-
-        String lvlStr = rest.substring(lastUnderscore + 1);
         try {
-            int lvl = Integer.parseInt(lvlStr);
-            return lvl > 0;
+            return Integer.parseInt(rest.substring(lastUnderscore + 1)) > 0;
         } catch (NumberFormatException ex) {
             return false;
         }
     }
 
     private static List<IdentifierCompat.Id> resolvePriceKeys(ItemStack stack) {
-        List<IdentifierCompat.Id> out = new ArrayList<>(4);
-
+        List<IdentifierCompat.Id> out = new ArrayList<>();
         IdentifierCompat.Id itemId = IdentifierCompat.wrap(BuiltInRegistries.ITEM.getKey(stack.getItem()));
 
         if (stack.is(Items.POTION) || stack.is(Items.SPLASH_POTION) || stack.is(Items.LINGERING_POTION) || stack.is(Items.TIPPED_ARROW)) {
             IdentifierCompat.Id potionId = readPotionId(stack);
-
-            if (potionId != null) {
-                out.addAll(buildVirtualPotionKeys(stack, potionId));
-            } else {
-                out.addAll(buildVirtualPotionKeys(stack, IdentifierCompat.withDefaultNamespace("water")));
-            }
+            out.addAll(buildVirtualPotionKeys(stack, potionId != null ? potionId : IdentifierCompat.withDefaultNamespace("water")));
         }
 
         if (stack.is(Items.ENCHANTED_BOOK)) {
             ItemEnchantments stored = stack.getOrDefault(DataComponents.STORED_ENCHANTMENTS, ItemEnchantments.EMPTY);
             for (Object2IntMap.Entry<Holder<Enchantment>> e : stored.entrySet()) {
-                Holder<Enchantment> holder = e.getKey();
                 int level = e.getIntValue();
                 if (level <= 0) continue;
-                IdentifierCompat.Id enchId = holder.unwrapKey().map(IdentifierCompat::fromResourceKey).orElse(null);
-                if (enchId == null) continue;
-                String base = "enchanted_book_" + enchId.path() + "_" + level;
-                IdentifierCompat.Id key = IdentifierCompat.fromNamespaceAndPath(enchId.namespace(), base);
-                out.add(key);
-
-                if ("binding_curse".equals(enchId.path())) {
-                    out.add(IdentifierCompat.fromNamespaceAndPath(enchId.namespace(), "enchanted_book_curse_of_binding_" + level));
-                } else if ("vanishing_curse".equals(enchId.path())) {
-                    out.add(IdentifierCompat.fromNamespaceAndPath(enchId.namespace(), "enchanted_book_curse_of_vanishing_" + level));
-                }
+                e.getKey().unwrapKey().ifPresent(key -> {
+                    IdentifierCompat.Id enchId = IdentifierCompat.fromResourceKey(key);
+                    String base = "enchanted_book_" + enchId.path() + "_" + level;
+                    out.add(IdentifierCompat.fromNamespaceAndPath(enchId.namespace(), base));
+                    
+                    // Legacy curse names
+                    if (enchId.path().equals("binding_curse")) out.add(IdentifierCompat.withDefaultNamespace("enchanted_book_curse_of_binding_" + level));
+                    if (enchId.path().equals("vanishing_curse")) out.add(IdentifierCompat.withDefaultNamespace("enchanted_book_curse_of_vanishing_" + level));
+                });
             }
         }
-
+        
         out.add(itemId);
         return out;
     }
@@ -420,27 +355,19 @@ public final class PriceRegistry {
     private static IdentifierCompat.Id readPotionId(ItemStack stack) {
         PotionContents contents = stack.get(DataComponents.POTION_CONTENTS);
         if (contents == null) return null;
-
-        Optional<Holder<Potion>> opt = contents.potion();
-        if (opt.isEmpty()) return null;
-
-        Potion potion = opt.get().value();
-        return IdentifierCompat.wrap(BuiltInRegistries.POTION.getKey(potion));
+        return contents.potion().map(h -> IdentifierCompat.wrap(BuiltInRegistries.POTION.getKey(h.value()))).orElse(null);
     }
 
     private static List<IdentifierCompat.Id> buildVirtualPotionKeys(ItemStack stack, IdentifierCompat.Id potionId) {
         String potionPath = potionId.path();
-        String form;
-        if (stack.is(Items.SPLASH_POTION)) form = "splash";
-        else if (stack.is(Items.LINGERING_POTION)) form = "lingering";
-        else if (stack.is(Items.TIPPED_ARROW)) form = "arrow";
-        else form = "potion";
+        String form = stack.is(Items.SPLASH_POTION) ? "splash" : 
+                      stack.is(Items.LINGERING_POTION) ? "lingering" : 
+                      stack.is(Items.TIPPED_ARROW) ? "arrow" : "potion";
 
         if (potionPath.equals("water")) {
             String key = switch (form) {
                 case "splash" -> "splash_water_bottle";
                 case "lingering" -> "lingering_water_bottle";
-                case "potion" -> "water_bottle";
                 case "arrow" -> "arrow_of_water_1";
                 default -> "water_bottle";
             };
@@ -448,78 +375,37 @@ public final class PriceRegistry {
         }
 
         if (potionPath.equals("awkward") || potionPath.equals("mundane") || potionPath.equals("thick")) {
-            String key = switch (form) {
-                case "potion" -> potionPath + "_potion";
-                case "splash" -> potionPath + "_splash_potion";
-                case "lingering" -> potionPath + "_lingering_potion";
-                case "arrow" -> "arrow_of_" + potionPath + "_1";
-                default -> potionPath + "_potion";
-            };
-            return List.of(IdentifierCompat.withDefaultNamespace(key));
+            return List.of(IdentifierCompat.withDefaultNamespace(potionPath + (form.equals("potion") ? "_potion" : "_" + form + "_potion")));
         }
 
         String effect = potionPath;
         String suffix = "_1";
-        if (effect.startsWith("long_")) {
-            effect = effect.substring("long_".length());
-            suffix = "_extended";
-        } else if (effect.startsWith("strong_")) {
-            effect = effect.substring("strong_".length());
-            suffix = "_2";
-        }
+        if (effect.startsWith("long_")) { effect = effect.substring(5); suffix = "_extended"; }
+        else if (effect.startsWith("strong_")) { effect = effect.substring(7); suffix = "_2"; }
 
-        if (effect.equals("turtle_master")) {
-            effect = "the_turtle_master";
-        }
+        if (effect.equals("turtle_master")) effect = "the_turtle_master";
 
-        String base = switch (form) {
-            case "potion" -> "potion_of_" + effect;
-            case "splash" -> "splash_potion_of_" + effect;
-            case "lingering" -> "lingering_potion_of_" + effect;
-            case "arrow" -> "arrow_of_" + effect;
-            default -> "potion_of_" + effect;
-        };
+        String base = form.equals("potion") ? "potion_of_" + effect : form + "_potion_of_" + effect;
+        if (form.equals("arrow")) base = "arrow_of_" + effect;
 
-        if (suffix.equals("_1")) {
-            return List.of(
-                    IdentifierCompat.withDefaultNamespace(base + "_1"),
-                    IdentifierCompat.withDefaultNamespace(base)
-            );
-        } else {
-            return List.of(IdentifierCompat.withDefaultNamespace(base + suffix));
-        }
+        // Try specific suffix first, then try the bare base
+        return List.of(
+            IdentifierCompat.withDefaultNamespace(base + suffix),
+            IdentifierCompat.withDefaultNamespace(base)
+        );
     }
 
     private static String getString(JsonObject obj, String key, String fallback) {
-        if (obj.has(key) && obj.get(key).isJsonPrimitive() && obj.get(key).getAsJsonPrimitive().isString()) {
-            return obj.get(key).getAsString();
-        }
-        return fallback;
+        return (obj.has(key) && obj.get(key).isJsonPrimitive()) ? obj.get(key).getAsString() : fallback;
     }
 
     private static int getInt(JsonObject obj, String key, int fallback) {
-        if (obj.has(key) && obj.get(key).isJsonPrimitive() && obj.get(key).getAsJsonPrimitive().isNumber()) {
-            try {
-                return obj.get(key).getAsInt();
-            } catch (Exception ignored) {}
-        }
-        return fallback;
+        try { return obj.has(key) ? obj.get(key).getAsInt() : fallback; } catch (Exception e) { return fallback; }
     }
 
     private static long getLong(JsonObject obj, String key, long fallback) {
-        if (obj.has(key) && obj.get(key).isJsonPrimitive() && obj.get(key).getAsJsonPrimitive().isNumber()) {
-            try {
-                return obj.get(key).getAsLong();
-            } catch (Exception ignored) {}
-        }
-        return fallback;
+        try { return obj.has(key) ? obj.get(key).getAsLong() : fallback; } catch (Exception e) { return fallback; }
     }
 
-    public record PriceEntry(
-            IdentifierCompat.Id id,
-            String category,
-            int stack,
-            long unitBuy,
-            long unitSell
-    ) { }
+    public record PriceEntry(IdentifierCompat.Id id, String category, int stack, long unitBuy, long unitSell) { }
 }
