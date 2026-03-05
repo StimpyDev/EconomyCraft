@@ -185,7 +185,7 @@ public final class ShopUi {
                 long tax = Math.round(l.price * EconomyConfig.get().taxRate);
                 display.set(net.minecraft.core.component.DataComponents.LORE, new net.minecraft.world.item.component.ItemLore(List.of(
                         createPriceLore(l.price, tax),
-                        labeledValue("Seller", sellerName, LABEL_SECONDARY_COLOR))));
+                        labeledValue("Verkoper", sellerName, LABEL_SECONDARY_COLOR))));
                 container.setItem(i, display);
             }
 
@@ -316,7 +316,7 @@ public final class ShopUi {
                         long bal = eco.getBalance(player.getUUID(), true);
 
                         if (bal < total) {
-                            sp.sendSystemMessage(Component.literal("Je hebt geen genoepg saldo.").withStyle(ChatFormatting.RED));
+                            sp.sendSystemMessage(Component.literal("Je hebt geen genoeg saldo.").withStyle(ChatFormatting.RED));
                         } else {
                             eco.removeMoney(player.getUUID(), total);
                             eco.addMoney(current.seller, cost);
@@ -353,7 +353,7 @@ public final class ShopUi {
                                 }
                             } else {
                                 sp.sendSystemMessage(
-                                        Component.literal("Item gekocht " + count + "x " + name.getString() + " from " + sellerName +
+                                        Component.literal("Item gekocht " + count + "x " + name.getString() + " van " + sellerName +
                                                         " voor " + EconomyCraft.formatMoney(total))
                                                 .withStyle(ChatFormatting.GREEN)
                                 );
