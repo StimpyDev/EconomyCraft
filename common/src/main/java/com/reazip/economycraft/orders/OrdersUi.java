@@ -78,7 +78,7 @@ public final class OrdersUi {
     }
 
     private static Component balanceLore(long balance) {
-        return Component.literal("Balance: ")
+        return Component.literal("Saldo: ")
                 .withStyle(s -> s.withItalic(false).withColor(BALANCE_LABEL_COLOR))
                 .append(Component.literal(EconomyCraft.formatMoney(balance))
                         .withStyle(s -> s.withItalic(false).withColor(BALANCE_VALUE_COLOR)));
@@ -166,8 +166,8 @@ public final class OrdersUi {
                 display.set(net.minecraft.core.component.DataComponents.LORE,
                         new net.minecraft.world.item.component.ItemLore(List.of(
                                 createRewardLore(r.price, tax),
-                                labeledValue("Hoeveelheid", String.valueOf(r.amount), LABEL_PRIMARY_COLOR),
-                                labeledValue("Aanvrager", reqName, LABEL_SECONDARY_COLOR)
+                                labeledValue("amount", String.valueOf(r.amount), LABEL_PRIMARY_COLOR),
+                                labeledValue("request", reqName, LABEL_SECONDARY_COLOR)
                         )));
                 display.setCount(1);
                 container.setItem(i, display);
@@ -302,8 +302,8 @@ public final class OrdersUi {
             item.set(net.minecraft.core.component.DataComponents.LORE,
                     new net.minecraft.world.item.component.ItemLore(List.of(
                             createRewardLore(req.price, tax),
-                            labeledValue("Hoeveelheid", String.valueOf(req.amount), LABEL_PRIMARY_COLOR),
-                            labeledValue("Aanvrager", requesterName, LABEL_SECONDARY_COLOR)
+                            labeledValue("amount", String.valueOf(req.amount), LABEL_PRIMARY_COLOR),
+                            labeledValue("request", requesterName, LABEL_SECONDARY_COLOR)
                     )));
             container.setItem(4, item);
 
@@ -438,7 +438,7 @@ public final class OrdersUi {
             long tax = Math.round(req.price * EconomyConfig.get().taxRate);
             item.set(net.minecraft.core.component.DataComponents.LORE, new net.minecraft.world.item.component.ItemLore(java.util.List.of(
                     createRewardLore(req.price, tax),
-                    labeledValue("Hoeveelheid", String.valueOf(req.amount), LABEL_PRIMARY_COLOR),
+                    labeledValue("amount", String.valueOf(req.amount), LABEL_PRIMARY_COLOR),
                     Component.literal("Hiermee wordt het verzoek verwijderd.").withStyle(s -> s.withItalic(false).withColor(ChatFormatting.RED)))));
             container.setItem(4, item);
 
