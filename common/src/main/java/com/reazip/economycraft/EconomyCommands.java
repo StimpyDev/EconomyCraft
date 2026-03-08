@@ -196,7 +196,7 @@ public final class EconomyCommands {
         var sorted = getSortedEntries(balances, manager);
         if (sorted.size() > 10) sorted = new java.util.ArrayList<>(sorted.subList(0, 10));
 
-        StringBuilder sb = new StringBuilder("Top balances:\n");
+        StringBuilder sb = new StringBuilder("Top 10 Saldo's:\n");
         for (int i = 0; i < sorted.size(); i++) {
             var e = sorted.get(i);
             UUID id = e.getKey();
