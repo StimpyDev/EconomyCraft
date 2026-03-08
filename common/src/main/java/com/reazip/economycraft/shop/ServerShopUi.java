@@ -537,57 +537,59 @@ public final class ServerShopUi {
             super.clicked(slot, dragType, type, player);
         }
 
-        private void handlePurchase(PriceRegistry.PriceEntry entry, ClickType clickType) {
-            if (entry.unitBuy() <= 0) {
-                viewer.sendSystemMessage(Component.literal("Dit artikel kan niet worden gekocht.")
-                        .withStyle(ChatFormatting.RED));
-                return;
-            }
+      private void handlePurchase(PriceRegistry.PriceEntry entry, ClickType clickType) {
+    if (entry.unitBuy() <= 0) {
+        viewer.sendSystemMessage(Component.literal("Dit artikel kan niet worden gekocht.")
+                .withStyle(ChatFormatting.RED));
+        return;
+    }
 
-            ItemStack base = createDisplayStack(entry, viewer);
-            if (base.isEmpty()) {
-                viewer.sendSystemMessage(Component.literal("Artikel niet beschikbaar.")
-                        .withStyle(ChatFormatting.RED));
-                return;
-            }
+    ItemStack base = createDisplayStack(entry, viewer);
+    if (base.isEmpty()) {
+        viewer.sendSystemMessage(Component.literal("Artikel niet beschikbaar.")
+                .withStyle(ChatFormatting.RED));
+        return;
+    }
 
-            int stackSize = Math.max(1, entry.stack());
-            int amount = clickType == ClickType.QUICK_MOVE ? stackSize : 1;
+    int stackSize = Math.max(1, entry.stack());
+    int amount = clickType == ClickType.QUICK_MOVE ? stackSize : 1;
 
-            Long total = safeMultiply(entry.unitBuy(), amount);
-            if (total == null) {
-                viewer.sendSystemMessage(Component.literal("De prijs te groot.")
-                        .withStyle(ChatFormatting.RED));
-                return;
-            }
+    Long total = safeMultiply(entry.unitBuy(), amount);
+    if (total == null) {
+        viewer.sendSystemMessage(Component.literal("De prijs te groot.")
+                .withStyle(ChatFormatting.RED));
+        return;
+    }
 
-            long balance = eco.getBalance(viewer.getUUID(), true);
-            if (balance < total) {
-                viewer.sendSystemMessage(Component.literal("Je hebt geen genoeg saldo.")
-                        .withStyle(ChatFormatting.RED));
-                return;
-            }
+    long balance = eco.getBalance(viewer.getUUID(), true);
+    if (balance < total) {
+        viewer.sendSystemMessage(Component.literal("Je hebt geen genoeg saldo.")
+                .withStyle(ChatFormatting.RED));
+        return;
+    }
 
-            if (!eco.removeMoney(viewer.getUUID(), total)) {
-                viewer.sendSystemMessage(Component.literal("Je hebt geen genoeg saldo.")
-                        .withStyle(ChatFormatting.RED));
-                return;
-            }
+    if (!eco.removeMoney(viewer.getUUID(), total)) {
+        viewer.sendSystemMessage(Component.literal("Je hebt geen genoeg saldo.")
+                .withStyle(ChatFormatting.RED));
+        return;
+    }
 
-            boolean stored = giveToPlayer(base, amount);
+    boolean stored = giveToPlayer(base, amount);
 
-            Component success = Component.literal(
-                    "Item gekocht " + amount + "x " + base.getHoverName().getString() +
-                            " voor " + EconomyCraft.formatMoney(total))
-                    .withStyle(ChatFormatting.GREEN);
-            viewer.sendSystemMessage(success);
+    viewer.playSound(SoundEvents.EXPERIENCE_ORB_PICKUP, SoundSource.PLAYERS, 0.8f, 0.8f);
 
-            if (stored) {
-                sendStoredMessage(viewer);
-            }
+    Component success = Component.literal(
+            "Item gekocht " + amount + "x " + base.getHoverName().getString() +
+                    " voor " + EconomyCraft.formatMoney(total))
+            .withStyle(ChatFormatting.GREEN);
+    viewer.sendSystemMessage(success);
 
-            updatePage();
-        }
+    if (stored) {
+        sendStoredMessage(viewer);
+    }
+
+    updatePage();
+}
 
         private boolean giveToPlayer(ItemStack base, int amount) {
             int remaining = amount;
