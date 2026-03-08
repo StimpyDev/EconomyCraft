@@ -564,12 +564,14 @@ public final class ServerShopUi {
 
     long balance = eco.getBalance(viewer.getUUID(), true);
     if (balance < total) {
+        viewer.playSound(SoundEvents.VILLAGER_NO, 1.0f, 1.0f);
         viewer.sendSystemMessage(Component.literal("Je hebt geen genoeg saldo.")
                 .withStyle(ChatFormatting.RED));
         return;
     }
 
     if (!eco.removeMoney(viewer.getUUID(), total)) {
+        viewer.playSound(SoundEvents.VILLAGER_NO, 1.0f, 1.0f);
         viewer.sendSystemMessage(Component.literal("Je hebt geen genoeg saldo.")
                 .withStyle(ChatFormatting.RED));
         return;
