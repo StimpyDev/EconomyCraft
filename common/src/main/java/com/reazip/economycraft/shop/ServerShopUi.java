@@ -14,6 +14,7 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.resources.ResourceKey;
 import com.reazip.economycraft.util.IdentifierCompat;
 import net.minecraft.server.level.ServerPlayer;
