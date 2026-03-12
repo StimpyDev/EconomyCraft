@@ -14,6 +14,8 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.protocol.game.ClientboundSoundPacket;
+import net.minecraft.core.Holder;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.resources.ResourceKey;
 import com.reazip.economycraft.util.IdentifierCompat;
@@ -556,8 +558,9 @@ private void handlePurchase(PriceRegistry.PriceEntry entry, ClickType clickType)
     int stackSize = Math.max(1, entry.stack());
     int amount = clickType == ClickType.QUICK_MOVE ? stackSize : 1;
 
+    // Inventory Check
     if (viewer.getInventory().getFreeSlot() == -1) {
-        viewer.playNotifySound(SoundEvents.VILLAGER_NO, SoundSource.PLAYERS, 1.0f, 1.0f);
+        sendPrivateSound(SoundEvents.VILLAGER_NO);
         viewer.sendSystemMessage(Component.literal("Je inventaris is vol!")
                 .withStyle(ChatFormatting.RED));
         return;
@@ -572,23 +575,21 @@ private void handlePurchase(PriceRegistry.PriceEntry entry, ClickType clickType)
 
     long balance = eco.getBalance(viewer.getUUID(), true);
     if (balance < total) {
-        viewer.playNotifySound(SoundEvents.VILLAGER_NO, SoundSource.PLAYERS, 1.0f, 1.0f);
+        sendPrivateSound(SoundEvents.VILLAGER_NO);
         viewer.sendSystemMessage(Component.literal("Je hebt geen genoeg saldo.")
                 .withStyle(ChatFormatting.RED));
         return;
     }
 
-    // Attempt to remove money
     if (!eco.removeMoney(viewer.getUUID(), total)) {
-        viewer.playNotifySound(SoundEvents.VILLAGER_NO, SoundSource.PLAYERS, 1.0f, 1.0f);
+        sendPrivateSound(SoundEvents.VILLAGER_NO);
         viewer.sendSystemMessage(Component.literal("Transactie mislukt.")
                 .withStyle(ChatFormatting.RED));
         return;
     }
 
     giveToPlayer(base, amount);
-
-    viewer.playNotifySound(SoundEvents.EXPERIENCE_ORB_PICKUP, SoundSource.PLAYERS, 1.0f, 1.0f);
+    sendPrivateSound(SoundEvents.EXPERIENCE_ORB_PICKUP);
 
     Component success = Component.literal(
             "Item gekocht " + amount + "x " + base.getHoverName().getString() +
@@ -597,6 +598,16 @@ private void handlePurchase(PriceRegistry.PriceEntry entry, ClickType clickType)
     viewer.sendSystemMessage(success);
 
     updatePage();
+}
+
+private void sendPrivateSound(net.minecraft.sounds.SoundEvent sound) {
+    viewer.connection.send(new ClientboundSoundPacket(
+            Holder.direct(sound),
+            SoundSource.PLAYERS,
+            viewer.getX(), viewer.getY(), viewer.getZ(),
+            1.0f, 1.0f,
+            viewer.getRandom().nextLong()
+    ));
 }
 
         private boolean giveToPlayer(ItemStack base, int amount) {
