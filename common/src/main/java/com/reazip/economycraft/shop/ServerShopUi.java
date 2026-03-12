@@ -538,58 +538,57 @@ public final class ServerShopUi {
             super.clicked(slot, dragType, type, player);
         }
 
-      private void handlePurchase(PriceRegistry.PriceEntry entry, ClickType clickType) {
+private void handlePurchase(PriceRegistry.PriceEntry entry, ClickType clickType) {
     if (entry.unitBuy() <= 0) {
-        viewer.sendSystemMessage(Component.literal("Dit artikel kan niet worden gekocht.")
-                .withStyle(ChatFormatting.RED));
+        viewer.sendSystemMessage(Component.literal("Dit artikel kan niet worden gekocht.").withStyle(ChatFormatting.RED));
         return;
     }
 
     ItemStack base = createDisplayStack(entry, viewer);
     if (base.isEmpty()) {
-        viewer.sendSystemMessage(Component.literal("Artikel niet beschikbaar.")
-                .withStyle(ChatFormatting.RED));
+        viewer.sendSystemMessage(Component.literal("Artikel niet beschikbaar.").withStyle(ChatFormatting.RED));
         return;
     }
 
     int stackSize = Math.max(1, entry.stack());
     int amount = clickType == ClickType.QUICK_MOVE ? stackSize : 1;
+    
+    ItemStack toAdd = base.copy();
+    toAdd.setCount(amount);
+    if (!viewer.getInventory().addResource(toAdd))
+        viewer.playNotifySound(SoundEvents.VILLAGER_NO, SoundSource.PLAYERS, 1.0f, 1.0f);
+        viewer.sendSystemMessage(Component.literal("Je inventaris is vol!")
+                .withStyle(ChatFormatting.RED));
+        return;
+    }
 
     Long total = safeMultiply(entry.unitBuy(), amount);
     if (total == null) {
-        viewer.sendSystemMessage(Component.literal("De prijs te groot.")
-                .withStyle(ChatFormatting.RED));
+        viewer.sendSystemMessage(Component.literal("De prijs is te groot.").withStyle(ChatFormatting.RED));
         return;
     }
 
     long balance = eco.getBalance(viewer.getUUID(), true);
     if (balance < total) {
-        viewer.playSound(SoundEvents.VILLAGER_NO, 1.0f, 1.0f);
-        viewer.sendSystemMessage(Component.literal("Je hebt geen genoeg saldo.")
-                .withStyle(ChatFormatting.RED));
+        viewer.playNotifySound(SoundEvents.VILLAGER_NO, SoundSource.PLAYERS, 1.0f, 1.0f);
+        viewer.sendSystemMessage(Component.literal("Je hebt geen genoeg saldo.").withStyle(ChatFormatting.RED));
         return;
     }
 
     if (!eco.removeMoney(viewer.getUUID(), total)) {
-        viewer.playSound(SoundEvents.VILLAGER_NO, 1.0f, 1.0f);
-        viewer.sendSystemMessage(Component.literal("Je hebt geen genoeg saldo.")
-                .withStyle(ChatFormatting.RED));
+        viewer.playNotifySound(SoundEvents.VILLAGER_NO, SoundSource.PLAYERS, 1.0f, 1.0f);
+        viewer.sendSystemMessage(Component.literal("Transactie mislukt.").withStyle(ChatFormatting.RED));
         return;
     }
 
-    boolean stored = giveToPlayer(base, amount);
-
-    viewer.playSound(SoundEvents.EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
+    giveToPlayer(base, amount);
+    viewer.playNotifySound(SoundEvents.EXPERIENCE_ORB_PICKUP, SoundSource.PLAYERS, 1.0f, 1.0f);
 
     Component success = Component.literal(
             "Item gekocht " + amount + "x " + base.getHoverName().getString() +
-                    " voor " + EconomyCraft.formatMoney(total))
+            " voor " + EconomyCraft.formatMoney(total))
             .withStyle(ChatFormatting.GREEN);
     viewer.sendSystemMessage(success);
-
-    if (stored) {
-        sendStoredMessage(viewer);
-    }
 
     updatePage();
 }
