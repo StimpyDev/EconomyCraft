@@ -300,15 +300,24 @@ public final class EconomyCommands {
             }
 
             if (toOnline != null) {
-    toOnline.sendSystemMessage(
-        Component.literal(EconomyCraft.formatMoney(amount))
-            .withStyle(ChatFormatting.GOLD)
-            .append(Component.literal(" ontvangen van ").withStyle(ChatFormatting.GREEN))
-            .append(Component.literal(from.getName().getString()).withStyle(ChatFormatting.YELLOW))
-    );
+                toOnline.sendSystemMessage(
+                    Component.literal(EconomyCraft.formatMoney(amount))
+                        .withStyle(ChatFormatting.GOLD)
+                        .append(Component.literal(" Ontvangen van ").withStyle(ChatFormatting.GREEN))
+                        .append(Component.literal(from.getName().getString()).withStyle(ChatFormatting.YELLOW))
+                );
 
-    toOnline.playSound(net.minecraft.sounds.SoundEvents.EXPERIENCE_ORB_PICKUP, 1.0F, 1.0F);
-}
+                toOnline.connection.send(new net.minecraft.network.protocol.game.ClientboundSoundPacket(
+                    net.minecraft.core.registries.BuiltInRegistries.SOUND_EVENT.wrapAsHolder(net.minecraft.sounds.SoundEvents.EXPERIENCE_ORB_PICKUP),
+                    net.minecraft.sounds.SoundSource.MASTER,
+                    toOnline.getX(),
+                    toOnline.getY(),
+                    toOnline.getZ(),
+                    1.0F,
+                    1.0F,
+                    toOnline.getRandom().nextLong()
+                ));
+            }
             
         } else {
             source.sendFailure(Component.literal("Niet genoeg saldo").withStyle(ChatFormatting.RED));
