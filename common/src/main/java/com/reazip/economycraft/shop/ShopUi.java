@@ -191,13 +191,15 @@ public final class ShopUi {
 
             if (page > 0) {
                 ItemStack prev = new ItemStack(Items.ARROW);
-                prev.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME, Component.literal("Vorige pagina").withStyle(s -> s.withItalic(false)));
+                // Nu MET italic
+                prev.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME, Component.literal("Vorige pagina").withStyle(s -> s.withItalic(true)));
                 container.setItem(navRowStart + 3, prev);
             }
 
             if (start + 45 < listings.size()) {
                 ItemStack next = new ItemStack(Items.ARROW);
-                next.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME, Component.literal("Volgende pagina").withStyle(s -> s.withItalic(false)));
+                // Nu MET italic
+                next.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME, Component.literal("Volgende pagina").withStyle(s -> s.withItalic(true)));
                 container.setItem(navRowStart + 5, next);
             }
 
@@ -208,6 +210,11 @@ public final class ShopUi {
                     IdentityCompat.of(viewer).name()
             );
             container.setItem(navRowStart, balance);
+
+            ItemStack paper = new ItemStack(Items.PAPER);
+            // Nu MET italic
+            paper.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME, Component.literal("Pagina " + (page + 1) + "/" + Math.max(1, totalPages)).withStyle(s -> s.withItalic(true)));
+            container.setItem(navRowStart + 4, paper);
         }
 
         @Override
