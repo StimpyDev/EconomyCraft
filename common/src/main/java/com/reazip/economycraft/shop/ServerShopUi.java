@@ -852,15 +852,18 @@ case "platen" -> ChatFormatting.DARK_PURPLE;
                         .withStyle(s -> s.withItalic(false).withColor(BALANCE_VALUE_COLOR)));
     }
 
-    private static ItemStack createBalanceItem(ServerPlayer player) {
-        ItemStack head = new ItemStack(Items.GOLD_INGOT);
-        ProfileComponentCompat.tryResolvedOrUnresolved(player.getGameProfile()).ifPresent(resolvable ->
-                head.set(DataComponents.PROFILE, resolvable));
+private static ItemStack createBalanceItem(ServerPlayer player) {
+        ItemStack ingot = new ItemStack(Items.GOLD_INGOT);
+        
         long balance = EconomyCraft.getManager(player.level().getServer()).getBalance(player.getUUID(), true);
         String name = IdentityCompat.of(player).name();
-        head.set(DataComponents.CUSTOM_NAME, Component.literal(name).withStyle(s -> s.withItalic(false).withColor(BALANCE_NAME_COLOR)));
-        head.set(DataComponents.LORE, new ItemLore(List.of(balanceLore(balance))));
-        return head;
+        
+        ingot.set(DataComponents.CUSTOM_NAME, 
+                Component.literal(name).withStyle(s -> s.withColor(BALANCE_NAME_COLOR)));
+        
+        ingot.set(DataComponents.LORE, new ItemLore(List.of(balanceLore(balance))));
+        
+        return ingot;
     }
 
     private static List<Integer> buildStarSlotOrder() {
