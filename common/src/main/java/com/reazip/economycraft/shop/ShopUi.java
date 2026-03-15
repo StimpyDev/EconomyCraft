@@ -32,8 +32,8 @@ public final class ShopUi {
     private static final ChatFormatting LABEL_PRIMARY_COLOR = ChatFormatting.GOLD;
     private static final ChatFormatting LABEL_SECONDARY_COLOR = ChatFormatting.AQUA;
     private static final ChatFormatting VALUE_COLOR = ChatFormatting.DARK_PURPLE;
-    private static final ChatFormatting BALANCE_NAME_COLOR = ChatFormatting.GOLD;
-    private static final ChatFormatting BALANCE_LABEL_COLOR = ChatFormatting.YELLOW;
+    private static final ChatFormatting BALANCE_NAME_COLOR = ChatFormatting.YELLOW;
+    private static final ChatFormatting BALANCE_LABEL_COLOR = ChatFormatting.GOLD;
     private static final ChatFormatting BALANCE_VALUE_COLOR = ChatFormatting.DARK_PURPLE;
 
     public static void open(ServerPlayer player, ShopManager shop) {
@@ -100,17 +100,18 @@ public final class ShopUi {
         return labeledValue("Prijs", value.toString(), LABEL_PRIMARY_COLOR);
     }
 
-    private static ItemStack createBalanceItem(EconomyManager eco, UUID playerId, @Nullable ServerPlayer player, @Nullable String name) {
-    ItemStack ingot = new ItemStack(Items.GOLD_INGOT);
-
-    long balance = eco.getBalance(playerId, true);
-    String displayName = (name != null && !name.isBlank()) ? name : (player != null ? player.getScoreboardName() : playerId.toString());
-
-    ingot.setHoverName(Component.literal(displayName).withStyle(s -> s.withColor(BALANCE_NAME_COLOR)));
-    ingot.setLore(List.of(balanceLore(balance)));
-
-    return ingot;
-}
+    private static ItemStack createBalanceItem(ServerPlayer player) {
+        ItemStack head = new ItemStack(Items.PLAYER_HEAD);
+        GameProfile profile = player.getGameProfile();
+        ProfileComponentCompat.tryResolvedOrUnresolved(profile).ifPresent(resolvable ->
+                head.set(net.minecraft.core.component.DataComponents.PROFILE, resolvable));
+        long balance = EconomyCraft.getManager(player.level().getServer()).getBalance(player.getUUID(), true);
+        head.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME,
+                Component.literal(IdentityCompat.of(player).name()).withStyle(s -> s.withItalic(false).withColor(BALANCE_NAME_COLOR)));
+        head.set(net.minecraft.core.component.DataComponents.LORE,
+                new ItemLore(List.of(balanceLore(balance))));
+        return head;
+    }
 
     private static Component balanceLore(long balance) {
         return Component.literal("Saldo: ")
@@ -190,30 +191,21 @@ public final class ShopUi {
 
             if (page > 0) {
                 ItemStack prev = new ItemStack(Items.ARROW);
-                // Nu MET italic
-                prev.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME, Component.literal("Vorige pagina").withStyle(s -> s.withItalic(true)));
+                prev.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME, Component.literal("Vorige pagina").withStyle(s -> s.withItalic(false)));
                 container.setItem(navRowStart + 3, prev);
             }
 
             if (start + 45 < listings.size()) {
                 ItemStack next = new ItemStack(Items.ARROW);
-                // Nu MET italic
-                next.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME, Component.literal("Volgende pagina").withStyle(s -> s.withItalic(true)));
+                next.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME, Component.literal("Volgende pagina").withStyle(s -> s.withItalic(false)));
                 container.setItem(navRowStart + 5, next);
             }
 
-            ItemStack balance = createBalanceItem(
-                    EconomyCraft.getManager(viewer.level().getServer()), 
-                    viewer.getUUID(), 
-                    viewer, 
-                    IdentityCompat.of(viewer).name()
-            );
+            ItemStack balance = createBalanceItem(viewer);
             container.setItem(navRowStart, balance);
 
             ItemStack paper = new ItemStack(Items.PAPER);
-            paper.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME, 
-                    Component.literal("Pagina " + (page + 1) + "/" + Math.max(1, totalPages))
-                    .withStyle(s -> s.withItalic(true)));
+            paper.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME, Component.literal("Pagina " + (page + 1) + "/" + Math.max(1, totalPages)).withStyle(s -> s.withItalic(false)));
             container.setItem(navRowStart + 4, paper);
         }
 
