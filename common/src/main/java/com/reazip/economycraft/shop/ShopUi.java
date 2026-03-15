@@ -74,6 +74,7 @@ public final class ShopUi {
         GameProfile profile = player.getGameProfile();
         ProfileComponentCompat.tryResolvedOrUnresolved(profile).ifPresent(resolvable ->
                 head.set(net.minecraft.core.component.DataComponents.PROFILE, resolvable));
+        
         long balance = EconomyCraft.getManager(player.getServer()).getBalance(player.getUUID(), true);
         head.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME,
                 Component.literal(IdentityCompat.of(player).name()).withStyle(s -> s.withItalic(false).withColor(BALANCE_NAME_COLOR)));
@@ -130,6 +131,7 @@ public final class ShopUi {
                 if (idx >= listings.size()) break;
                 ShopListing l = listings.get(idx);
                 ItemStack display = l.item.copy();
+                
                 String sellerName = l.seller.equals(viewer.getUUID()) ? "Jij" : EconomyCraft.getManager(viewer.getServer()).getBestName(l.seller);
                 long tax = Math.round(l.price * EconomyConfig.get().taxRate);
                 display.set(net.minecraft.core.component.DataComponents.LORE, new ItemLore(List.of(
