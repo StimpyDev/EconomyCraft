@@ -516,30 +516,52 @@ public final class ServerShopUi {
             container.setItem(navRowStart + 4, paper);
         }
 
-        @Override
-        public void clicked(int slot, int dragType, ClickType type, Player player) {
-            if (type == ClickType.PICKUP || type == ClickType.QUICK_MOVE) {
-                if (slot < navRowStart) {
-                    int index = page * itemsPerPage + slot;
-                    if (index < entries.size()) {
-                        handlePurchase(entries.get(index), type);
-                        return;
-                    }
-                }
-                if (slot == navRowStart + 3 && page > 0) { page--; updatePage(); return; }
-                if (slot == navRowStart + 5 && (page + 1) * itemsPerPage < entries.size()) { page++; updatePage(); return; }
-                if (slot == navRowStart + 8) {
-                    if (category.contains(".")) {
-                        String topCategory = category.substring(0, category.indexOf('.'));
-                        openSubcategories(viewer, eco, topCategory);
-                    } else {
-                        openRoot(viewer, eco);
-                    }
-                    return;
-                }
+@Override
+public void clicked(int slot, int dragType, ClickType type, Player player) {
+    if (slot < 0 || slot >= navRowStart + 9) {
+        super.clicked(slot, dragType, type, player);
+        return;
+    }
+
+    if (type == ClickType.PICKUP || type == ClickType.QUICK_MOVE) {
+        
+        if (slot < navRowStart) {
+            int index = (page * itemsPerPage) + slot;
+            
+            if (index >= 0 && index < entries.size()) {
+                handlePurchase(entries.get(index), type);
             }
-            super.clicked(slot, dragType, type, player);
+            return; 
         }
+
+        if (slot == navRowStart + 3) {
+            if (page > 0) {
+                page--;
+                updatePage();
+            }
+            return;
+        }
+
+        if (slot == navRowStart + 5) {
+            if ((page + 1) * itemsPerPage < entries.size()) {
+                page++;
+                updatePage();
+            }
+            return;
+        }
+
+        if (slot == navRowStart + 8) {
+            if (category.contains(".")) {
+                String topCategory = category.substring(0, category.indexOf('.'));
+                openSubcategories(viewer, eco, topCategory);
+            } else {
+                openRoot(viewer, eco);
+            }
+            return;
+        }
+    }
+    super.clicked(slot, dragType, type, player);
+}
 
 private void handlePurchase(PriceRegistry.PriceEntry entry, ClickType clickType) {
     if (entry.unitBuy() <= 0) {
