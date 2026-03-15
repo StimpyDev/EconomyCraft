@@ -106,9 +106,8 @@ public final class ShopUi {
     long balance = eco.getBalance(playerId, true);
     String displayName = (name != null && !name.isBlank()) ? name : (player != null ? player.getScoreboardName() : playerId.toString());
 
-    ingot.set(DataComponents.CUSTOM_NAME, 
-            Component.literal(displayName).withStyle(s -> s.withColor(BALANCE_NAME_COLOR)));
-    ingot.set(DataComponents.LORE, new ItemLore(List.of(balanceLore(balance))));
+    ingot.setHoverName(Component.literal(displayName).withStyle(s -> s.withColor(BALANCE_NAME_COLOR)));
+    ingot.setLore(List.of(balanceLore(balance)));
 
     return ingot;
 }
@@ -212,8 +211,9 @@ public final class ShopUi {
             container.setItem(navRowStart, balance);
 
             ItemStack paper = new ItemStack(Items.PAPER);
-            // Nu MET italic
-            paper.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME, Component.literal("Pagina " + (page + 1) + "/" + Math.max(1, totalPages)).withStyle(s -> s.withItalic(true)));
+            paper.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME, 
+                    Component.literal("Pagina " + (page + 1) + "/" + Math.max(1, totalPages))
+                    .withStyle(s -> s.withItalic(true)));
             container.setItem(navRowStart + 4, paper);
         }
 
