@@ -70,7 +70,7 @@ public final class ShopUi {
         return labeledValue("Prijs", value.toString(), LABEL_PRIMARY_COLOR);
     }
 
-    private static ItemStack createBalanceItem(ServerPlayer player) {
+   private static ItemStack createBalanceItem(ServerPlayer player) {
         ItemStack gold = new ItemStack(Items.GOLD_INGOT);
         
         var server = ((ServerLevel) player.level()).getServer();
@@ -78,9 +78,13 @@ public final class ShopUi {
         
         gold.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME,
                 Component.literal("Saldo")
-                        .withStyle(s -> s.withItalic(false).withColor(BALANCE_NAME_COLOR)));
+                        .withStyle(s -> s.withItalic(true).withColor(BALANCE_NAME_COLOR)));
         
-        gold.set(net.minecraft.core.component.DataComponents.LORE, new ItemLore(List.of(balanceLore(balance))));
+        gold.set(net.minecraft.core.component.DataComponents.LORE, new ItemLore(List.of(
+                Component.literal(EconomyCraft.formatMoney(balance))
+                        .withStyle(s -> s.withItalic(true).withColor(BALANCE_VALUE_COLOR))
+        )));
+        
         return gold;
     }
 
