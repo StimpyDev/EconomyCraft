@@ -141,15 +141,17 @@ public final class EconomyCommands {
                         }));
     }
 
-    private static LiteralArgumentBuilder<CommandSourceStack> buildPay() {
-        return literal("pay")
-                .then(argument("player", StringArgumentType.word())
-                        .suggests((ctx, builder) -> suggestPlayers(ctx.getSource(), builder))
-                        .then(argument("amount", LongArgumentType.longArg(1, EconomyManager.MAX))
-                                .executes(ctx -> pay(ctx.getSource().getPlayerOrException(),
-                                        StringArgumentType.getString(ctx, "player"),
-                                        LongArgumentType.getLong(ctx, "amount"), ctx.getSource()))));
-    }
+private static LiteralArgumentBuilder<CommandSourceStack> buildPay() {
+    return literal("pay")
+            .then(argument("player", StringArgumentType.word())
+                    .suggests((ctx, builder) -> suggestPlayers(ctx.getSource(), builder))
+                    .then(argument("amount", StringArgumentType.string()) 
+                            .executes(ctx -> pay(
+                                    ctx.getSource().getPlayerOrException(),
+                                    StringArgumentType.getString(ctx, "player"),
+                                    StringArgumentType.getString(ctx, "amount"), 
+                                    ctx.getSource()))));
+}
 
     private static int showBalance(IdentityCompat.PlayerRef target, CommandSourceStack source) {
         EconomyManager manager = EconomyCraft.getManager(source.getServer());
@@ -245,68 +247,64 @@ public final class EconomyCommands {
         return sorted;
     }
 
-    private static int pay(ServerPlayer from, String target, long amount, CommandSourceStack source) {
-        var server = source.getServer();
-        EconomyManager manager = EconomyCraft.getManager(server);
+private static int pay(ServerPlayer from, String target, String amountStr, CommandSourceStack source) {
+    var server = source.getServer();
+    EconomyManager manager = EconomyCraft.getManager(server);
 
-        ServerPlayer toOnline = server.getPlayerList().getPlayerByName(target);
-        UUID toId = (toOnline != null) ? toOnline.getUUID() : null;
-
-        if (toId == null) {
-            try { toId = java.util.UUID.fromString(target); } catch (IllegalArgumentException ignored) {}
-        }
-
-        if (toId == null) {
-            toId = manager.tryResolveUuidByName(target);
-        }
-
-        if (toId == null) {
-            source.sendFailure(Component.literal("Unknown player").withStyle(ChatFormatting.RED));
-            return 0;
-        }
-
-        if (from.getUUID().equals(toId)) {
-            source.sendFailure(Component.literal("You cannot pay yourself").withStyle(ChatFormatting.RED));
-            return 0;
-        }
-
-        if (!manager.getBalances().containsKey(toId)) {
-            source.sendFailure(Component.literal("Unknown player").withStyle(ChatFormatting.RED));
-            return 0;
-        }
-
-        if (manager.pay(from.getUUID(), toId, amount)) {
-            String displayName = (toOnline != null)
-                    ? IdentityCompat.of(toOnline).name()
-                    : getDisplayName(manager, toId);
-
-            ServerPlayer executor;
-            try {
-                executor = source.getPlayerOrException();
-            } catch (Exception e) {
-                executor = null;
-            }
-
-            Component msg = Component.literal("Paid " + EconomyCraft.formatMoney(amount) + " to " + displayName)
-                    .withStyle(ChatFormatting.GREEN);
-
-            if (executor != null) {
-                executor.sendSystemMessage(msg);
-            } else {
-                source.sendSuccess(() -> msg, false);
-            }
-
-            if (toOnline != null) {
-                toOnline.sendSystemMessage(
-                        Component.literal(from.getName().getString() + " sent you " + EconomyCraft.formatMoney(amount))
-                                .withStyle(ChatFormatting.GREEN)
-                );
-            }
-        } else {
-            source.sendFailure(Component.literal("Niet genoeg geld.").withStyle(ChatFormatting.RED));
-        }
-        return 1;
+    long amount = EconomyCraft.parseAmount(amountStr);
+    if (amount <= 0) {
+        source.sendFailure(Component.literal("Ongeldig bedrag! Gebruik bijv: 100, 1.5k of 1m.")
+                .withStyle(ChatFormatting.RED));
+        return 0;
     }
+
+    ServerPlayer toOnline = server.getPlayerList().getPlayerByName(target);
+    UUID toId = (toOnline != null) ? toOnline.getUUID() : null;
+
+    if (toId == null) {
+        try { toId = java.util.UUID.fromString(target); } catch (IllegalArgumentException ignored) {}
+    }
+
+    if (toId == null) {
+        toId = manager.tryResolveUuidByName(target);
+    }
+
+    if (toId == null || !manager.getBalances().containsKey(toId)) {
+        source.sendFailure(Component.literal("Speler niet gevonden.").withStyle(ChatFormatting.RED));
+        return 0;
+    }
+
+    if (from.getUUID().equals(toId)) {
+        source.sendFailure(Component.literal("Je kunt jezelf niet betalen.").withStyle(ChatFormatting.RED));
+        return 0;
+    }
+
+    if (manager.pay(from.getUUID(), toId, amount)) {
+        String displayName = (toOnline != null)
+                ? toOnline.getName().getString() 
+                : manager.getBestName(toId);
+        
+        Component msg = Component.literal("Je hebt " + EconomyCraft.formatMoney(amount) + " betaald aan " + displayName)
+                .withStyle(ChatFormatting.GREEN);
+
+        // Send to sender
+        if (from != null) {
+            from.sendSystemMessage(msg);
+        } else {
+            source.sendSuccess(() -> msg, false);
+        }
+        
+        if (toOnline != null) {
+            toOnline.sendSystemMessage(
+                    Component.literal(from.getName().getString() + " heeft je " + EconomyCraft.formatMoney(amount) + " gestuurd.")
+                            .withStyle(ChatFormatting.GREEN)
+            );
+        }
+    } else {
+        source.sendFailure(Component.literal("Niet genoeg geld.").withStyle(ChatFormatting.RED));
+    }
+    return 1;
+}
 
     // =====================================================================
     // === Admin commands ==================================================
