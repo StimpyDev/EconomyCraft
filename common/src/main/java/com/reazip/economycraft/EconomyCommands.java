@@ -134,7 +134,7 @@ public final class EconomyCommands {
                         .executes(ctx -> {
                             var refs = IdentityCompat.getArgAsPlayerRefs(ctx, "target");
                             if (refs.size() != 1) {
-                                ctx.getSource().sendFailure(Component.literal("Please specify exactly one player").withStyle(ChatFormatting.RED));
+                                ctx.getSource().sendFailure(Component.literal("Geef precies een speler op.").withStyle(ChatFormatting.RED));
                                 return 0;
                             }
                             return showBalance(refs.iterator().next(), ctx.getSource());
@@ -155,7 +155,7 @@ public final class EconomyCommands {
         EconomyManager manager = EconomyCraft.getManager(source.getServer());
         Long bal = manager.getBalance(target.id(), false);
         if (bal == null) {
-            source.sendFailure(Component.literal("Unknown player").withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.literal("Onbekende speler!").withStyle(ChatFormatting.RED));
             return 0;
         }
 
@@ -189,7 +189,7 @@ public final class EconomyCommands {
         Map<UUID, Long> balances = manager.getBalances();
 
         if (balances.isEmpty()) {
-            source.sendFailure(Component.literal("No balances found").withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.literal("Geen saldo gevonden").withStyle(ChatFormatting.RED));
             return 0;
         }
 
@@ -261,17 +261,17 @@ public final class EconomyCommands {
         }
 
         if (toId == null) {
-            source.sendFailure(Component.literal("Unknown player").withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.literal("Onbekende speler!").withStyle(ChatFormatting.RED));
             return 0;
         }
 
         if (from.getUUID().equals(toId)) {
-            source.sendFailure(Component.literal("You cannot pay yourself").withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.literal("Je kan jezelf niet betalen.").withStyle(ChatFormatting.RED));
             return 0;
         }
 
         if (!manager.getBalances().containsKey(toId)) {
-            source.sendFailure(Component.literal("Unknown player").withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.literal("Onbekende speler!").withStyle(ChatFormatting.RED));
             return 0;
         }
 
@@ -287,7 +287,7 @@ public final class EconomyCommands {
                 executor = null;
             }
 
-            Component msg = Component.literal("Paid " + EconomyCraft.formatMoney(amount) + " to " + displayName)
+            Component msg = Component.literal("Betaald " + EconomyCraft.formatMoney(amount) + " naar " + displayName)
                     .withStyle(ChatFormatting.GREEN);
 
             if (executor != null) {
@@ -298,12 +298,12 @@ public final class EconomyCommands {
 
             if (toOnline != null) {
                 toOnline.sendSystemMessage(
-                        Component.literal(from.getName().getString() + " sent you " + EconomyCraft.formatMoney(amount))
+                        Component.literal(from.getName().getString() + " heeft je gestuurd " + EconomyCraft.formatMoney(amount))
                                 .withStyle(ChatFormatting.GREEN)
                 );
             }
         } else {
-            source.sendFailure(Component.literal("Niet genoeg geld.").withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.literal("Niet genoeg saldo").withStyle(ChatFormatting.RED));
         }
         return 1;
     }
@@ -356,7 +356,7 @@ public final class EconomyCommands {
 
     private static int addMoney(Collection<IdentityCompat.PlayerRef> profiles, long amount, CommandSourceStack source) {
         if (profiles.isEmpty()) {
-            source.sendFailure(Component.literal("No targets matched").withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.literal("Geen target gevonden").withStyle(ChatFormatting.RED));
             return 0;
         }
 
@@ -374,7 +374,7 @@ public final class EconomyCommands {
             manager.addMoney(p.id(), amount);
 
             Component msg = Component.literal(
-                            "Added " + EconomyCraft.formatMoney(amount) + " to " + p.name() + "'s balance.")
+                            "Toegevoegd " + EconomyCraft.formatMoney(amount) + " naar " + p.name() + "'s saldo.")
                     .withStyle(ChatFormatting.GREEN);
 
             if (executor != null) {
@@ -393,7 +393,7 @@ public final class EconomyCommands {
         int count = profiles.size();
 
         Component msg = Component.literal(
-                        "Added " + EconomyCraft.formatMoney(amount) + " to " + count + " player" + (count > 1 ? "s" : ""))
+                        "Toegevoegd " + EconomyCraft.formatMoney(amount) + " naar " + count + " player" + (count > 1 ? "s" : ""))
                 .withStyle(ChatFormatting.GREEN);
 
         if (executor != null) {
@@ -407,7 +407,7 @@ public final class EconomyCommands {
 
     private static int setMoney(Collection<IdentityCompat.PlayerRef> profiles, long amount, CommandSourceStack source) {
         if (profiles.isEmpty()) {
-            source.sendFailure(Component.literal("No targets matched").withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.literal("Geen target gevonden").withStyle(ChatFormatting.RED));
             return 0;
         }
 
@@ -425,7 +425,7 @@ public final class EconomyCommands {
             manager.setMoney(p.id(), amount);
 
             Component msg = Component.literal(
-                            "Set balance of " + p.name() + " to " + EconomyCraft.formatMoney(amount))
+                            "Zet saldo van " + p.name() + " naar " + EconomyCraft.formatMoney(amount))
                     .withStyle(ChatFormatting.GREEN);
 
             if (executor != null) {
@@ -444,7 +444,7 @@ public final class EconomyCommands {
         int count = profiles.size();
 
         Component msg = Component.literal(
-                        "Stel het saldo in op " + EconomyCraft.formatMoney(amount) + " for " + count + " player" + (count > 1 ? "s" : ""))
+                        "Stel het saldo in op " + EconomyCraft.formatMoney(amount) + " voor " + count + " player" + (count > 1 ? "s" : ""))
                 .withStyle(ChatFormatting.GREEN);
 
         if (executor != null) {
@@ -458,7 +458,7 @@ public final class EconomyCommands {
 
     private static int removeMoney(Collection<IdentityCompat.PlayerRef> profiles, Long amount, CommandSourceStack source) {
         if (profiles.isEmpty()) {
-            source.sendFailure(Component.literal("No targets matched").withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.literal("Geen target gevonden").withStyle(ChatFormatting.RED));
             return 0;
         }
 
@@ -479,13 +479,13 @@ public final class EconomyCommands {
             if (amount == null) {
                 if (!manager.getBalances().containsKey(id)) {
                     source.sendFailure(Component.literal(
-                                    "Failed to remove all money from " + p.name() + "'s balance. Unknown player.")
+                                    "Het is niet gelukt om het saldo te verwijderen van. " + p.name() + "'s saldo. Onbekende speler.")
                             .withStyle(ChatFormatting.RED));
                     return 1;
                 }
                 manager.setMoney(id, 0L);
                 Component msg = Component.literal(
-                                "Removed all money from " + p.name() + "'s balance.")
+                                "Al het geld is verwijderd van " + p.name() + "'s saldo.")
                         .withStyle(ChatFormatting.GREEN);
                 if (executor != null) {
                     executor.sendSystemMessage(msg);
@@ -497,13 +497,13 @@ public final class EconomyCommands {
 
             if (!manager.removeMoney(id, amount)) {
                 source.sendFailure(Component.literal(
-                                "Failed to remove " + EconomyCraft.formatMoney(amount) + " from " + p.name() + "'s balance due to insufficient funds.")
+                                "Verwijderen mislukt " + EconomyCraft.formatMoney(amount) + " van " + p.name() + "'s Saldo ontoereikend.")
                         .withStyle(ChatFormatting.RED));
                 return 1;
             }
 
             Component msg = Component.literal(
-                            "Successfully removed " + EconomyCraft.formatMoney(amount) + " from " + p.name() + "'s balance.")
+                            "Succesvol verwijderd " + EconomyCraft.formatMoney(amount) + " van " + p.name() + "'s saldo.")
                     .withStyle(ChatFormatting.GREEN);
             if (executor != null) {
                 executor.sendSystemMessage(msg);
@@ -518,7 +518,7 @@ public final class EconomyCommands {
             if (amount == null) {
                 if (!manager.getBalances().containsKey(id)) {
                     source.sendFailure(Component.literal(
-                                    "Failed to remove all money from " + p.name() + "'s balance. Unknown player.")
+                                    "Al het geld is verwijderd van " + p.name() + "'s saldo.")
                             .withStyle(ChatFormatting.RED));
                     continue;
                 }
@@ -529,7 +529,7 @@ public final class EconomyCommands {
                     success++;
                 } else {
                     source.sendFailure(Component.literal(
-                                    "Failed to remove " + EconomyCraft.formatMoney(amount) + " from " + p.name() + "'s balance due to insufficient funds.")
+                                    "Verwijderen mislukt " + EconomyCraft.formatMoney(amount) + " van " + p.name() + "'s Saldo ontoereikend.")
                             .withStyle(ChatFormatting.RED));
                 }
             }
@@ -540,11 +540,11 @@ public final class EconomyCommands {
             Component msg;
             if (amount == null) {
                 msg = Component.literal(
-                                "Removed all money from " + finalSuccess + " player" + (finalSuccess > 1 ? "s" : "") + ".")
+                                "Al het geld is verwijderd van " + finalSuccess + " player" + (finalSuccess > 1 ? "s" : "") + ".")
                         .withStyle(ChatFormatting.GREEN);
             } else {
                 msg = Component.literal(
-                                "Successfully removed " + EconomyCraft.formatMoney(amount) + " from " + finalSuccess + " player" + (finalSuccess > 1 ? "s" : "") + ".")
+                                "Succesvol verwjderd " + EconomyCraft.formatMoney(amount) + " van " + finalSuccess + " player" + (finalSuccess > 1 ? "s" : "") + ".")
                         .withStyle(ChatFormatting.GREEN);
             }
             if (executor != null) {
@@ -559,7 +559,7 @@ public final class EconomyCommands {
 
     private static int removePlayers(Collection<IdentityCompat.PlayerRef> profiles, CommandSourceStack source) {
         if (profiles.isEmpty()) {
-            source.sendFailure(Component.literal("No targets matched").withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.literal("Geen target gevonden").withStyle(ChatFormatting.RED));
             return 0;
         }
 
@@ -718,7 +718,7 @@ public final class EconomyCommands {
     if (category != null) {
         Collection<String> validCategories = manager.getPrices().buyCategories();
         if (!validCategories.contains(category)) {
-            source.sendFailure(Component.literal("Categorie: '" + category + "' bestaat niet, probeer een andere.")
+            source.sendFailure(Component.literal("Categorie '" + category + "' bestaat niet, probeer een andere.")
                     .withStyle(ChatFormatting.RED));
             return 0;
         }
@@ -769,7 +769,7 @@ public final class EconomyCommands {
         IdentifierCompat.Id item = IdentifierCompat.tryParse(itemId);
         var holder = IdentifierCompat.registryGetOptional(net.minecraft.core.registries.BuiltInRegistries.ITEM, item);
         if (holder.isEmpty()) {
-            source.sendFailure(Component.literal("Invalid item").withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.literal("Ongeldig item").withStyle(ChatFormatting.RED));
             return 0;
         }
         OrderManager orders = EconomyCraft.getManager(source.getServer()).getOrders();
@@ -779,15 +779,15 @@ public final class EconomyCommands {
         r.item = new ItemStack(holder.get());
         int maxAmount = 36 * r.item.getMaxStackSize();
         if (amount > maxAmount) {
-            source.sendFailure(Component.literal("Amount exceeds 36 stacks (max " + maxAmount + ")").withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.literal("Het aantal stacks is groter dan 36. (max " + maxAmount + ")").withStyle(ChatFormatting.RED));
             return 0;
         }
         r.amount = amount;
         orders.addRequest(r);
         long tax = Math.round(price * EconomyConfig.get().taxRate);
 
-        Component msg = Component.literal("Created request" +
-                (tax > 0 ? " (fulfiller receives " + EconomyCraft.formatMoney(price - tax) + ")" : ""))
+        Component msg = Component.literal("Aanvraag gemaakt" +
+                (tax > 0 ? " (vervuller ontvangt " + EconomyCraft.formatMoney(price - tax) + ")" : ""))
                 .withStyle(ChatFormatting.GREEN);
         player.sendSystemMessage(msg);
 
