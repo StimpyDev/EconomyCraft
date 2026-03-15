@@ -243,13 +243,13 @@ public final class ServerShopUi {
 
             if (page > 0) {
                 ItemStack prev = new ItemStack(Items.ARROW);
-                prev.set(DataComponents.CUSTOM_NAME, Component.literal("Vorige pagina").withStyle(s -> s.withItalic(false)));
+                prev.set(DataComponents.CUSTOM_NAME, Component.literal("Vorige pagina").withStyle(s -> s.withItalic(true)));
                 container.setItem(navRowStart + 3, prev);
             }
 
             if (start + itemsPerPage < categories.size()) {
                 ItemStack next = new ItemStack(Items.ARROW);
-                next.set(DataComponents.CUSTOM_NAME, Component.literal("Volgende pagina").withStyle(s -> s.withItalic(false)));
+                next.set(DataComponents.CUSTOM_NAME, Component.literal("Volgende pagina").withStyle(s -> s.withItalic(true)));
                 container.setItem(navRowStart + 5, next);
             }
 
