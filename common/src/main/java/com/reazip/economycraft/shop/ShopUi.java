@@ -9,6 +9,7 @@ import com.reazip.economycraft.util.ProfileComponentCompat;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.MenuProvider;
 import net.minecraft.world.SimpleContainer;
@@ -75,8 +76,8 @@ public final class ShopUi {
         ProfileComponentCompat.tryResolvedOrUnresolved(profile).ifPresent(resolvable ->
                 head.set(net.minecraft.core.component.DataComponents.PROFILE, resolvable));
         
-        // FIX: serverLevel().getServer()
-        long balance = EconomyCraft.getManager(player.serverLevel().getServer()).getBalance(player.getUUID(), true);
+        long balance = EconomyCraft.getManager(((ServerLevel) player.level()).getServer()).getBalance(player.getUUID(), true);
+        
         head.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME,
                 Component.literal(IdentityCompat.of(player).name()).withStyle(s -> s.withItalic(false).withColor(BALANCE_NAME_COLOR)));
         head.set(net.minecraft.core.component.DataComponents.LORE, new ItemLore(List.of(balanceLore(balance))));
@@ -136,7 +137,7 @@ public final class ShopUi {
                 ShopListing l = listings.get(idx);
                 ItemStack display = l.item.copy();
                 
-                var server = viewer.serverLevel().getServer();
+                var server = ((ServerLevel) viewer.level()).getServer();
                 String sellerName;
                 ServerPlayer sellerPlayer = server.getPlayerList().getPlayer(l.seller);
                 if (sellerPlayer != null) {
@@ -224,9 +225,9 @@ public final class ShopUi {
                 if (slot == 2) {
                     ShopListing current = shop.getListing(listing.id);
                     if (current == null) {
-                        sp.sendSystemMessage(Component.literal("Item niet meer beschikbaar.").withStyle(ChatFormatting.RED));
+                        sp.sendSystemMessage(Component.literal("Aanbieding niet meer beschikbaar.").withStyle(ChatFormatting.RED));
                     } else {
-                        var server = sp.serverLevel().getServer();
+                        var server = ((ServerLevel) sp.level()).getServer();
                         EconomyManager eco = EconomyCraft.getManager(server);
                         long total = current.price + Math.round(current.price * EconomyConfig.get().taxRate);
                         if (eco.getBalance(sp.getUUID(), true) < total) {
@@ -264,7 +265,7 @@ public final class ShopUi {
             this.listing = listing;
 
             ItemStack confirm = new ItemStack(Items.LIME_STAINED_GLASS_PANE);
-            confirm.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME, Component.literal("Bevestigen").withStyle(ChatFormatting.GREEN));
+            confirm.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME, Component.literal("Terugnemen").withStyle(ChatFormatting.GREEN));
             container.setItem(2, confirm);
             container.setItem(4, listing.item.copy());
             
@@ -287,7 +288,7 @@ public final class ShopUi {
                             shop.addDelivery(sp.getUUID(), stack);
                             sendClaimMessage(sp);
                         }
-                        sp.sendSystemMessage(Component.literal("item verwijderd.").withStyle(ChatFormatting.GREEN));
+                        sp.sendSystemMessage(Component.literal("Aanbieding verwijderd.").withStyle(ChatFormatting.GREEN));
                     }
                     ShopUi.open(sp, shop);
                 } else if (slot == 6) {
