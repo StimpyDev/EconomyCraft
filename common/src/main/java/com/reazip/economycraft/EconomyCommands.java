@@ -287,8 +287,10 @@ public final class EconomyCommands {
                 executor = null;
             }
 
-            Component msg = Component.literal("Betaald " + EconomyCraft.formatMoney(amount) + " naar " + displayName)
-                    .withStyle(ChatFormatting.GREEN);
+             Component msg = Component.empty()
+    .append(Component.literal(EconomyCraft.formatMoney(amount)).withStyle(ChatFormatting.GOLD))
+    .append(Component.literal(" betaald naar ").withStyle(ChatFormatting.GREEN))
+    .append(Component.literal(displayName).withStyle(ChatFormatting.WHITE));
 
             if (executor != null) {
                 executor.sendSystemMessage(msg);
@@ -297,11 +299,13 @@ public final class EconomyCommands {
             }
 
             if (toOnline != null) {
-                toOnline.sendSystemMessage(
-                        Component.literal(from.getName().getString() + " heeft je gestuurd " + EconomyCraft.formatMoney(amount))
-                                .withStyle(ChatFormatting.GREEN)
-                );
-            }
+    toOnline.sendSystemMessage(
+        Component.literal(EconomyCraft.formatMoney(amount))
+            .withStyle(ChatFormatting.GOLD)
+            .append(Component.literal(" ontvangen van ").withStyle(ChatFormatting.GREEN))
+            .append(Component.literal(from.getName().getString()).withStyle(ChatFormatting.WHITE))
+    );
+}
         } else {
             source.sendFailure(Component.literal("Niet genoeg saldo").withStyle(ChatFormatting.RED));
         }
