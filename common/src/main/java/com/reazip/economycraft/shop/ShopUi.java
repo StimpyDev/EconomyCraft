@@ -56,7 +56,7 @@ public final class ShopUi {
 
     private static void openRemove(ServerPlayer player, ShopManager shop, ShopListing listing) {
         player.openMenu(new MenuProvider() {
-            @Override public Component getDisplayName() { return Component.literal("Verwijder"); }
+            @Override public Component getDisplayName() { return Component.literal("Verwijderen"); }
             @Override public AbstractContainerMenu createMenu(int id, Inventory inv, Player p) {
                 return new RemoveMenu(id, inv, shop, listing, (ServerPlayer) p);
             }
@@ -65,7 +65,7 @@ public final class ShopUi {
 
     private static Component createPriceLore(long price, long tax) {
         StringBuilder value = new StringBuilder(EconomyCraft.formatMoney(price));
-        if (tax > 0) value.append(" (+").append(EconomyCraft.formatMoney(tax)).append(" tax)");
+        if (tax > 0) value.append(" (+").append(EconomyCraft.formatMoney(tax)).append(" belasting)");
         return labeledValue("Prijs", value.toString(), LABEL_PRIMARY_COLOR);
     }
 
@@ -75,7 +75,8 @@ public final class ShopUi {
         ProfileComponentCompat.tryResolvedOrUnresolved(profile).ifPresent(resolvable ->
                 head.set(net.minecraft.core.component.DataComponents.PROFILE, resolvable));
         
-        long balance = EconomyCraft.getManager(player.getServer()).getBalance(player.getUUID(), true);
+        // FIX: serverLevel().getServer()
+        long balance = EconomyCraft.getManager(player.serverLevel().getServer()).getBalance(player.getUUID(), true);
         head.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME,
                 Component.literal(IdentityCompat.of(player).name()).withStyle(s -> s.withItalic(false).withColor(BALANCE_NAME_COLOR)));
         head.set(net.minecraft.core.component.DataComponents.LORE, new ItemLore(List.of(balanceLore(balance))));
@@ -98,6 +99,7 @@ public final class ShopUi {
         private List<ShopListing> listings = new ArrayList<>();
         private final SimpleContainer container = new SimpleContainer(54);
         private int page = 0;
+        private final int navRowStart = 45;
         private final Runnable listener = this::updatePage;
 
         ShopMenu(int id, Inventory inv, ShopManager shop, ServerPlayer viewer) {
@@ -126,30 +128,62 @@ public final class ShopUi {
             listings = new ArrayList<>(shop.getListings());
             container.clearContent();
             int start = page * 45;
+            int totalPages = (int) Math.ceil(listings.size() / 45.0);
+
             for (int i = 0; i < 45; i++) {
                 int idx = start + i;
                 if (idx >= listings.size()) break;
                 ShopListing l = listings.get(idx);
                 ItemStack display = l.item.copy();
                 
-                String sellerName = l.seller.equals(viewer.getUUID()) ? "Jij" : EconomyCraft.getManager(viewer.getServer()).getBestName(l.seller);
+                var server = viewer.serverLevel().getServer();
+                String sellerName;
+                ServerPlayer sellerPlayer = server.getPlayerList().getPlayer(l.seller);
+                if (sellerPlayer != null) {
+                    sellerName = IdentityCompat.of(sellerPlayer).name();
+                } else {
+                    sellerName = EconomyCraft.getManager(server).getBestName(l.seller);
+                }
+
                 long tax = Math.round(l.price * EconomyConfig.get().taxRate);
                 display.set(net.minecraft.core.component.DataComponents.LORE, new ItemLore(List.of(
                         createPriceLore(l.price, tax),
                         labeledValue("Verkoper", sellerName, LABEL_SECONDARY_COLOR))));
                 container.setItem(i, display);
             }
-            container.setItem(45, createBalanceItem(viewer));
+
+            if (page > 0) {
+                ItemStack prev = new ItemStack(Items.ARROW);
+                prev.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME, Component.literal("Vorige pagina").withStyle(s -> s.withItalic(false)));
+                container.setItem(navRowStart + 3, prev);
+            }
+
+            if (start + 45 < listings.size()) {
+                ItemStack next = new ItemStack(Items.ARROW);
+                next.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME, Component.literal("Volgende pagina").withStyle(s -> s.withItalic(false)));
+                container.setItem(navRowStart + 5, next);
+            }
+
+            container.setItem(navRowStart, createBalanceItem(viewer));
+            
+            ItemStack info = new ItemStack(Items.PAPER);
+            info.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME, Component.literal("Pagina " + (page + 1) + "/" + Math.max(1, totalPages)).withStyle(s -> s.withItalic(false)));
+            container.setItem(navRowStart + 4, info);
         }
 
         @Override public void clicked(int slot, int dragType, ClickType type, Player player) {
-            if (type == ClickType.PICKUP && slot >= 0 && slot < 45) {
-                int idx = (page * 45) + slot;
-                if (idx < listings.size()) {
-                    ShopListing l = listings.get(idx);
-                    if (l.seller.equals(player.getUUID())) openRemove((ServerPlayer) player, shop, l);
-                    else openConfirm((ServerPlayer) player, shop, l);
+            if (type == ClickType.PICKUP && slot >= 0) {
+                if (slot < 45) {
+                    int idx = (page * 45) + slot;
+                    if (idx < listings.size()) {
+                        ShopListing l = listings.get(idx);
+                        if (l.seller.equals(player.getUUID())) openRemove((ServerPlayer) player, shop, l);
+                        else openConfirm((ServerPlayer) player, shop, l);
+                        return;
+                    }
                 }
+                if (slot == navRowStart + 3 && page > 0) { page--; updatePage(); return; }
+                if (slot == navRowStart + 5 && (page + 1) * 45 < listings.size()) { page++; updatePage(); return; }
             }
             super.clicked(slot, dragType, type, player);
         }
@@ -170,14 +204,14 @@ public final class ShopUi {
             this.listing = listing;
 
             ItemStack confirm = new ItemStack(Items.LIME_STAINED_GLASS_PANE);
-            confirm.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME, Component.literal("Bevestigen").withStyle(ChatFormatting.GREEN, ChatFormatting.BOLD));
+            confirm.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME, Component.literal("Bevestigen").withStyle(s -> s.withBold(true).withColor(ChatFormatting.GREEN)));
             container.setItem(2, confirm);
 
             ItemStack display = listing.item.copy();
             container.setItem(4, display);
 
             ItemStack cancel = new ItemStack(Items.RED_STAINED_GLASS_PANE);
-            cancel.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME, Component.literal("Annuleren").withStyle(ChatFormatting.RED, ChatFormatting.BOLD));
+            cancel.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME, Component.literal("Annuleren").withStyle(s -> s.withBold(true).withColor(ChatFormatting.RED)));
             container.setItem(6, cancel);
 
             for (int i = 0; i < 9; i++) {
@@ -190,9 +224,10 @@ public final class ShopUi {
                 if (slot == 2) {
                     ShopListing current = shop.getListing(listing.id);
                     if (current == null) {
-                        sp.sendSystemMessage(Component.literal("Niet langer beschikbaar.").withStyle(ChatFormatting.RED));
+                        sp.sendSystemMessage(Component.literal("Item niet meer beschikbaar.").withStyle(ChatFormatting.RED));
                     } else {
-                        EconomyManager eco = EconomyCraft.getManager(sp.getServer());
+                        var server = sp.serverLevel().getServer();
+                        EconomyManager eco = EconomyCraft.getManager(server);
                         long total = current.price + Math.round(current.price * EconomyConfig.get().taxRate);
                         if (eco.getBalance(sp.getUUID(), true) < total) {
                             sp.sendSystemMessage(Component.literal("Onvoldoende saldo.").withStyle(ChatFormatting.RED));
@@ -229,7 +264,7 @@ public final class ShopUi {
             this.listing = listing;
 
             ItemStack confirm = new ItemStack(Items.LIME_STAINED_GLASS_PANE);
-            confirm.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME, Component.literal("Terugnemen").withStyle(ChatFormatting.GREEN));
+            confirm.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME, Component.literal("Bevestigen").withStyle(ChatFormatting.GREEN));
             container.setItem(2, confirm);
             container.setItem(4, listing.item.copy());
             
@@ -252,7 +287,7 @@ public final class ShopUi {
                             shop.addDelivery(sp.getUUID(), stack);
                             sendClaimMessage(sp);
                         }
-                        sp.sendSystemMessage(Component.literal("Item verwijderd.").withStyle(ChatFormatting.GREEN));
+                        sp.sendSystemMessage(Component.literal("item verwijderd.").withStyle(ChatFormatting.GREEN));
                     }
                     ShopUi.open(sp, shop);
                 } else if (slot == 6) {
