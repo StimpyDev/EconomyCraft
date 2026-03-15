@@ -101,16 +101,18 @@ public final class ShopUi {
     }
 
     private static ItemStack createBalanceItem(ServerPlayer player) {
-        ItemStack head = new ItemStack(Items.GOLD_INGOT);
-        GameProfile profile = player.getGameProfile();
-        ProfileComponentCompat.tryResolvedOrUnresolved(profile).ifPresent(resolvable ->
-                head.set(net.minecraft.core.component.DataComponents.PROFILE, resolvable));
+        ItemStack ingot = new ItemStack(Items.GOLD_INGOT);
+        
         long balance = EconomyCraft.getManager(player.level().getServer()).getBalance(player.getUUID(), true);
-        head.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME,
-                Component.literal(IdentityCompat.of(player).name()).withStyle(s -> s.withItalic(false).withColor(BALANCE_NAME_COLOR)));
-        head.set(net.minecraft.core.component.DataComponents.LORE,
+        String playerName = IdentityCompat.of(player).name();
+        
+        ingot.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME,
+                Component.literal(playerName).withStyle(s -> s.withColor(BALANCE_NAME_COLOR)));
+        
+        ingot.set(net.minecraft.core.component.DataComponents.LORE,
                 new ItemLore(List.of(balanceLore(balance))));
-        return head;
+        
+        return ingot;
     }
 
     private static Component balanceLore(long balance) {
