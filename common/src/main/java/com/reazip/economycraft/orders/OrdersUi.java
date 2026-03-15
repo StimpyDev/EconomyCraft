@@ -70,7 +70,7 @@ public final class OrdersUi {
     
     gold.set(DataComponents.CUSTOM_NAME, 
             Component.literal(EconomyCraft.formatMoney(balance))
-                    .withStyle(s -> s.withItalic(false).withColor(BALANCE_VALUE_COLOR)));
+                    .withStyle(s -> s.withItalic(true).withColor(BALANCE_VALUE_COLOR)));
     
     return gold;
 }
