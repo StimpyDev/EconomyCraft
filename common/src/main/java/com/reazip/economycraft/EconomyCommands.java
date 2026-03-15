@@ -289,7 +289,7 @@ public final class EconomyCommands {
 
              Component msg = Component.empty()
     .append(Component.literal(EconomyCraft.formatMoney(amount)).withStyle(ChatFormatting.GOLD))
-    .append(Component.literal(" betaald naar ").withStyle(ChatFormatting.GREEN))
+    .append(Component.literal(" Betaald aan ").withStyle(ChatFormatting.GREEN))
     .append(Component.literal(displayName).withStyle(ChatFormatting.YELLOW));
 
             if (executor != null) {
@@ -299,13 +299,20 @@ public final class EconomyCommands {
             }
 
             if (toOnline != null) {
-    toOnline.sendSystemMessage(
-        Component.literal(EconomyCraft.formatMoney(amount))
-            .withStyle(ChatFormatting.GOLD)
-            .append(Component.literal(" ontvangen van ").withStyle(ChatFormatting.GREEN))
-            .append(Component.literal(from.getName().getString()).withStyle(ChatFormatting.YELLOW))
-    );
-}
+                toOnline.sendSystemMessage(
+                    Component.literal(EconomyCraft.formatMoney(amount))
+                        .withStyle(ChatFormatting.GOLD)
+                        .append(Component.literal(" ontvangen van ").withStyle(ChatFormatting.GREEN))
+                        .append(Component.literal(from.getName().getString()).withStyle(ChatFormatting.YELLOW))
+                );
+                toOnline.playSound(
+                    net.minecraft.sounds.SoundEvents.EXPERIENCE_ORB_PICKUP, 
+                    net.minecraft.sounds.SoundSource.PLAYERS, 
+                    1.0F,
+                    1.0F
+                );
+            }
+            
         } else {
             source.sendFailure(Component.literal("Niet genoeg saldo").withStyle(ChatFormatting.RED));
         }
