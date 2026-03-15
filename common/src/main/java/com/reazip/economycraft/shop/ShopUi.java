@@ -74,7 +74,7 @@ public final class ShopUi {
         GameProfile profile = player.getGameProfile();
         ProfileComponentCompat.tryResolvedOrUnresolved(profile).ifPresent(resolvable ->
                 head.set(net.minecraft.core.component.DataComponents.PROFILE, resolvable));
-        long balance = EconomyCraft.getManager(player.level().getServer()).getBalance(player.getUUID(), true);
+        long balance = EconomyCraft.getManager(player.getServer()).getBalance(player.getUUID(), true);
         head.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME,
                 Component.literal(IdentityCompat.of(player).name()).withStyle(s -> s.withItalic(false).withColor(BALANCE_NAME_COLOR)));
         head.set(net.minecraft.core.component.DataComponents.LORE, new ItemLore(List.of(balanceLore(balance))));
@@ -91,7 +91,6 @@ public final class ShopUi {
                 .append(Component.literal(value).withStyle(s -> s.withItalic(false).withColor(VALUE_COLOR)));
     }
 
-    // --- MAIN SHOP MENU ---
     private static class ShopMenu extends AbstractContainerMenu {
         private final ShopManager shop;
         private final ServerPlayer viewer;
@@ -131,7 +130,7 @@ public final class ShopUi {
                 if (idx >= listings.size()) break;
                 ShopListing l = listings.get(idx);
                 ItemStack display = l.item.copy();
-                String sellerName = l.seller.equals(viewer.getUUID()) ? "Jij" : EconomyCraft.getManager(viewer.level().getServer()).getBestName(l.seller);
+                String sellerName = l.seller.equals(viewer.getUUID()) ? "Jij" : EconomyCraft.getManager(viewer.getServer()).getBestName(l.seller);
                 long tax = Math.round(l.price * EconomyConfig.get().taxRate);
                 display.set(net.minecraft.core.component.DataComponents.LORE, new ItemLore(List.of(
                         createPriceLore(l.price, tax),
@@ -158,7 +157,6 @@ public final class ShopUi {
         @Override public ItemStack quickMoveStack(Player p, int i) { return ItemStack.EMPTY; }
     }
 
-    // --- CONFIRM PURCHASE MENU ---
     private static class ConfirmMenu extends AbstractContainerMenu {
         private final ShopManager shop;
         private final ShopListing listing;
@@ -186,14 +184,13 @@ public final class ShopUi {
         }
 
         @Override public void clicked(int slot, int dragType, ClickType type, Player player) {
-            if (type == ClickType.PICKUP) {
+            if (type == ClickType.PICKUP && player instanceof ServerPlayer sp) {
                 if (slot == 2) {
                     ShopListing current = shop.getListing(listing.id);
-                    ServerPlayer sp = (ServerPlayer) player;
                     if (current == null) {
                         sp.sendSystemMessage(Component.literal("Niet langer beschikbaar.").withStyle(ChatFormatting.RED));
                     } else {
-                        EconomyManager eco = EconomyCraft.getManager(sp.server);
+                        EconomyManager eco = EconomyCraft.getManager(sp.getServer());
                         long total = current.price + Math.round(current.price * EconomyConfig.get().taxRate);
                         if (eco.getBalance(sp.getUUID(), true) < total) {
                             sp.sendSystemMessage(Component.literal("Onvoldoende saldo.").withStyle(ChatFormatting.RED));
@@ -202,13 +199,16 @@ public final class ShopUi {
                             eco.addMoney(current.seller, current.price);
                             shop.removeListing(current.id);
                             ItemStack stack = current.item.copy();
-                            if (!sp.getInventory().add(stack)) shop.addDelivery(sp.getUUID(), stack);
+                            if (!sp.getInventory().add(stack)) {
+                                shop.addDelivery(sp.getUUID(), stack);
+                                sendClaimMessage(sp);
+                            }
                             sp.sendSystemMessage(Component.literal("Item gekocht!").withStyle(ChatFormatting.GREEN));
                         }
                     }
                     ShopUi.open(sp, shop);
                 } else if (slot == 6) {
-                    ShopUi.open((ServerPlayer) player, shop);
+                    ShopUi.open(sp, shop);
                 }
             }
         }
@@ -216,7 +216,6 @@ public final class ShopUi {
         @Override public ItemStack quickMoveStack(Player p, int i) { return ItemStack.EMPTY; }
     }
 
-    // --- REMOVE LISTING MENU ---
     private static class RemoveMenu extends AbstractContainerMenu {
         private final ShopManager shop;
         private final ShopListing listing;
@@ -242,17 +241,20 @@ public final class ShopUi {
         }
 
         @Override public void clicked(int slot, int dragType, ClickType type, Player player) {
-            if (type == ClickType.PICKUP) {
+            if (type == ClickType.PICKUP && player instanceof ServerPlayer sp) {
                 if (slot == 2) {
                     ShopListing removed = shop.removeListing(listing.id);
                     if (removed != null) {
                         ItemStack stack = removed.item.copy();
-                        if (!player.getInventory().add(stack)) shop.addDelivery(player.getUUID(), stack);
-                        player.sendSystemMessage(Component.literal("Item verwijderd.").withStyle(ChatFormatting.GREEN));
+                        if (!sp.getInventory().add(stack)) {
+                            shop.addDelivery(sp.getUUID(), stack);
+                            sendClaimMessage(sp);
+                        }
+                        sp.sendSystemMessage(Component.literal("Item verwijderd.").withStyle(ChatFormatting.GREEN));
                     }
-                    ShopUi.open((ServerPlayer) player, shop);
+                    ShopUi.open(sp, shop);
                 } else if (slot == 6) {
-                    ShopUi.open((ServerPlayer) player, shop);
+                    ShopUi.open(sp, shop);
                 }
             }
         }
