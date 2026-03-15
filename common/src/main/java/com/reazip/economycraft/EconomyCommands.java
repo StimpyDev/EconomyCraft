@@ -689,7 +689,7 @@ public final class EconomyCommands {
 
         long tax = Math.round(price * EconomyConfig.get().taxRate);
 
-        Component msg = Component.literal("Aangeboden item voor " + EconomyCraft.formatMoney(price) +
+        Component msg = Component.literal("Item op AH gezet voor " + EconomyCraft.formatMoney(price) +
                         (tax > 0 ? " (kopers betalen " + EconomyCraft.formatMoney(price + tax) + ")" : ""))
                 .withStyle(ChatFormatting.GREEN);
 
