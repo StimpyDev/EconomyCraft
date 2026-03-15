@@ -65,17 +65,19 @@ public final class OrdersUi {
     }
 
     private static ItemStack createBalanceItem(EconomyManager eco, UUID playerId, @Nullable ServerPlayer player, @Nullable String name) {
-        ItemStack head = new ItemStack(Items.GOLD_INGOT);
-        var profile = player != null
-                ? ProfileComponentCompat.tryResolvedOrUnresolved(player.getGameProfile())
-                : ProfileComponentCompat.tryUnresolved(name != null && !name.isBlank() ? name : playerId.toString());
-        profile.ifPresent(resolvable -> head.set(DataComponents.PROFILE, resolvable));
-        long balance = eco.getBalance(playerId, true);
-        String displayName = name != null ? name : playerId.toString();
-        head.set(DataComponents.CUSTOM_NAME, Component.literal(displayName).withStyle(s -> s.withItalic(false).withColor(BALANCE_NAME_COLOR)));
-        head.set(DataComponents.LORE, new ItemLore(List.of(balanceLore(balance))));
-        return head;
-    }
+    ItemStack ingot = new ItemStack(Items.GOLD_INGOT);
+
+    long balance = eco.getBalance(playerId, true);
+    
+    String displayName = (name != null && !name.isBlank()) ? name : (player != null ? player.getScoreboardName() : playerId.toString());
+
+    ingot.set(DataComponents.CUSTOM_NAME, 
+            Component.literal(displayName).withStyle(s -> s.withColor(BALANCE_NAME_COLOR)));
+
+    ingot.set(DataComponents.LORE, new ItemLore(List.of(balanceLore(balance))));
+
+    return ingot;
+}
 
     private static Component balanceLore(long balance) {
         return Component.literal("Saldo: ")
