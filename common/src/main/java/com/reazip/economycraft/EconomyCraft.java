@@ -75,7 +75,10 @@ public final class EconomyCraft {
         return Component.literal(baseTitle + " - Saldo: " + formatMoney(balance));
     }
 
-    public static String formatMoney(long amount) {
-        return "$" + FORMAT.format(amount);
-    }
+   public static String formatMoney(long amount) {
+    if (amount >= 1_000_000_000L) return String.format("$%.1fB", amount / 1_000_000_000.0);
+    if (amount >= 1_000_000L) return String.format("$%.1fM", amount / 1_000_000.0);
+    if (amount >= 1_000L) return String.format("$%.1fK", amount / 1_000.0);
+    return "$" + amount;
+   }
 }
