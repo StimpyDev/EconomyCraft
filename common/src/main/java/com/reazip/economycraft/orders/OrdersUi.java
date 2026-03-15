@@ -33,8 +33,8 @@ public final class OrdersUi {
     private static final ChatFormatting LABEL_PRIMARY_COLOR = ChatFormatting.GOLD;
     private static final ChatFormatting LABEL_SECONDARY_COLOR = ChatFormatting.AQUA;
     private static final ChatFormatting VALUE_COLOR = ChatFormatting.DARK_PURPLE;
-    private static final ChatFormatting BALANCE_NAME_COLOR = ChatFormatting.GOLD;
-    private static final ChatFormatting BALANCE_LABEL_COLOR = ChatFormatting.YELLOW;
+    private static final ChatFormatting BALANCE_NAME_COLOR = ChatFormatting.YELLOW;
+    private static final ChatFormatting BALANCE_LABEL_COLOR = ChatFormatting.GOLD;
     private static final ChatFormatting BALANCE_VALUE_COLOR = ChatFormatting.DARK_PURPLE;
 
     public static void open(ServerPlayer player, EconomyManager eco) {
@@ -65,19 +65,17 @@ public final class OrdersUi {
     }
 
     private static ItemStack createBalanceItem(EconomyManager eco, UUID playerId, @Nullable ServerPlayer player, @Nullable String name) {
-    ItemStack ingot = new ItemStack(Items.GOLD_INGOT);
-
-    long balance = eco.getBalance(playerId, true);
-    
-    String displayName = (name != null && !name.isBlank()) ? name : (player != null ? player.getScoreboardName() : playerId.toString());
-
-    ingot.set(DataComponents.CUSTOM_NAME, 
-            Component.literal(displayName).withStyle(s -> s.withColor(BALANCE_NAME_COLOR)));
-
-    ingot.set(DataComponents.LORE, new ItemLore(List.of(balanceLore(balance))));
-
-    return ingot;
-}
+        ItemStack head = new ItemStack(Items.PLAYER_HEAD);
+        var profile = player != null
+                ? ProfileComponentCompat.tryResolvedOrUnresolved(player.getGameProfile())
+                : ProfileComponentCompat.tryUnresolved(name != null && !name.isBlank() ? name : playerId.toString());
+        profile.ifPresent(resolvable -> head.set(DataComponents.PROFILE, resolvable));
+        long balance = eco.getBalance(playerId, true);
+        String displayName = name != null ? name : playerId.toString();
+        head.set(DataComponents.CUSTOM_NAME, Component.literal(displayName).withStyle(s -> s.withItalic(false).withColor(BALANCE_NAME_COLOR)));
+        head.set(DataComponents.LORE, new ItemLore(List.of(balanceLore(balance))));
+        return head;
+    }
 
     private static Component balanceLore(long balance) {
         return Component.literal("Saldo: ")
@@ -177,13 +175,13 @@ public final class OrdersUi {
 
             if (page > 0) {
                 ItemStack prev = new ItemStack(Items.ARROW);
-                prev.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME, Component.literal("Vorige pagina").withStyle(s -> s.withItalic(true)));
+                prev.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME, Component.literal("Vorige pagina").withStyle(s -> s.withItalic(false)));
                 container.setItem(navRowStart + 2, prev);
             }
 
             if (start + 45 < requests.size()) {
                 ItemStack next = new ItemStack(Items.ARROW);
-                next.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME, Component.literal("Volgende pagina").withStyle(s -> s.withItalic(true)));
+                next.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME, Component.literal("Volgende pagina").withStyle(s -> s.withItalic(false)));
                 container.setItem(navRowStart + 6, next);
             }
 
