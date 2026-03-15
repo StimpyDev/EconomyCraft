@@ -298,91 +298,87 @@ public final class ShopUi {
             }
         }
 
-        @Override
-        public void clicked(int slot, int dragType, ClickType type, Player player) {
-            if (type == ClickType.PICKUP) {
-                if (slot == 2) {
-                    ShopListing current = shop.getListing(listing.id);
-                    ServerPlayer sp = (ServerPlayer) player;
-                    var server = sp.level().getServer();
+@Override
+public void clicked(int slot, int dragType, ClickType type, Player player) {
+    if (type == ClickType.PICKUP) {
+        if (slot == 2) {
+            ShopListing current = shop.getListing(listing.id);
+            ServerPlayer sp = (ServerPlayer) player;
+            var server = sp.level().getServer();
 
-                    if (current == null) {
-                        sp.sendSystemMessage(Component.literal("Dit item is niet langer beschikbaar.").withStyle(ChatFormatting.RED));
-                    } else {
-                        EconomyManager eco = EconomyCraft.getManager(server);
-                        long cost = current.price;
-                        long tax = Math.round(cost * EconomyConfig.get().taxRate);
-                        long total = cost + tax;
-                        long bal = eco.getBalance(player.getUUID(), true);
+            if (current == null) {
+                sp.sendSystemMessage(Component.literal("Dit item is niet langer beschikbaar.").withStyle(ChatFormatting.RED));
+            } else {
+                EconomyManager eco = EconomyCraft.getManager(server);
+                long cost = current.price;
+                long tax = Math.round(cost * EconomyConfig.get().taxRate);
+                long total = cost + tax;
+                long bal = eco.getBalance(player.getUUID(), true);
 
-                        if (bal < total) {
-                            sp.sendSystemMessage(Component.literal("Je hebt geen genoeg saldo.").withStyle(ChatFormatting.RED));
-                        } else {
-                            eco.removeMoney(player.getUUID(), total);
-                            eco.addMoney(current.seller, cost);
-                            ShopListing sold = shop.removeListing(current.id);
-                            if (sold != null) {
-                                shop.notifySellerSale(sold, sp);
-                            }
-                            ItemStack stack = current.item.copy();
-                            int count = stack.getCount();
-                            Component name = stack.getHoverName();
-
-                            String sellerName;
-                            ServerPlayer sellerPlayer = server.getPlayerList().getPlayer(current.seller);
-                            if (sellerPlayer != null) {
-                                sellerName = IdentityCompat.of(sellerPlayer).name();
-                            } else {
-                                sellerName = eco.getBestName(current.seller);
-                            }
-
-                            if (!player.getInventory().add(stack)) {
-                                shop.addDelivery(player.getUUID(), stack);
-
-                                ClickEvent ev = ChatCompat.runCommandEvent("/eco orders claim");
-                                if (ev != null) {
-                                    Component msg = Component.literal("Item stored: ")
-                                            .withStyle(ChatFormatting.YELLOW)
-                                            .append(Component.literal("[Claim]")
-                                                    .withStyle(s -> s.withUnderlined(true)
-                                                            .withColor(ChatFormatting.GREEN)
-                                                            .withClickEvent(ev)));
-                                    sp.sendSystemMessage(msg);
-                                } else {
-                                    ChatCompat.sendRunCommandTellraw(sp, "Item stored: ", "[Claim]", "/eco orders claim");
-                                }
-                            } else {
-                                sp.sendSystemMessage(
-                                        Component.literal("Item gekocht " + count + "x ")
-    .withStyle(ChatFormatting.GREEN)
-    .append(name.copy().withStyle(ChatFormatting.YELLOW))
-    .append(Component.literal(" van ").withStyle(ChatFormatting.GREEN))
-    .append(Component.literal(sellerName).withStyle(ChatFormatting.YELLOW))
-    .append(Component.literal(" voor " + EconomyCraft.formatMoney(total)).withStyle(ChatFormatting.GREEN));
-                                );
-                            }
-                        }
+                if (bal < total) {
+                    sp.sendSystemMessage(Component.literal("Je hebt geen genoeg saldo.").withStyle(ChatFormatting.RED));
+                } else {
+                    eco.removeMoney(player.getUUID(), total);
+                    eco.addMoney(current.seller, cost);
+                    ShopListing sold = shop.removeListing(current.id);
+                    if (sold != null) {
+                        shop.notifySellerSale(sold, sp);
                     }
-                    player.closeContainer();
-                    ShopUi.open(sp, shop);
-                    return;
-                }
+                    
+                    ItemStack stack = current.item.copy();
+                    int count = stack.getCount();
+                    Component name = stack.getHoverName();
 
-                if (slot == 6) {
-                    player.closeContainer();
-                    ShopUi.open((ServerPlayer) player, shop);
-                    return;
+                    String sellerName;
+                    ServerPlayer sellerPlayer = server.getPlayerList().getPlayer(current.seller);
+                    if (sellerPlayer != null) {
+                        sellerName = IdentityCompat.of(sellerPlayer).name();
+                    } else {
+                        sellerName = eco.getBestName(current.seller);
+                    }
+
+                    Component successMsg = Component.literal("Item gekocht " + count + "x ")
+                        .withStyle(ChatFormatting.GREEN)
+                        .append(name.copy().withStyle(ChatFormatting.YELLOW))
+                        .append(Component.literal(" van ").withStyle(ChatFormatting.GREEN))
+                        .append(Component.literal(sellerName).withStyle(ChatFormatting.YELLOW))
+                        .append(Component.literal(" voor " + EconomyCraft.formatMoney(total)).withStyle(ChatFormatting.GREEN));
+
+                    if (!player.getInventory().add(stack)) {
+                        shop.addDelivery(player.getUUID(), stack);
+                        
+                        sp.sendSystemMessage(successMsg);
+
+                        ClickEvent ev = ChatCompat.runCommandEvent("/eco orders claim");
+                        if (ev != null) {
+                            Component msg = Component.literal("Item opgeslagen: ")
+                                    .withStyle(ChatFormatting.YELLOW)
+                                    .append(Component.literal("[Claimen]")
+                                            .withStyle(s -> s.withUnderlined(true)
+                                                    .withColor(ChatFormatting.GREEN)
+                                                    .withClickEvent(ev)));
+                            sp.sendSystemMessage(msg);
+                        } else {
+                            ChatCompat.sendRunCommandTellraw(sp, "Item opgeslagen: ", "[Claimen]", "/eco orders claim");
+                        }
+                    } else {
+                        sp.sendSystemMessage(successMsg);
+                    }
                 }
             }
-            super.clicked(slot, dragType, type, player);
+            player.closeContainer();
+            ShopUi.open(sp, shop);
+            return;
         }
 
-        @Override
-        public boolean stillValid(Player player) { return true; }
-
-        @Override
-        public ItemStack quickMoveStack(Player player, int index) { return ItemStack.EMPTY; }
+        if (slot == 6) {
+            player.closeContainer();
+            ShopUi.open((ServerPlayer) player, shop);
+            return;
+        }
     }
+    super.clicked(slot, dragType, type, player);
+}
 
     private static class RemoveMenu extends AbstractContainerMenu {
         private final ShopManager shop;
