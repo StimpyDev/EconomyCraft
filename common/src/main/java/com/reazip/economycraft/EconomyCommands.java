@@ -698,9 +698,17 @@ public final class EconomyCommands {
 
         long tax = Math.round(price * EconomyConfig.get().taxRate);
 
-        Component msg = Component.literal("Item op AH gezet voor " + EconomyCraft.formatMoney(price) +
-                        (tax > 0 ? " (kopers betalen " + EconomyCraft.formatMoney(price + tax) + ")" : ""))
-                .withStyle(ChatFormatting.GREEN);
+        Component msg = Component.literal("Item op AH gezet voor ")
+                .withStyle(ChatFormatting.GREEN)
+                .append(Component.literal(EconomyCraft.formatMoney(price))
+                        .withStyle(ChatFormatting.GOLD))
+                .append(Component.literal(tax > 0 ? " (Kopers betalen " : "")
+                        .withStyle(ChatFormatting.GREEN))
+                .append(tax > 0 ? 
+                        Component.literal(EconomyCraft.formatMoney(price + tax))
+                                .withStyle(ChatFormatting.GOLD) : Component.empty())
+                .append(Component.literal(tax > 0 ? ")" : "")
+                        .withStyle(ChatFormatting.GREEN));
 
         player.sendSystemMessage(msg);
 
