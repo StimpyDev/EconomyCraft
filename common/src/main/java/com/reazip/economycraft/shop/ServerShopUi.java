@@ -853,7 +853,7 @@ case "platen" -> ChatFormatting.DARK_PURPLE;
     }
 
     private static ItemStack createBalanceItem(ServerPlayer player) {
-        ItemStack head = new ItemStack(Items.PLAYER_HEAD);
+        ItemStack head = new ItemStack(Items.GOLD_INGOT);
         ProfileComponentCompat.tryResolvedOrUnresolved(player.getGameProfile()).ifPresent(resolvable ->
                 head.set(DataComponents.PROFILE, resolvable));
         long balance = EconomyCraft.getManager(player.level().getServer()).getBalance(player.getUUID(), true);
