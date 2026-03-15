@@ -229,7 +229,7 @@ public final class ShopUi {
                 if (slot == 2) {
                     ShopListing current = shop.getListing(listing.id);
                     if (current == null) {
-                        sp.sendSystemMessage(Component.literal("Aanbieding niet meer beschikbaar.").withStyle(ChatFormatting.RED));
+                        sp.sendSystemMessage(Component.literal("Item niet meer beschikbaar.").withStyle(ChatFormatting.RED));
                     } else {
                         var server = ((ServerLevel) sp.level()).getServer();
                         EconomyManager eco = EconomyCraft.getManager(server);
@@ -292,7 +292,7 @@ public final class ShopUi {
                             shop.addDelivery(sp.getUUID(), stack);
                             sendClaimMessage(sp);
                         }
-                        sp.sendSystemMessage(Component.literal("Aanbieding verwijderd.").withStyle(ChatFormatting.GREEN));
+                        sp.sendSystemMessage(Component.literal("Item verwijderd uit AH.").withStyle(ChatFormatting.GREEN));
                     }
                     ShopUi.open(sp, shop);
                 } else if (slot == 6) {
