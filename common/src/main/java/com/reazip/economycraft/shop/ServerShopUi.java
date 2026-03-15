@@ -56,8 +56,8 @@ public final class ServerShopUi {
     private static final ChatFormatting LABEL_PRIMARY_COLOR = ChatFormatting.GOLD;
     private static final ChatFormatting LABEL_SECONDARY_COLOR = ChatFormatting.AQUA;
     private static final ChatFormatting VALUE_COLOR = ChatFormatting.DARK_PURPLE;
-    private static final ChatFormatting BALANCE_NAME_COLOR = ChatFormatting.GOLD;
-    private static final ChatFormatting BALANCE_LABEL_COLOR = ChatFormatting.YELLOW;
+    private static final ChatFormatting BALANCE_NAME_COLOR = ChatFormatting.YELLOW;
+    private static final ChatFormatting BALANCE_LABEL_COLOR = ChatFormatting.GOLD;
     private static final ChatFormatting BALANCE_VALUE_COLOR = ChatFormatting.DARK_PURPLE;
 
     private ServerShopUi() {}
@@ -243,13 +243,13 @@ public final class ServerShopUi {
 
             if (page > 0) {
                 ItemStack prev = new ItemStack(Items.ARROW);
-                prev.set(DataComponents.CUSTOM_NAME, Component.literal("Vorige pagina").withStyle(s -> s.withItalic(true)));
+                prev.set(DataComponents.CUSTOM_NAME, Component.literal("Vorige pagina").withStyle(s -> s.withItalic(false)));
                 container.setItem(navRowStart + 3, prev);
             }
 
             if (start + itemsPerPage < categories.size()) {
                 ItemStack next = new ItemStack(Items.ARROW);
-                next.set(DataComponents.CUSTOM_NAME, Component.literal("Volgende pagina").withStyle(s -> s.withItalic(true)));
+                next.set(DataComponents.CUSTOM_NAME, Component.literal("Volgende pagina").withStyle(s -> s.withItalic(false)));
                 container.setItem(navRowStart + 5, next);
             }
 
@@ -852,18 +852,15 @@ case "platen" -> ChatFormatting.DARK_PURPLE;
                         .withStyle(s -> s.withItalic(false).withColor(BALANCE_VALUE_COLOR)));
     }
 
-private static ItemStack createBalanceItem(ServerPlayer player) {
-        ItemStack ingot = new ItemStack(Items.GOLD_INGOT);
-        
+    private static ItemStack createBalanceItem(ServerPlayer player) {
+        ItemStack head = new ItemStack(Items.GOLD_INGOT);
+        ProfileComponentCompat.tryResolvedOrUnresolved(player.getGameProfile()).ifPresent(resolvable ->
+                head.set(DataComponents.PROFILE, resolvable));
         long balance = EconomyCraft.getManager(player.level().getServer()).getBalance(player.getUUID(), true);
         String name = IdentityCompat.of(player).name();
-        
-        ingot.set(DataComponents.CUSTOM_NAME, 
-                Component.literal(name).withStyle(s -> s.withColor(BALANCE_NAME_COLOR)));
-        
-        ingot.set(DataComponents.LORE, new ItemLore(List.of(balanceLore(balance))));
-        
-        return ingot;
+        head.set(DataComponents.CUSTOM_NAME, Component.literal(name).withStyle(s -> s.withItalic(false).withColor(BALANCE_NAME_COLOR)));
+        head.set(DataComponents.LORE, new ItemLore(List.of(balanceLore(balance))));
+        return head;
     }
 
     private static List<Integer> buildStarSlotOrder() {
