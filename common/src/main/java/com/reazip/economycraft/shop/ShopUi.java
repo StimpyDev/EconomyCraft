@@ -201,12 +201,13 @@ public final class ShopUi {
                 container.setItem(navRowStart + 5, next);
             }
 
-            ItemStack balance = createBalanceItem(viewer);
+            ItemStack balance = createBalanceItem(
+                    EconomyCraft.getManager(viewer.level().getServer()), 
+                    viewer.getUUID(), 
+                    viewer, 
+                    IdentityCompat.of(viewer).name()
+            );
             container.setItem(navRowStart, balance);
-
-            ItemStack paper = new ItemStack(Items.PAPER);
-            paper.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME, Component.literal("Pagina " + (page + 1) + "/" + Math.max(1, totalPages)).withStyle(s -> s.withItalic(false)));
-            container.setItem(navRowStart + 4, paper);
         }
 
         @Override
