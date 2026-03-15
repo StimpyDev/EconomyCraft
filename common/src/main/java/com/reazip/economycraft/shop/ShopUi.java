@@ -100,18 +100,17 @@ public final class ShopUi {
         return labeledValue("Prijs", value.toString(), LABEL_PRIMARY_COLOR);
     }
 
-    private static ItemStack createBalanceItem(ServerPlayer player) {
+    private static ItemStack createBalanceItem(EconomyManager eco, UUID playerId, @Nullable ServerPlayer player, @Nullable String name) {
         ItemStack ingot = new ItemStack(Items.GOLD_INGOT);
-        
-        long balance = EconomyCraft.getManager(player.level().getServer()).getBalance(player.getUUID(), true);
-        String playerName = IdentityCompat.of(player).name();
-        
-        ingot.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME,
-                Component.literal(playerName).withStyle(s -> s.withColor(BALANCE_NAME_COLOR)));
-        
-        ingot.set(net.minecraft.core.component.DataComponents.LORE,
-                new ItemLore(List.of(balanceLore(balance))));
-        
+
+        long balance = eco.getBalance(playerId, true);
+        String displayName = (name != null && !name.isBlank()) ? name : (player != null ? player.getScoreboardName() : playerId.toString());
+
+        ingot.set(DataComponents.CUSTOM_NAME, 
+                Component.literal(displayName).withStyle(s -> s.withColor(BALANCE_NAME_COLOR)));
+
+        ingot.set(DataComponents.LORE, new ItemLore(List.of(balanceLore(balance))));
+
         return ingot;
     }
 
