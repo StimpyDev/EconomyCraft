@@ -853,16 +853,19 @@ case "platen" -> ChatFormatting.DARK_PURPLE;
     }
 
     private static ItemStack createBalanceItem(ServerPlayer player) {
-        ItemStack head = new ItemStack(Items.GOLD_INGOT);
-        ProfileComponentCompat.tryResolvedOrUnresolved(player.getGameProfile()).ifPresent(resolvable ->
-                head.set(DataComponents.PROFILE, resolvable));
-        long balance = EconomyCraft.getManager(player.level().getServer()).getBalance(player.getUUID(), true);
-        String name = IdentityCompat.of(player).name();
-        head.set(DataComponents.CUSTOM_NAME, Component.literal(name).withStyle(s -> s.withItalic(false).withColor(BALANCE_NAME_COLOR)));
-        head.set(DataComponents.LORE, new ItemLore(List.of(balanceLore(balance))));
-        return head;
+        ItemStack gold = new ItemStack(Items.GOLD_INGOT);
+        
+        var server = ((ServerLevel) player.level()).getServer();
+        long balance = EconomyCraft.getManager(server).getBalance(player.getUUID(), true);
+        
+        gold.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME,
+                Component.literal("Saldo")
+                        .withStyle(s -> s.withItalic(false).withColor(BALANCE_NAME_COLOR)));
+        
+        gold.set(net.minecraft.core.component.DataComponents.LORE, new ItemLore(List.of(balanceLore(balance))));
+        return gold;
     }
-
+    
     private static List<Integer> buildStarSlotOrder() {
         int width = 9;
         int height = 5;
