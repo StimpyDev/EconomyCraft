@@ -101,7 +101,7 @@ public final class ShopUi {
     }
 
     private static ItemStack createBalanceItem(ServerPlayer player) {
-        ItemStack head = new ItemStack(Items.PLAYER_HEAD);
+        ItemStack head = new ItemStack(Items.GOLD_INGOT);
         GameProfile profile = player.getGameProfile();
         ProfileComponentCompat.tryResolvedOrUnresolved(profile).ifPresent(resolvable ->
                 head.set(net.minecraft.core.component.DataComponents.PROFILE, resolvable));
