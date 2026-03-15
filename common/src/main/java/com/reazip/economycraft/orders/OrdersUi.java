@@ -65,7 +65,7 @@ public final class OrdersUi {
     }
 
     private static ItemStack createBalanceItem(EconomyManager eco, UUID playerId, @Nullable ServerPlayer player, @Nullable String name) {
-        ItemStack head = new ItemStack(Items.PLAYER_HEAD);
+        ItemStack head = new ItemStack(Items.GOLD_INGOT);
         var profile = player != null
                 ? ProfileComponentCompat.tryResolvedOrUnresolved(player.getGameProfile())
                 : ProfileComponentCompat.tryUnresolved(name != null && !name.isBlank() ? name : playerId.toString());
