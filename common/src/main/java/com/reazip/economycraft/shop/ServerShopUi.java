@@ -613,13 +613,12 @@ private void handlePurchase(PriceRegistry.PriceEntry entry, ClickType clickType)
     giveToPlayer(base, amount);
     sendPrivateSound(SoundEvents.EXPERIENCE_ORB_PICKUP);
 
-    Component success = Component.literal(
-            "Item gekocht " + amount + "x " + base.getHoverName().getString() +
-                    " voor " + EconomyCraft.formatMoney(total))
-            .withStyle(ChatFormatting.GREEN);
-    viewer.sendSystemMessage(success);
+    Component success = Component.literal("Item gekocht " + amount + "x " + base.getHoverName().getString() + " voor ")
+        .withStyle(ChatFormatting.GREEN)
+        .append(Component.literal(EconomyCraft.formatMoney(total)).withStyle(ChatFormatting.GOLD));
 
-    updatePage();
+viewer.sendSystemMessage(success);
+updatePage();
 }
 
 private void sendPrivateSound(net.minecraft.sounds.SoundEvent sound) {
