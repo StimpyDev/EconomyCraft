@@ -18,8 +18,8 @@ public class ShopListing {
     public JsonObject save(HolderLookup.Provider provider) {
         JsonObject obj = new JsonObject();
         obj.addProperty("id", id);
-        if (seller != null) obj.addProperty("Verkoper", seller.toString());
-        obj.addProperty("prijs", price);
+        if (seller != null) obj.addProperty("seller", seller.toString());
+        obj.addProperty("price", price);
 
         var ops = RegistryOps.create(JsonOps.INSTANCE, provider);
         ItemStack.CODEC.encodeStart(ops, item)
@@ -36,12 +36,12 @@ public class ShopListing {
             l.id = obj.get("id").getAsInt();
         }
         
-        if (obj.has("Verkoper")) {
-            l.seller = UUID.fromString(obj.get("Verkoper").getAsString());
+        if (obj.has("seller")) {
+            l.seller = UUID.fromString(obj.get("seller").getAsString());
         }
         
-        if (obj.has("prijs")) {
-            l.price = obj.get("prijs").getAsLong();
+        if (obj.has("price")) {
+            l.price = obj.get("price").getAsLong();
         }
 
         if (obj.has("stack")) {
