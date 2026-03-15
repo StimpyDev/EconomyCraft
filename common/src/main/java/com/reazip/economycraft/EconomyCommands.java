@@ -290,7 +290,7 @@ public final class EconomyCommands {
              Component msg = Component.empty()
     .append(Component.literal(EconomyCraft.formatMoney(amount)).withStyle(ChatFormatting.GOLD))
     .append(Component.literal(" betaald naar ").withStyle(ChatFormatting.GREEN))
-    .append(Component.literal(displayName).withStyle(ChatFormatting.WHITE));
+    .append(Component.literal(displayName).withStyle(ChatFormatting.YELLOW));
 
             if (executor != null) {
                 executor.sendSystemMessage(msg);
@@ -303,7 +303,7 @@ public final class EconomyCommands {
         Component.literal(EconomyCraft.formatMoney(amount))
             .withStyle(ChatFormatting.GOLD)
             .append(Component.literal(" ontvangen van ").withStyle(ChatFormatting.GREEN))
-            .append(Component.literal(from.getName().getString()).withStyle(ChatFormatting.WHITE))
+            .append(Component.literal(from.getName().getString()).withStyle(ChatFormatting.YELLOW))
     );
 }
         } else {
