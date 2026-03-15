@@ -101,18 +101,17 @@ public final class ShopUi {
     }
 
     private static ItemStack createBalanceItem(EconomyManager eco, UUID playerId, @Nullable ServerPlayer player, @Nullable String name) {
-        ItemStack ingot = new ItemStack(Items.GOLD_INGOT);
+    ItemStack ingot = new ItemStack(Items.GOLD_INGOT);
 
-        long balance = eco.getBalance(playerId, true);
-        String displayName = (name != null && !name.isBlank()) ? name : (player != null ? player.getScoreboardName() : playerId.toString());
+    long balance = eco.getBalance(playerId, true);
+    String displayName = (name != null && !name.isBlank()) ? name : (player != null ? player.getScoreboardName() : playerId.toString());
 
-        ingot.set(DataComponents.CUSTOM_NAME, 
-                Component.literal(displayName).withStyle(s -> s.withColor(BALANCE_NAME_COLOR)));
+    ingot.set(DataComponents.CUSTOM_NAME, 
+            Component.literal(displayName).withStyle(s -> s.withColor(BALANCE_NAME_COLOR)));
+    ingot.set(DataComponents.LORE, new ItemLore(List.of(balanceLore(balance))));
 
-        ingot.set(DataComponents.LORE, new ItemLore(List.of(balanceLore(balance))));
-
-        return ingot;
-    }
+    return ingot;
+}
 
     private static Component balanceLore(long balance) {
         return Component.literal("Saldo: ")
