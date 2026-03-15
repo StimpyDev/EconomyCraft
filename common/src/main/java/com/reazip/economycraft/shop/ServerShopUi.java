@@ -19,6 +19,7 @@ import net.minecraft.core.Holder;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.resources.ResourceKey;
 import com.reazip.economycraft.util.IdentifierCompat;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.MenuProvider;
 import net.minecraft.world.SimpleContainer;
