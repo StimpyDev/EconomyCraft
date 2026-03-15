@@ -613,9 +613,11 @@ private void handlePurchase(PriceRegistry.PriceEntry entry, ClickType clickType)
     giveToPlayer(base, amount);
     sendPrivateSound(SoundEvents.EXPERIENCE_ORB_PICKUP);
 
-    Component success = Component.literal("Item gekocht " + amount + "x " + base.getHoverName().getString() + " voor ")
-        .withStyle(ChatFormatting.GREEN)
-        .append(Component.literal(EconomyCraft.formatMoney(total)).withStyle(ChatFormatting.GOLD));
+Component success = Component.literal("Item gekocht ")
+    .withStyle(ChatFormatting.GREEN)
+    .append(Component.literal(amount + "x " + base.getHoverName().getString()).withStyle(ChatFormatting.YELLOW))
+    .append(" voor ")
+    .append(Component.literal(EconomyCraft.formatMoney(total)).withStyle(ChatFormatting.GOLD));
 
 viewer.sendSystemMessage(success);
 updatePage();
