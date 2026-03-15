@@ -1,3 +1,9 @@
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+}
+
 plugins {
     id "dev.architectury.loom" version "1.13.467" apply false
     id "architectury-plugin" version "3.4.162"
@@ -25,16 +31,16 @@ subprojects {
 
     tasks.withType(Jar).configureEach { archiveVersion = "" }
 
-    tasks.named("remapJar", RemapJarTask).configure {
+    tasks.named("remapJar", net.fabricmc.loom.task.RemapJarTask).configure {
         input.set(tasks.named("jar").flatMap { it.archiveFile })
         archiveVersion = ""
     }
 
     repositories {
+        mavenCentral()
         maven { url "https://maven.fabricmc.net/" }
         maven { url "https://maven.architectury.dev/" }
         maven { url "https://maven.neoforged.net/releases" }
-        mavenCentral()
     }
 
     loom {
@@ -54,7 +60,7 @@ subprojects {
                 from components.java
             }
         }
-        repositories { /* leer gelassen */ }
+        repositories {  }
     }
 
     if (project.name == "neoforge") {
@@ -114,7 +120,7 @@ ext.mcTaskVer = { String v ->
 
 // ---- BUILD TARGETS
 ext.mcTargets = [
-        [ mc: "1.21",   fabricApi: "0.102.0+1.21",   architecturyVer: "13.0.8", neoforge: "21.0.167",    neoforgeLineLo: "21.0", neoforgeLineHi: "21.1", yarnBuild: "build.1" ],
+        [ mc: "1.21",    fabricApi: "0.102.0+1.21",   architecturyVer: "13.0.8", neoforge: "21.0.167",    neoforgeLineLo: "21.0", neoforgeLineHi: "21.1", yarnBuild: "build.1" ],
         [ mc: "1.21.1", fabricApi: "0.116.5+1.21.1", architecturyVer: "13.0.8", neoforge: "21.1.217",    neoforgeLineLo: "21.1", neoforgeLineHi: "21.2", yarnBuild: "build.1" ],
         [ mc: "1.21.2", fabricApi: "0.106.1+1.21.2", architecturyVer: "14.0.4", neoforge: "21.2.1-beta", neoforgeLineLo: "21.2", neoforgeLineHi: "21.3", yarnBuild: "build.1" ],
         [ mc: "1.21.3", fabricApi: "0.114.1+1.21.3", architecturyVer: "14.0.4", neoforge: "21.3.95",     neoforgeLineLo: "21.3", neoforgeLineHi: "21.4", yarnBuild: "build.1" ],
@@ -129,7 +135,6 @@ ext.mcTargets = [
 ]
 
 // ---- Build per version via external gradlew
-import net.fabricmc.loom.task.RemapJarTask
 import org.gradle.internal.os.OperatingSystem
 def gradleWrapper = OperatingSystem.current().isWindows() ? "gradlew.bat" : "./gradlew"
 
@@ -200,7 +205,6 @@ ext.mcTargets.each { t ->
         dependsOn "buildAndCopyFabricJars_${mcTask}"
 
         workingDir "$rootProject.projectDir/local_servers/fabric/${t.mc}"
-        // java -Xmx4G -jar server.jar nogui
         commandLine "java", "-Xmx4G", "-jar", "server.jar", "nogui"
     }
 
@@ -271,30 +275,15 @@ ext.mcTargets.each { t ->
         workingDir "$rootProject.projectDir/local_servers/neoforge/${t.mc}"
 
         if (OperatingSystem.current().isWindows()) {
-            // cmd /c run.bat
             commandLine "cmd", "/c", "run.bat"
         } else {
-            // bash run.sh
             commandLine "bash", "run.sh"
         }
     }
 }
 
-// Convenience task: build everything
 tasks.register("buildAll") {
     group = "build"
     description = "Build all Fabric & NeoForge targets"
     dependsOn tasks.matching { it.name.startsWith("buildAndCopyFabricJars_") || it.name.startsWith("buildAndCopyNeoForgeJars_") }
-}
-
-tasks.register("buildAllFabric") {
-    group = "build"
-    description = "Build all Fabric targets"
-    dependsOn tasks.matching { it.name.startsWith("buildAndCopyFabricJars_") }
-}
-
-tasks.register("buildAllNeoForge") {
-    group = "build"
-    description = "Build all NeoForge targets"
-    dependsOn tasks.matching { it.name.startsWith("buildAndCopyNeoForgeJars_") }
 }
