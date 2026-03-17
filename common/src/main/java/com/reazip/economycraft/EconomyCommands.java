@@ -320,7 +320,7 @@ public final class EconomyCommands {
             }
             
         } else {
-            source.sendFailure(Component.literal("Niet genoeg saldo").withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.literal("Geen genoeg saldo").withStyle(ChatFormatting.RED));
         }
         return 1;
     }
