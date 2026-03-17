@@ -254,7 +254,7 @@ public class EconomyManager {
         if (loss <= 0) return;
         removeMoney(victim.getUUID(), loss);
         addMoney(killer.getUUID(), loss);
-        victim.sendSystemMessage(Component.literal("Jij hebt verloren " + EconomyCraft.formatMoney(loss) + " omdat je vermoord bent door " + killer.getName().getString()).withStyle(ChatFormatting.RED));
+        victim.sendSystemMessage(Component.literal("Jij hebt verloren " + EconomyCraft.formatMoney(loss) + " omdat je vermoord bent door: " + killer.getName().getString()).withStyle(ChatFormatting.RED));
         killer.sendSystemMessage(Component.literal("Jij hebt ontvangen " + EconomyCraft.formatMoney(loss) + " voor het killen van: " + victim.getName().getString()).withStyle(ChatFormatting.GREEN));
     }
 
