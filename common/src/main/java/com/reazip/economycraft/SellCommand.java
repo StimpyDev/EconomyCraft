@@ -92,9 +92,14 @@ public final class SellCommand {
         }
 
         manager.addMoney(player.getUUID(), total);
-        Component msg = Component.literal("Succesvol verkocht " + toSell + "x " + itemName +
-                        " voor " + EconomyCraft.formatMoney(total) + ".")
-                .withStyle(ChatFormatting.GREEN);
+        
+        Component msg = Component.literal("Succesvol verkocht ")
+                .withStyle(ChatFormatting.GREEN)
+                .append(Component.literal(toSell + "x " + itemName).withStyle(ChatFormatting.YELLOW))
+                .append(Component.literal(" voor ").withStyle(ChatFormatting.GREEN))
+                .append(Component.literal(EconomyCraft.formatMoney(total)).withStyle(ChatFormatting.GOLD))
+                .append(Component.literal(".").withStyle(ChatFormatting.GREEN));
+                
         player.sendSystemMessage(msg);
         return toSell;
     }
@@ -146,9 +151,13 @@ public final class SellCommand {
                 System.currentTimeMillis() + CONFIRM_EXPIRY_MS, heldItemId));
 
         String itemName = hand.getHoverName().getString();
-        MutableComponent base = Component.literal("Dit item kan worden verkocht " + totalCount + "x " + itemName +
-                        " voor " + EconomyCraft.formatMoney(total) + ". ")
-                .withStyle(ChatFormatting.YELLOW);
+        
+        MutableComponent base = Component.literal("Dit item kan worden verkocht ")
+                .withStyle(ChatFormatting.GREEN)
+                .append(Component.literal(totalCount + "x " + itemName).withStyle(ChatFormatting.YELLOW))
+                .append(Component.literal(" voor ").withStyle(ChatFormatting.GREEN))
+                .append(Component.literal(EconomyCraft.formatMoney(total)).withStyle(ChatFormatting.GOLD))
+                .append(Component.literal(". ").withStyle(ChatFormatting.GREEN));
 
         ClickEvent ev = ChatCompat.runCommandEvent("/sell all confirm");
         if (ev != null) {
@@ -169,7 +178,7 @@ public final class SellCommand {
 
         PendingSale pending = PENDING.get(player.getUUID());
         if (pending == null || pending.expiresAt() < System.currentTimeMillis()) {
-            source.sendFailure(Component.literal("Geen lopende verkoop. Alles opnieuw verkopen.").withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.literal("Geen lopende verkoop.").withStyle(ChatFormatting.RED));
             PENDING.remove(player.getUUID());
             return 0;
         }
@@ -187,7 +196,7 @@ public final class SellCommand {
 
         IdentifierCompat.Id currentItemId = IdentifierCompat.wrap(net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(hand.getItem()));
         if (!currentItemId.equals(pending.heldItemId())) {
-            source.sendFailure(Component.literal("Held item changed. Run /sell all again.").withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.literal("Het vastgehouden item is gewijzigd. Voer /sell all opnieuw uit.").withStyle(ChatFormatting.RED));
             PENDING.remove(player.getUUID());
             return 0;
         }
@@ -206,7 +215,7 @@ public final class SellCommand {
 
         int available = countMatchingSellable(player, prices, pending.key());
         if (available < pending.count()) {
-            source.sendFailure(Component.literal("Items changed. Run /sell all again.").withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.literal("Het vastgehouden item is gewijzigd. Voer /sell all opnieuw uit.").withStyle(ChatFormatting.RED));
             PENDING.remove(player.getUUID());
             return 0;
         }
@@ -219,9 +228,13 @@ public final class SellCommand {
         removeMatching(player, prices, pending.key(), pending.count());
         manager.addMoney(player.getUUID(), pending.total());
 
-        Component msg = Component.literal("Succesvol verkocht " + pending.count() + "x " +
-                        itemName + " voor " + EconomyCraft.formatMoney(pending.total()) + ".")
-                .withStyle(ChatFormatting.GREEN);
+        Component msg = Component.literal("Succesvol verkocht ")
+                .withStyle(ChatFormatting.GREEN)
+                .append(Component.literal(pending.count() + "x " + itemName).withStyle(ChatFormatting.YELLOW))
+                .append(Component.literal(" voor ").withStyle(ChatFormatting.GREEN))
+                .append(Component.literal(EconomyCraft.formatMoney(pending.total())).withStyle(ChatFormatting.GOLD))
+                .append(Component.literal(".").withStyle(ChatFormatting.GREEN));
+
         player.sendSystemMessage(msg);
         PENDING.remove(player.getUUID());
         return pending.count();
@@ -308,7 +321,7 @@ public final class SellCommand {
         long limit = EconomyConfig.get().dailySellLimit;
 
         if (remaining <= 0) {
-            source.sendFailure(Component.literal("Dagelijkse verkooplimiet van " + EconomyCraft.formatMoney(limit) + " reached. Try again tomorrow.")
+            source.sendFailure(Component.literal("Dagelijkse verkooplimiet van " + EconomyCraft.formatMoney(limit) + " bereikt. Probeer morgen weer.")
                     .withStyle(ChatFormatting.RED));
         } else {
             source.sendFailure(Component.literal("Deze verkoop overschrijdt de dagelijkse verkooplimiet van " +
