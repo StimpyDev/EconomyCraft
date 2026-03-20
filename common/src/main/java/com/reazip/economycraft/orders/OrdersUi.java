@@ -67,10 +67,15 @@ public final class OrdersUi {
     private static ItemStack createBalanceItem(EconomyManager eco, UUID playerId, @Nullable ServerPlayer player, @Nullable String name) {
     ItemStack gold = new ItemStack(Items.GOLD_INGOT);
     long balance = eco.getBalance(playerId, true);
-    
-    gold.set(DataComponents.CUSTOM_NAME, 
+        
+    gold.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME,
+            Component.literal("Saldo")
+                     .withStyle(s -> s.withItalic(true).withColor(BALANCE_NAME_COLOR)));
+        
+    gold.set(net.minecraft.core.component.DataComponents.LORE, new ItemLore(List.of(
             Component.literal(EconomyCraft.formatMoney(balance))
-                    .withStyle(s -> s.withItalic(true).withColor(BALANCE_VALUE_COLOR)));
+                      .withStyle(s -> s.withItalic(true).withColor(BALANCE_VALUE_COLOR))
+    )));
     
     return gold;
 }
