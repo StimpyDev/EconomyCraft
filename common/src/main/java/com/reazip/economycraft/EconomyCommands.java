@@ -186,46 +186,42 @@ public final class EconomyCommands {
     }
 
     private static int balTop(CommandSourceStack source) {
-        EconomyManager manager = EconomyCraft.getManager(source.getServer());
-        Map<UUID, Long> balances = manager.getBalances();
+    EconomyManager manager = EconomyCraft.getManager(source.getServer());
+    Map<UUID, Long> balances = manager.getBalances();
 
-        if (balances.isEmpty()) {
-            source.sendFailure(Component.literal("Geen saldo gevonden").withStyle(ChatFormatting.RED));
-            return 0;
-        }
-
-        var sorted = getSortedEntries(balances, manager);
-        if (sorted.size() > 10) sorted = new java.util.ArrayList<>(sorted.subList(0, 10));
-
-        StringBuilder sb = new StringBuilder("Top 10 Saldo's:\n");
-        for (int i = 0; i < sorted.size(); i++) {
-            var e = sorted.get(i);
-            UUID id = e.getKey();
-            long balance = e.getValue();
-
-            String name = manager.getBestName(id);
-            if (name == null || name.isBlank()) name = id.toString();
-
-            sb.append(i + 1)
-                    .append(". ")
-                    .append(name)
-                    .append(": ")
-                    .append(EconomyCraft.formatMoney(balance));
-
-            if (i + 1 < sorted.size()) sb.append("\n");
-        }
-
-        Component msg = Component.literal(sb.toString()).withStyle(ChatFormatting.GOLD);
-
-        ServerPlayer executor;
-        try { executor = source.getPlayerOrException(); }
-        catch (Exception ex) { executor = null; }
-
-        if (executor != null) executor.sendSystemMessage(msg);
-        else source.sendSuccess(() -> msg, false);
-
-        return sorted.size();
+    if (balances == null || balances.isEmpty()) {
+        source.sendFailure(Component.literal("Geen saldo gevonden").withStyle(ChatFormatting.RED));
+        return 0;
     }
+        
+    var topEntries = balances.entrySet().stream()
+            .sorted(Map.Entry.<UUID, Long>comparingByValue().reversed())
+            .limit(10)
+            .toList();
+
+    MutableComponent message = Component.literal("--- Top 10 Saldo's ---")
+        .withStyle(ChatFormatting.GOLD)
+        .withStyle(ChatFormatting.BOLD);
+    
+    for (int i = 0; i < topEntries.size(); i++) {
+        var entry = topEntries.get(i);
+        UUID id = entry.getKey();
+        long balance = entry.getValue();
+
+        String name = manager.getBestName(id);
+        if (name == null || name.isBlank()) name = "Onbekend (" + id.toString().substring(0, 8) + ")";
+
+        message.append(Component.literal("\n" + (i + 1) + ". ")
+                .withStyle(ChatFormatting.YELLOW))
+               .append(Component.literal(name + ": ")
+                .withStyle(ChatFormatting.GRAY))
+               .append(Component.literal(EconomyCraft.formatMoney(balance))
+                .withStyle(ChatFormatting.WHITE));
+    }
+
+    source.sendSuccess(() -> message, false);
+    return topEntries.size();
+}
 
     private static @NotNull ArrayList<Map.Entry<UUID, Long>> getSortedEntries(Map<UUID, Long> balances, EconomyManager manager) {
         var sorted = new ArrayList<>(balances.entrySet());
