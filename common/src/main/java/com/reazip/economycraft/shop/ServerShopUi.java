@@ -742,30 +742,42 @@ map.put(normalizeCategoryKey("Platen"), IdentifierCompat.withDefaultNamespace("m
         return cleaned;
     }
 
-    private static List<Integer> buildStarSlotOrder(int height) {
-        int width = 9;
-        int centerX = (width - 1) / 2;
-        int centerY = (height - 1) / 2;
-        List<int[]> entries = new ArrayList<>();
-        for (int y = 0; y < height; y++) {
-            for (int x = 0; x < width; x++) {
-                int idx = y * width + x;
-                double dx = x - centerX;
-                double dy = y - centerY;
-                double dist = Math.sqrt(dx * dx + dy * dy);
-                entries.add(new int[]{idx, (int) (dist * 1000), y, x});
+private static List<Integer> buildStarSlotOrder(int height) {
+    int width = 9;
+    int centerX = (width - 1) / 2;
+    int centerY = (height - 1) / 2;
+    List<int[]> entries = new ArrayList<>();
+
+    for (int y = 0; y < height; y++) {
+        for (int x = 0; x < width; x++) {
+            int idx = y * width + x;
+            
+            if (y == 0) {
+                entries.add(new int[]{idx, 9999, y, x});
+                continue;
             }
+
+            double dx = x - centerX;
+            double dy = y - centerY;
+            double dist = Math.sqrt(dx * dx + dy * dy);
+            int finalDist = (int) (dist * 1000);
+
+            if (idx == 23) finalDist = -2;
+            if (idx == 24) finalDist = -1;
+
+            entries.add(new int[]{idx, finalDist, y, x});
         }
-
-        entries.sort(Comparator
-                .comparingInt((int[] a) -> a[1])
-                .thenComparingInt(a -> a[2])
-                .thenComparingInt(a -> a[3]));
-
-        List<Integer> order = new ArrayList<>(entries.size());
-        for (int[] e : entries) order.add(e[0]);
-        return order;
     }
+
+    entries.sort(Comparator
+            .comparingInt((int[] a) -> a[1])
+            .thenComparingInt(a -> a[2])
+            .thenComparingInt(a -> a[3]));
+
+    List<Integer> order = new ArrayList<>(entries.size());
+    for (int[] e : entries) order.add(e[0]);
+    return order;
+}
 
     private static ChatFormatting getCategoryColor(String key) {
         String norm = normalizeCategoryKey(key);
