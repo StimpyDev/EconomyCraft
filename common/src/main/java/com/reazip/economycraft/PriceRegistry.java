@@ -119,6 +119,10 @@ public final class PriceRegistry {
         }
     }
 
+    public void load() {
+        reload();
+    }
+
     public PriceEntry get(IdentifierCompat.Id id) {
         return prices.get(id);
     }
