@@ -1,4 +1,4 @@
-> ⚠️ Fork of EconomyCraft that improves server performance, translate most things to (dutch), add few qol stuff, like /eco reload to reload the prices.json without needing to restart the server.
+> ⚠️ Fork of EconomyCraft that improves server performance, translate most things to (dutch), add few qol stuff, like /eco reload to reload the prices.json without needing to restart the server. This fork also removes the /daily command.
 
 # EconomyCraft
 
