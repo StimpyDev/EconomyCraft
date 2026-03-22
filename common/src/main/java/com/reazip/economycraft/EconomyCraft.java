@@ -30,7 +30,9 @@ public final class EconomyCraft {
 
         LifecycleEvent.SERVER_STOPPING.register(server -> {
             if (manager != null && lastServer == server) {
-                manager.save();
+                manager.shutdown();
+                manager = null;
+                lastServer = null;
             }
         });
 
@@ -39,13 +41,15 @@ public final class EconomyCraft {
 
     private static void onPlayerJoin(ServerPlayer player) {
         EconomyManager eco = getManager(player.level().getServer());
+        
+        eco.getBestName(player.getUUID()); 
         eco.getBalance(player.getUUID(), true);
 
         if (eco.getOrders().hasDeliveries(player.getUUID()) || eco.getShop().hasDeliveries(player.getUUID())) {
             ClickEvent ev = ChatCompat.runCommandEvent("/eco orders claim");
 
             if (ev != null) {
-                Component msg = Component.literal("Je hebt ongeclaimede items: ")
+                Component msg = Component.literal("Je hebt ongeclaimde items: ")
                         .withStyle(ChatFormatting.YELLOW)
                         .append(Component.literal("[Claim]")
                                 .withStyle(s -> s.withUnderlined(true).withColor(ChatFormatting.GREEN).withClickEvent(ev)));
@@ -53,7 +57,7 @@ public final class EconomyCraft {
             } else {
                 ChatCompat.sendRunCommandTellraw(
                         player,
-                        "You have unclaimed items: ",
+                        "Je hebt ongeclaimde items: ",
                         "[Claim]",
                         "/eco orders claim"
                 );
@@ -75,7 +79,6 @@ public final class EconomyCraft {
         return Component.literal(baseTitle + " - Saldo: " + formatMoney(balance));
     }
 
-   
     public static String formatMoney(long amount) {
         return "$" + FORMAT.format(amount);
     }
