@@ -1,5 +1,4 @@
-> ⚠️ Development is paused until **August 2026**. No updates will be released during this time.  
-> Thanks to everyone for the support and suggestions so far. I’ll review new comments and issues once development resumes.
+> ⚠️ Fork of EconomyCraft that improves server performance, translate most things to (dutch), add few qol stuff, like /eco reload to reload the prices.json without needing to restart the server.
 
 # EconomyCraft
 
