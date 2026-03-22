@@ -43,14 +43,15 @@ public final class EconomyCommands {
                 buildSetMoney(),
                 buildRemoveMoney(),
                 buildRemovePlayer(),
-                buildToggleScoreboard()
+                buildToggleScoreboard(),
+                buildReload()
         ));
 
         dispatcher.register(buildBalance().requires(s -> EconomyConfig.get().standaloneCommands));
         dispatcher.register(buildPay().requires(s -> EconomyConfig.get().standaloneCommands));
         dispatcher.register(SellCommand.register().requires(s -> EconomyConfig.get().standaloneCommands));
         dispatcher.register(buildAH().requires(s -> EconomyConfig.get().standaloneCommands));
-        dispatcher.register(buildOrders().requires(s -> EconomyConfig.get().standaloneCommands));
+        dispatcher.register(buildOrders().requires(s -> EconomyConfig.get().standaloneCommands));\
 
         dispatcher.register(
                 buildAddMoney().requires(src ->
@@ -100,7 +101,8 @@ public final class EconomyCommands {
             LiteralArgumentBuilder<CommandSourceStack> setMoney,
             LiteralArgumentBuilder<CommandSourceStack> removeMoney,
             LiteralArgumentBuilder<CommandSourceStack> removePlayer,
-            LiteralArgumentBuilder<CommandSourceStack> toggleScoreboard
+            LiteralArgumentBuilder<CommandSourceStack> toggleScoreboard,
+            LiteralArgumentBuilder<CommandSourceStack> reload
     ) {
         LiteralArgumentBuilder<CommandSourceStack> root = literal("eco");
 
@@ -109,6 +111,7 @@ public final class EconomyCommands {
         root.then(SellCommand.register());
         root.then(buildAH());
         root.then(buildOrders());
+        root.then(reload);
 
         root.then(addMoney);
         root.then(setMoney);
@@ -268,8 +271,9 @@ public final class EconomyCommands {
             return 0;
         }
 
-        if (!manager.getBalances().containsKey(toId)) {
-            source.sendFailure(Component.literal("Onbekende speler!").withStyle(ChatFormatting.RED));
+        Long targetBalance = manager.getBalance(toId, false);
+        if (targetBalance == null) {
+            source.sendFailure(Component.literal("Deze speler heeft geen economy account!").withStyle(ChatFormatting.RED));
             return 0;
         }
 
@@ -325,6 +329,30 @@ public final class EconomyCommands {
     // =====================================================================
     // === Admin commands ==================================================
     // =====================================================================
+
+    private static LiteralArgumentBuilder<CommandSourceStack> buildReload() {
+    return literal("reload")
+            .requires(PermissionCompat.gamemaster())
+            .executes(ctx -> reloadEconomy(ctx.getSource()));
+}
+
+    private static int reloadEconomy(CommandSourceStack source) {
+    try {
+        EconomyManager manager = EconomyCraft.getManager(source.getServer());
+        manager.getPrices().load(); 
+        
+        Component msg = Component.literal("Economy prijzen succesvol herladen")
+                .withStyle(ChatFormatting.GREEN);
+        
+        source.sendSuccess(() -> msg, true);
+        return 1;
+    } catch (Exception e) {
+        LOGGER.error("Fout bij het herladen van de economy prijzen", e);
+        source.sendFailure(Component.literal("Herladen mislukt! Controleer de server logs.")
+                .withStyle(ChatFormatting.RED));
+        return 0;
+       }
+    }
 
     private static LiteralArgumentBuilder<CommandSourceStack> buildAddMoney() {
         return literal("addmoney").requires(PermissionCompat.gamemaster())
@@ -826,13 +854,20 @@ public final class EconomyCommands {
     // =====================================================================
 
     private static String getDisplayName(EconomyManager manager, UUID id) {
-        var server = manager.getServer();
-        ServerPlayer online = server.getPlayerList().getPlayer(id);
-        if (online != null) return IdentityCompat.of(online).name();
-        String name = manager.getBestName(id);
-        if (name != null && !name.isBlank()) return name;
-        return id.toString();
+    var server = manager.getServer();
+    ServerPlayer online = server.getPlayerList().getPlayer(id);
+
+    if (online != null) {
+        return IdentityCompat.of(online).name();
     }
+
+    String name = manager.getBestName(id);
+    if (name != null && !name.isBlank()) {
+        return name;
+    }
+    
+    return id.toString().substring(0, 8); 
+}
 
     private static CompletableFuture<Suggestions> suggestPlayers(CommandSourceStack source, SuggestionsBuilder builder) {
         var server = source.getServer();
