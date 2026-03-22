@@ -195,6 +195,12 @@ public class EconomyManager {
         return false;
     }
 
+    public long getDailySellRemaining(UUID player) {
+        long limit = EconomyConfig.get().dailySellLimit;
+        if (limit <= 0) return Long.MAX_VALUE;
+        return Math.max(0, limit - getOrCreateTodaySellData(player).amount());
+    }
+
     private DailySellData getOrCreateTodaySellData(UUID player) {
         long today = LocalDate.now().toEpochDay();
         DailySellData data = dailySells.get(player);
