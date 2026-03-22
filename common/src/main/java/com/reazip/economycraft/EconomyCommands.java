@@ -51,7 +51,7 @@ public final class EconomyCommands {
         dispatcher.register(buildPay().requires(s -> EconomyConfig.get().standaloneCommands));
         dispatcher.register(SellCommand.register().requires(s -> EconomyConfig.get().standaloneCommands));
         dispatcher.register(buildAH().requires(s -> EconomyConfig.get().standaloneCommands));
-        dispatcher.register(buildOrders().requires(s -> EconomyConfig.get().standaloneCommands));\
+        dispatcher.register(buildOrders().requires(s -> EconomyConfig.get().standaloneCommands));
 
         dispatcher.register(
                 buildAddMoney().requires(src ->
