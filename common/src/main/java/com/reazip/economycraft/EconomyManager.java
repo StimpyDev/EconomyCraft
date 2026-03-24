@@ -5,9 +5,13 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 import com.reazip.economycraft.util.IdentityCompat;
 import net.minecraft.ChatFormatting;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.StringTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.scores.DisplaySlot;
 import net.minecraft.world.scores.Objective;
 import net.minecraft.world.scores.Scoreboard;
@@ -180,6 +184,26 @@ public class EconomyManager {
         markDirty();
     }
 
+    // --- Item Lore Price ---
+
+    public void applyPriceLore(ItemStack stack) {
+        if (stack.isEmpty()) return;
+
+        long price = prices.getSellPrice(stack.getItem());
+        if (price <= 0) return;
+
+        CompoundTag display = stack.getOrCreateTagElement("display");
+        ListTag lore = new ListTag();
+
+        Component priceComponent = Component.literal("Verkoopprijs: ")
+                .withStyle(ChatFormatting.GRAY)
+                .append(Component.literal(EconomyCraft.formatMoney(price)).withStyle(ChatFormatting.GOLD))
+                .withStyle(ChatFormatting.ITALIC);
+
+        lore.add(StringTag.valueOf(Component.Serializer.toJson(priceComponent)));
+        display.put("Lore", lore);
+    }
+
     // --- Daily Sell Logic ---
 
     public boolean tryRecordDailySell(UUID player, long saleAmount) {
@@ -298,16 +322,16 @@ public class EconomyManager {
         addMoney(killer.getUUID(), loss);
         
         victim.sendSystemMessage(Component.literal("Je verloor ")
-        .append(Component.literal(EconomyCraft.formatMoney(loss)).withStyle(ChatFormatting.GOLD))
-        .append(Component.literal(" omdat je bent vermoord door: "))
-        .append(Component.literal(killer.getName().getString()).withStyle(ChatFormatting.RED).withStyle(ChatFormatting.BOLD))
-        .withStyle(ChatFormatting.RED));
+            .append(Component.literal(EconomyCraft.formatMoney(loss)).withStyle(ChatFormatting.GOLD))
+            .append(Component.literal(" omdat je bent vermoord door: "))
+            .append(Component.literal(killer.getName().getString()).withStyle(ChatFormatting.RED).withStyle(ChatFormatting.BOLD))
+            .withStyle(ChatFormatting.RED));
 
         killer.sendSystemMessage(Component.literal("Je ontving ")
-        .append(Component.literal(EconomyCraft.formatMoney(loss)).withStyle(ChatFormatting.GOLD))
-        .append(Component.literal(" door het vermoorden van: "))
-        .append(Component.literal(victim.getName().getString()).withStyle(ChatFormatting.RED).withStyle(ChatFormatting.BOLD))
-        .withStyle(ChatFormatting.RED));
+            .append(Component.literal(EconomyCraft.formatMoney(loss)).withStyle(ChatFormatting.GOLD))
+            .append(Component.literal(" door het vermoorden van: "))
+            .append(Component.literal(victim.getName().getString()).withStyle(ChatFormatting.RED).withStyle(ChatFormatting.BOLD))
+            .withStyle(ChatFormatting.RED));
     }
 
     private long clamp(long value) { return Math.max(0, Math.min(MAX, value)); }
