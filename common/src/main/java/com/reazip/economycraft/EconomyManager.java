@@ -297,8 +297,17 @@ public class EconomyManager {
         removeMoney(victim.getUUID(), loss);
         addMoney(killer.getUUID(), loss);
         
-        victim.sendSystemMessage(Component.literal("Je verloor " + EconomyCraft.formatMoney(loss) + " aan " + killer.getName().getString()).withStyle(ChatFormatting.RED));
-        killer.sendSystemMessage(Component.literal("Je ontving " + EconomyCraft.formatMoney(loss) + " van " + victim.getName().getString()).withStyle(ChatFormatting.GREEN));
+        victim.sendSystemMessage(Component.literal("Je verloor ")
+        .append(Component.literal(EconomyCraft.formatMoney(loss)).withStyle(ChatFormatting.GOLD))
+        .append(Component.literal(" omdat je bent vermoord door: "))
+        .append(Component.literal(killer.getName().getString()).withStyle(ChatFormatting.RED).withStyle(ChatFormatting.BOLD))
+        .withStyle(ChatFormatting.RED));
+
+        killer.sendSystemMessage(Component.literal("Je ontving ")
+        .append(Component.literal(EconomyCraft.formatMoney(loss)).withStyle(ChatFormatting.GOLD))
+        .append(Component.literal(" door het vermoorden van: "))
+        .append(Component.literal(victim.getName().getString()).withStyle(ChatFormatting.RED).withStyle(ChatFormatting.BOLD))
+        .withStyle(ChatFormatting.RED));
     }
 
     private long clamp(long value) { return Math.max(0, Math.min(MAX, value)); }
