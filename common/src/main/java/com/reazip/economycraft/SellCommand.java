@@ -11,6 +11,7 @@ import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
 
@@ -47,8 +48,8 @@ public final class SellCommand {
             source.sendFailure(Component.literal("Je houdt geen item vast.").withStyle(ChatFormatting.RED));
             return 0;
         }
-
-        EconomyManager manager = EconomyCraft.getManager(source.getServer());
+        MinecraftServer server = source.getServer();
+        EconomyManager manager = EconomyCraft.getManager(server);
         PriceRegistry prices = manager.getPrices();
 
         ResolvedPrice resolved = prices.resolve(hand);
@@ -116,7 +117,8 @@ public final class SellCommand {
             return 0;
         }
 
-        EconomyManager manager = EconomyCraft.getManager(source.getServer());
+        MinecraftServer server = source.getServer();
+        EconomyManager manager = EconomyCraft.getManager(server);
         PriceRegistry prices = manager.getPrices();
         ResolvedPrice resolved = prices.resolve(hand);
         Long unitSell = prices.getUnitSell(hand);
@@ -182,8 +184,8 @@ public final class SellCommand {
             PENDING.remove(player.getUUID());
             return 0;
         }
-
-        EconomyManager manager = EconomyCraft.getManager(source.getServer());
+        MinecraftServer server = source.getServer();
+        EconomyManager manager = EconomyCraft.getManager(server);
         PriceRegistry prices = manager.getPrices();
 
         ItemStack hand = player.getMainHandItem();
@@ -200,7 +202,8 @@ public final class SellCommand {
         }
 
         String itemName = hand.getHoverName().getString();
-        removeMatching(player, prices, pending.key(), pending.count());
+        // FIX: Geef server mee aan removeMatching
+        removeMatching(player, prices, pending.key(), pending.count(), server);
         manager.addMoney(player.getUUID(), pending.total());
 
         player.sendSystemMessage(Component.literal("Succesvol verkocht ")
@@ -230,11 +233,11 @@ public final class SellCommand {
         return total;
     }
 
-    private static void removeMatching(ServerPlayer player, PriceRegistry prices, IdentifierCompat.Id key, int toRemove) {
+    // FIX: server toegevoegd als parameter om manager op te halen
+    private static void removeMatching(ServerPlayer player, PriceRegistry prices, IdentifierCompat.Id key, int toRemove, MinecraftServer server) {
         var inv = player.getInventory();
         int remaining = toRemove;
-        
-        EconomyManager manager = EconomyCraft.getManager(player.getServer());
+        EconomyManager manager = EconomyCraft.getManager(server);
 
         for (int i = 0; i < 36; i++) {
             ItemStack stack = inv.getItem(i);
