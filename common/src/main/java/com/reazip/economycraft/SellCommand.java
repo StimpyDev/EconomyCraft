@@ -234,7 +234,7 @@ public final class SellCommand {
         var inv = player.getInventory();
         int remaining = toRemove;
         
-        EconomyManager manager = EconomyCraft.getManager(player.server);
+        EconomyManager manager = EconomyCraft.getManager(player.getServer());
 
         for (int i = 0; i < 36; i++) {
             ItemStack stack = inv.getItem(i);
