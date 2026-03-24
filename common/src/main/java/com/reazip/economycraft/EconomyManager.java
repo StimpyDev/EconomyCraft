@@ -19,6 +19,9 @@ import net.minecraft.world.scores.Scoreboard;
 import net.minecraft.world.scores.ScoreHolder;
 import net.minecraft.world.scores.criteria.ObjectiveCriteria;
 import org.jetbrains.annotations.Nullable;
+import net.minecraft.world.item.component.ItemLore;
+import java.util.stream.Stream;
+import net.minecraft.core.component.DataComponents;
 
 import java.io.IOException;
 import java.lang.reflect.Type;
@@ -188,27 +191,23 @@ public class EconomyManager {
     // --- Item Lore Price ---
 
     public void applyPriceLore(ItemStack stack) {
-        if (stack.isEmpty()) return;
+    if (stack.isEmpty()) return;
 
-        Long price = prices.getUnitSell(stack);
-        if (price == null || price <= 0) return;
+    Long price = prices.getUnitSell(stack);
+    if (price == null || price <= 0) return;
 
-        CompoundTag tag = stack.getOrCreateTag();
-        if (!tag.contains("display", 10)) {
-            tag.put("display", new CompoundTag());
-        }
-        CompoundTag display = tag.getCompound("display");
-        
-        ListTag lore = new ListTag();
+    MutableComponent priceComponent = Component.literal("Verkoopprijs: ")
+            .withStyle(ChatFormatting.GRAY)
+            .append(Component.literal(EconomyCraft.formatMoney(price)).withStyle(ChatFormatting.GOLD))
+            .withStyle(ChatFormatting.ITALIC);
 
-        MutableComponent priceComponent = Component.literal("Verkoopprijs: ")
-                .withStyle(ChatFormatting.GRAY)
-                .append(Component.literal(EconomyCraft.formatMoney(price)).withStyle(ChatFormatting.GOLD))
-                .withStyle(ChatFormatting.ITALIC);
-
-        lore.add(StringTag.valueOf(Component.Serializer.toJson(priceComponent, server.registryAccess())));
-        display.put("Lore", lore);
-    }
+    ItemLore currentLore = stack.getOrDefault(DataComponents.LORE, ItemLore.EMPTY);
+    List<Component> newLines = new ArrayList<>();
+    
+    newLines.add(priceComponent);
+    
+    stack.set(DataComponents.LORE, new ItemLore(newLines));
+}
 
     // --- Daily Sell Logic ---
 
