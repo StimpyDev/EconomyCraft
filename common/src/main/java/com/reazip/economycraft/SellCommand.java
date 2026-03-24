@@ -233,7 +233,8 @@ public final class SellCommand {
     private static void removeMatching(ServerPlayer player, PriceRegistry prices, IdentifierCompat.Id key, int toRemove) {
         var inv = player.getInventory();
         int remaining = toRemove;
-        EconomyManager manager = EconomyCraft.getManager(player.getServer());
+        
+        EconomyManager manager = EconomyCraft.getManager(player.server);
 
         for (int i = 0; i < 36; i++) {
             ItemStack stack = inv.getItem(i);
