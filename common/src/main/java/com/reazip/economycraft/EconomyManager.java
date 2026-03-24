@@ -9,6 +9,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.StringTag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
@@ -189,18 +190,23 @@ public class EconomyManager {
     public void applyPriceLore(ItemStack stack) {
         if (stack.isEmpty()) return;
 
-        long price = prices.getSellPrice(stack.getItem());
-        if (price <= 0) return;
+        Long price = prices.getUnitSell(stack);
+        if (price == null || price <= 0) return;
 
-        CompoundTag display = stack.getOrCreateTagElement("display");
+        CompoundTag tag = stack.getOrCreateTag();
+        if (!tag.contains("display", 10)) {
+            tag.put("display", new CompoundTag());
+        }
+        CompoundTag display = tag.getCompound("display");
+        
         ListTag lore = new ListTag();
 
-        Component priceComponent = Component.literal("Verkoopprijs: ")
+        MutableComponent priceComponent = Component.literal("Verkoopprijs: ")
                 .withStyle(ChatFormatting.GRAY)
                 .append(Component.literal(EconomyCraft.formatMoney(price)).withStyle(ChatFormatting.GOLD))
                 .withStyle(ChatFormatting.ITALIC);
 
-        lore.add(StringTag.valueOf(Component.Serializer.toJson(priceComponent)));
+        lore.add(StringTag.valueOf(Component.Serializer.toJson(priceComponent, server.registryAccess())));
         display.put("Lore", lore);
     }
 
