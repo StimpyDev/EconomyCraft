@@ -2,6 +2,7 @@ package com.reazip.economycraft;
 
 import com.reazip.economycraft.util.ChatCompat;
 import dev.architectury.event.events.common.CommandRegistrationEvent;
+import dev.architectury.event.events.common.EntityEvent; // Nieuw
 import dev.architectury.event.events.common.LifecycleEvent;
 import dev.architectury.event.events.common.PlayerEvent;
 import net.minecraft.ChatFormatting;
@@ -37,6 +38,13 @@ public final class EconomyCraft {
         });
 
         PlayerEvent.PLAYER_JOIN.register(EconomyCraft::onPlayerJoin);
+
+        EntityEvent.ON_PICKUP.register((entity, stack) -> {
+            if (entity instanceof ServerPlayer player) {
+                getManager(player.server).applyPriceLore(stack);
+            }
+            return true;
+        });
     }
 
     private static void onPlayerJoin(ServerPlayer player) {
@@ -44,6 +52,7 @@ public final class EconomyCraft {
         
         eco.getBestName(player.getUUID()); 
         eco.getBalance(player.getUUID(), true);
+        eco.refreshPlayerInventory(player);
 
         if (eco.getOrders().hasDeliveries(player.getUUID()) || eco.getShop().hasDeliveries(player.getUUID())) {
             ClickEvent ev = ChatCompat.runCommandEvent("/eco orders claim");
@@ -76,7 +85,7 @@ public final class EconomyCraft {
     public static Component createBalanceTitle(String baseTitle, ServerPlayer player) {
         EconomyManager eco = getManager(player.level().getServer());
         long balance = eco.getBalance(player.getUUID(), true);
-        return Component.literal(baseTitle + " - Saldo: " + formatMoney(balance));
+        return Component.literal(baseTitle + "Saldo: " + formatMoney(balance));
     }
 
     public static String formatMoney(long amount) {
