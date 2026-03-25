@@ -190,24 +190,37 @@ public class EconomyManager {
 
     // --- Item Lore Price ---
 
-    public void applyPriceLore(ItemStack stack) {
-    if (stack.isEmpty()) return;
+   public void applyPriceLore(ItemStack stack) {
+        if (stack.isEmpty()) return;
 
-    Long price = prices.getUnitSell(stack);
-    if (price == null || price <= 0) return;
+        Long price = prices.getUnitSell(stack);
 
-    MutableComponent priceComponent = Component.literal("Verkoopprijs: ")
-            .withStyle(ChatFormatting.GRAY)
-            .append(Component.literal(EconomyCraft.formatMoney(price)).withStyle(ChatFormatting.GOLD))
-            .withStyle(ChatFormatting.ITALIC);
+       
+        ItemLore currentLore = stack.getOrDefault(DataComponents.LORE, ItemLore.EMPTY);
+        List<Component> lines = new ArrayList<>(currentLore.lines());
 
-    ItemLore currentLore = stack.getOrDefault(DataComponents.LORE, ItemLore.EMPTY);
-    List<Component> newLines = new ArrayList<>();
-    
-    newLines.add(priceComponent);
-    
-    stack.set(DataComponents.LORE, new ItemLore(newLines));
-}
+        lines.removeIf(line -> line.getString().contains("Verkoopprijs:"));
+
+        if (price != null && price > 0) {
+            if (!prices.isSellBlockedByDamage(stack)) {
+                MutableComponent priceComponent = Component.literal("Verkoopprijs: ")
+                        .withStyle(ChatFormatting.GRAY)
+                        .append(Component.literal(EconomyCraft.formatMoney(price)).withStyle(ChatFormatting.GOLD))
+                        .withStyle(ChatFormatting.ITALIC);
+                lines.add(priceComponent);
+            }
+        }
+
+        if (lines.size() != currentLore.lines().size()) {
+            stack.set(DataComponents.LORE, new ItemLore(lines));
+        }
+    }
+
+    public void refreshPlayerInventory(ServerPlayer player) {
+        for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
+            applyPriceLore(player.getInventory().getItem(i));
+        }
+    }
 
     // --- Daily Sell Logic ---
 
