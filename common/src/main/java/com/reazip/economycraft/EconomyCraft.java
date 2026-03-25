@@ -38,21 +38,26 @@ public final class EconomyCraft {
 
         PlayerEvent.PLAYER_JOIN.register(EconomyCraft::onPlayerJoin);
 
-        PlayerEvent.PICKUP_ITEM.register((player, entity, stack) -> {
+        PlayerEvent.PICKUP_ITEM_PRE.register((player, entity, stack) -> {
             if (player instanceof ServerPlayer serverPlayer) {
-                getManager(serverPlayer.getServer()).applyPriceLore(stack);
+                MinecraftServer server = serverPlayer.level().getServer();
+                if (server != null) {
+                    getManager(server).applyPriceLore(stack);
+                }
             }
+            return dev.architectury.event.EventResult.pass();
         });
     }
 
     private static void onPlayerJoin(ServerPlayer player) {
-        // Gebruik player.getServer() voor consistentie
-        EconomyManager eco = getManager(player.getServer());
+        MinecraftServer server = player.level().getServer();
+        if (server == null) return;
+
+        EconomyManager eco = getManager(server);
         
         eco.getBestName(player.getUUID()); 
         eco.getBalance(player.getUUID(), true);
         
-        // Ververs de lore van alle items die de speler al heeft
         eco.refreshPlayerInventory(player);
 
         if (eco.getOrders().hasDeliveries(player.getUUID()) || eco.getShop().hasDeliveries(player.getUUID())) {
@@ -84,7 +89,10 @@ public final class EconomyCraft {
     }
 
     public static Component createBalanceTitle(String baseTitle, ServerPlayer player) {
-        EconomyManager eco = getManager(player.getServer());
+        MinecraftServer server = player.level().getServer();
+        if (server == null) return Component.literal(baseTitle);
+        
+        EconomyManager eco = getManager(server);
         long balance = eco.getBalance(player.getUUID(), true);
         return Component.literal(baseTitle + "Saldo: " + formatMoney(balance));
     }
