@@ -5,23 +5,19 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 import com.reazip.economycraft.util.IdentityCompat;
 import net.minecraft.ChatFormatting;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.StringTag;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.component.ItemLore;
 import net.minecraft.world.scores.DisplaySlot;
 import net.minecraft.world.scores.Objective;
 import net.minecraft.world.scores.Scoreboard;
 import net.minecraft.world.scores.ScoreHolder;
 import net.minecraft.world.scores.criteria.ObjectiveCriteria;
 import org.jetbrains.annotations.Nullable;
-import net.minecraft.world.item.component.ItemLore;
-import java.util.stream.Stream;
-import net.minecraft.core.component.DataComponents;
 
 import java.io.IOException;
 import java.lang.reflect.Type;
@@ -190,28 +186,22 @@ public class EconomyManager {
 
     // --- Item Lore Price ---
 
-   public void applyPriceLore(ItemStack stack) {
+    public void applyPriceLore(ItemStack stack) {
         if (stack.isEmpty()) return;
 
         Long price = prices.getUnitSell(stack);
-
-       
+        
         ItemLore currentLore = stack.getOrDefault(DataComponents.LORE, ItemLore.EMPTY);
         List<Component> lines = new ArrayList<>(currentLore.lines());
 
         lines.removeIf(line -> line.getString().contains("Verkoopprijs:"));
 
         if (price != null && price > 0) {
-            if (!prices.isSellBlockedByDamage(stack)) {
-                MutableComponent priceComponent = Component.literal("Verkoopprijs: ")
-                        .withStyle(ChatFormatting.GRAY)
-                        .append(Component.literal(EconomyCraft.formatMoney(price)).withStyle(ChatFormatting.GOLD))
-                        .withStyle(ChatFormatting.ITALIC);
-                lines.add(priceComponent);
-            }
-        }
-
-        if (lines.size() != currentLore.lines().size()) {
+            MutableComponent priceLine = Component.literal("Verkoopprijs: ")
+                    .withStyle(ChatFormatting.GRAY)
+                    .append(Component.literal(EconomyCraft.formatMoney(price)).withStyle(ChatFormatting.GOLD));
+            
+            lines.add(priceLine);
             stack.set(DataComponents.LORE, new ItemLore(lines));
         }
     }
