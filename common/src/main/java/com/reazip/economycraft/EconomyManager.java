@@ -189,7 +189,7 @@ public class EconomyManager {
     public void applyPriceLore(ItemStack stack) {
         if (stack.isEmpty()) return;
 
-        Long price = prices.getUnitSell(stack);
+        Long price = prices.getUnitSell(stack); 
         
         ItemLore currentLore = stack.getOrDefault(DataComponents.LORE, ItemLore.EMPTY);
         List<Component> lines = new ArrayList<>(currentLore.lines());
@@ -198,8 +198,9 @@ public class EconomyManager {
 
         if (price != null && price > 0) {
             MutableComponent priceLine = Component.literal("Verkoopprijs: ")
-                    .withStyle(ChatFormatting.GRAY)
-                    .append(Component.literal(EconomyCraft.formatMoney(price)).withStyle(ChatFormatting.GOLD));
+                    .withStyle(s -> s.withColor(ChatFormatting.GRAY).withItalic(false))
+                    .append(Component.literal(EconomyCraft.formatMoney(price))
+                            .withStyle(s -> s.withColor(ChatFormatting.GOLD).withItalic(false)));
             
             lines.add(priceLine);
             stack.set(DataComponents.LORE, new ItemLore(lines));
