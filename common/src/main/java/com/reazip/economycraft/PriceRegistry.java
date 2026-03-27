@@ -12,12 +12,12 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.core.Holder;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.item.component.BundleContents;
-import net.minecraft.world.item.component.ItemContainerContents;
 import net.minecraft.world.item.alchemy.PotionContents;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.ItemEnchantments;
+import net.minecraft.world.item.component.BundleContents;
+import net.minecraft.world.item.component.ItemContainerContents;
 import org.slf4j.Logger;
 
 import java.io.IOException;
@@ -65,7 +65,12 @@ public final class PriceRegistry {
             for (Map.Entry<String, JsonElement> e : root.entrySet()) {
                 IdentifierCompat.Id id = IdentifierCompat.tryParse(e.getKey());
                 if (id == null) continue;
-                if (!IdentifierCompat.registryContainsKey(BuiltInRegistries.ITEM, id) && !isVirtualPriceId(id)) continue;
+
+                // Check of het item bestaat in de game OF een geldige virtuele ID is (potions/enchantments)
+                boolean isRealItem = IdentifierCompat.registryContainsKey(BuiltInRegistries.ITEM, id);
+                if (!isRealItem && !isVirtualPriceId(id)) {
+                    continue; 
+                }
 
                 JsonObject obj = e.getValue().getAsJsonObject();
                 prices.put(id, new PriceEntry(
@@ -76,14 +81,15 @@ public final class PriceRegistry {
                         getLong(obj, "unit_sell", 0L)
                 ));
             }
+            LOGGER.info("[EconomyCraft] Loaded {} prices from {}", prices.size(), file.getFileName());
         } catch (Exception ex) {
-            LOGGER.error("[EconomyCraft] Failed to load prices", ex);
+            LOGGER.error("[EconomyCraft] Failed to load prices.json", ex);
         }
     }
 
     public void load() { reload(); }
 
-    // --- Verkoop & Status Checks (Nodig voor SellCommand & EconomyManager) ---
+    // --- Verkoop & Status methoden (Nodig voor SellCommand & EconomyManager) ---
 
     public Long getUnitSell(ItemStack stack) {
         PriceEntry p = get(stack);
@@ -128,7 +134,7 @@ public final class PriceRegistry {
         return rp != null ? rp.entry() : null;
     }
 
-    // --- GUI & Category API ---
+    // --- GUI API (Nodig voor ServerShopUi) ---
 
     public Collection<String> buyCategories() {
         Set<String> out = new LinkedHashSet<>();
@@ -167,7 +173,7 @@ public final class PriceRegistry {
         return out;
     }
 
-    // --- Interne Potion/Book Logica ---
+    // --- Potion & Book Logica ---
 
     private static List<IdentifierCompat.Id> resolvePriceKeys(ItemStack stack) {
         List<IdentifierCompat.Id> out = new ArrayList<>();
@@ -193,12 +199,15 @@ public final class PriceRegistry {
 
     private static IdentifierCompat.Id readPotionId(ItemStack stack) {
         PotionContents contents = stack.get(DataComponents.POTION_CONTENTS);
-        return (contents == null) ? null : contents.potion().flatMap(Holder::unwrapKey).map(IdentifierCompat::fromResourceKey).orElse(null);
+        if (contents == null) return null;
+        return contents.potion().flatMap(Holder::unwrapKey).map(IdentifierCompat::fromResourceKey).orElse(null);
     }
 
     private static List<IdentifierCompat.Id> buildVirtualPotionKeys(ItemStack stack, IdentifierCompat.Id potionId) {
         String path = potionId.path();
-        String form = stack.is(Items.SPLASH_POTION) ? "splash_potion" : stack.is(Items.LINGERING_POTION) ? "lingering_potion" : stack.is(Items.TIPPED_ARROW) ? "arrow" : "potion";
+        String form = stack.is(Items.SPLASH_POTION) ? "splash_potion" : 
+                     stack.is(Items.LINGERING_POTION) ? "lingering_potion" : 
+                     stack.is(Items.TIPPED_ARROW) ? "arrow" : "potion";
 
         if (path.equals("water") || path.equals("awkward") || path.equals("mundane") || path.equals("thick")) {
             String key = (path.equals("water") && form.equals("potion")) ? "water_bottle" : form + "_of_" + path + "_1";
@@ -212,12 +221,15 @@ public final class PriceRegistry {
         if (effect.equals("turtle_master")) effect = "the_turtle_master";
 
         String finalKey = form + "_of_" + effect + suffix;
-        return suffix.equals("_1") ? List.of(IdentifierCompat.withDefaultNamespace(finalKey), IdentifierCompat.withDefaultNamespace(form + "_of_" + effect)) : List.of(IdentifierCompat.withDefaultNamespace(finalKey));
+        return suffix.equals("_1") ? 
+            List.of(IdentifierCompat.withDefaultNamespace(finalKey), IdentifierCompat.withDefaultNamespace(form + "_of_" + effect)) : 
+            List.of(IdentifierCompat.withDefaultNamespace(finalKey));
     }
 
     private static boolean isVirtualPriceId(IdentifierCompat.Id id) {
         String p = id.path();
-        return p.contains("_potion_of_") || p.contains("arrow_of_") || p.startsWith("enchanted_book_") || p.contains("water_bottle");
+        return p.contains("potion_of_") || p.contains("arrow_of_") || 
+               p.startsWith("enchanted_book_") || p.contains("water_bottle");
     }
 
     // --- Helpers ---
