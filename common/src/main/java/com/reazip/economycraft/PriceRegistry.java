@@ -76,15 +76,43 @@ public final class PriceRegistry {
                         getLong(obj, "unit_sell", 0L)
                 ));
             }
-            LOGGER.info("[EconomyCraft] Loaded {} prices from {}", prices.size(), file.getFileName());
         } catch (Exception ex) {
-            LOGGER.error("[EconomyCraft] Failed to load prices.json", ex);
+            LOGGER.error("[EconomyCraft] Failed to load prices", ex);
         }
     }
 
-    public void load() {
-        reload();
+    public void load() { reload(); }
+
+    // --- Verkoop & Status Checks (Nodig voor SellCommand & EconomyManager) ---
+
+    public Long getUnitSell(ItemStack stack) {
+        PriceEntry p = get(stack);
+        return (p != null && p.unitSell() > 0) ? p.unitSell() : null;
     }
+
+    public Long getUnitBuy(ItemStack stack) {
+        PriceEntry p = get(stack);
+        return (p != null && p.unitBuy() > 0) ? p.unitBuy() : null;
+    }
+
+    public boolean isSellBlockedByDamage(ItemStack stack) {
+        return stack != null && stack.isDamageableItem() && stack.getDamageValue() > 0;
+    }
+
+    public boolean isSellBlockedByContents(ItemStack stack) {
+        if (stack == null || stack.isEmpty()) return false;
+        ItemContainerContents container = stack.get(DataComponents.CONTAINER);
+        if (container != null && container.nonEmptyItems().iterator().hasNext()) return true;
+        BundleContents bundle = stack.get(DataComponents.BUNDLE_CONTENTS);
+        return bundle != null && !bundle.isEmpty();
+    }
+
+    public Integer getStackSize(ItemStack stack) {
+        PriceEntry p = get(stack);
+        return (p != null) ? p.stack() : null;
+    }
+
+    // --- Resolving ---
 
     public ResolvedPrice resolve(ItemStack stack) {
         if (stack == null || stack.isEmpty()) return null;
@@ -99,6 +127,8 @@ public final class PriceRegistry {
         ResolvedPrice rp = resolve(stack);
         return rp != null ? rp.entry() : null;
     }
+
+    // --- GUI & Category API ---
 
     public Collection<String> buyCategories() {
         Set<String> out = new LinkedHashSet<>();
@@ -132,12 +162,12 @@ public final class PriceRegistry {
     public List<PriceEntry> buyableByCategory(String category) {
         List<PriceEntry> out = new ArrayList<>();
         for (PriceEntry p : prices.values()) {
-            if (p.unitBuy() > 0 && category.equalsIgnoreCase(p.category())) {
-                out.add(p);
-            }
+            if (p.unitBuy() > 0 && category.equalsIgnoreCase(p.category())) out.add(p);
         }
         return out;
     }
+
+    // --- Interne Potion/Book Logica ---
 
     private static List<IdentifierCompat.Id> resolvePriceKeys(ItemStack stack) {
         List<IdentifierCompat.Id> out = new ArrayList<>();
@@ -147,7 +177,7 @@ public final class PriceRegistry {
             IdentifierCompat.Id potionId = readPotionId(stack);
             out.addAll(buildVirtualPotionKeys(stack, potionId != null ? potionId : IdentifierCompat.withDefaultNamespace("water")));
         }
-        
+
         if (stack.is(Items.ENCHANTED_BOOK)) {
             ItemEnchantments stored = stack.getOrDefault(DataComponents.STORED_ENCHANTMENTS, ItemEnchantments.EMPTY);
             for (Object2IntMap.Entry<Holder<Enchantment>> e : stored.entrySet()) {
@@ -168,9 +198,7 @@ public final class PriceRegistry {
 
     private static List<IdentifierCompat.Id> buildVirtualPotionKeys(ItemStack stack, IdentifierCompat.Id potionId) {
         String path = potionId.path();
-        String form = stack.is(Items.SPLASH_POTION) ? "splash_potion" : 
-                     stack.is(Items.LINGERING_POTION) ? "lingering_potion" : 
-                     stack.is(Items.TIPPED_ARROW) ? "arrow" : "potion";
+        String form = stack.is(Items.SPLASH_POTION) ? "splash_potion" : stack.is(Items.LINGERING_POTION) ? "lingering_potion" : stack.is(Items.TIPPED_ARROW) ? "arrow" : "potion";
 
         if (path.equals("water") || path.equals("awkward") || path.equals("mundane") || path.equals("thick")) {
             String key = (path.equals("water") && form.equals("potion")) ? "water_bottle" : form + "_of_" + path + "_1";
@@ -184,9 +212,7 @@ public final class PriceRegistry {
         if (effect.equals("turtle_master")) effect = "the_turtle_master";
 
         String finalKey = form + "_of_" + effect + suffix;
-        return suffix.equals("_1") ? 
-            List.of(IdentifierCompat.withDefaultNamespace(finalKey), IdentifierCompat.withDefaultNamespace(form + "_of_" + effect)) : 
-            List.of(IdentifierCompat.withDefaultNamespace(finalKey));
+        return suffix.equals("_1") ? List.of(IdentifierCompat.withDefaultNamespace(finalKey), IdentifierCompat.withDefaultNamespace(form + "_of_" + effect)) : List.of(IdentifierCompat.withDefaultNamespace(finalKey));
     }
 
     private static boolean isVirtualPriceId(IdentifierCompat.Id id) {
@@ -194,7 +220,7 @@ public final class PriceRegistry {
         return p.contains("_potion_of_") || p.contains("arrow_of_") || p.startsWith("enchanted_book_") || p.contains("water_bottle");
     }
 
-    // --- Boilerplate & Helpers ---
+    // --- Helpers ---
 
     private void createFromBundledDefault() {
         try (InputStream in = PriceRegistry.class.getResourceAsStream(DEFAULT_RESOURCE_PATH)) {
