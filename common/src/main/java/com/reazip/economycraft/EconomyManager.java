@@ -43,7 +43,10 @@ public class EconomyManager {
         Items.MELON, 90L,
         Items.MELON_SLICE, 90L,
         Items.KELP, 90L,
-        Items.BLAZE_ROD, 200L
+        Items.BLAZE_ROD, 200L,
+        Items.PUMPKIN, 90L,
+        Items.CACTUS, 45L,
+        Items.SUGAR_CANE, 45L
     );
 
     private final MinecraftServer server;
