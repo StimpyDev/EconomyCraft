@@ -80,9 +80,9 @@ public class EconomyManager {
         loadAll();
         loadUserCache();
 
+        this.prices = new PriceRegistry(server);
         this.shop = new com.reazip.economycraft.shop.ShopManager(server);
         this.orders = new com.reazip.economycraft.orders.OrderManager(server);
-        this.prices = new PriceRegistry(server);
 
         initScoreboard();
         startAutoSave();
@@ -201,7 +201,6 @@ public class EconomyManager {
 
         ItemLore currentLore = stack.getOrDefault(DataComponents.LORE, ItemLore.EMPTY);
         List<Component> lines = new ArrayList<>(currentLore.lines());
-        
         lines.removeIf(line -> line.getString().contains("Verkoopprijs:"));
 
         if (stack.is(ItemTags.SHULKER_BOXES)) {
@@ -210,6 +209,7 @@ public class EconomyManager {
         }
 
         Long price = prices.getUnitSell(stack);
+        
         if (price == null || price <= 0) {
             price = EXTRA_PRICES.get(stack.getItem());
         }
@@ -220,7 +220,6 @@ public class EconomyManager {
                         .withStyle(s -> s.withColor(ChatFormatting.GOLD).withItalic(false)));
         
         lines.add(priceLine);
-        
         stack.set(DataComponents.LORE, new ItemLore(lines));
     }
 
@@ -230,43 +229,11 @@ public class EconomyManager {
         }
     }
 
-    // --- Daily Sell Logic ---
-
-    public boolean tryRecordDailySell(UUID player, long saleAmount) {
-        long limit = EconomyConfig.get().dailySellLimit;
-        if (limit <= 0) return false;
-
-        DailySellData data = getOrCreateTodaySellData(player);
-        long newTotal = data.amount() + saleAmount;
-        if (newTotal > limit) return true;
-
-        dailySells.put(player, new DailySellData(data.day(), newTotal));
-        markDirty();
-        return false;
-    }
-
-    public long getDailySellRemaining(UUID player) {
-        long limit = EconomyConfig.get().dailySellLimit;
-        if (limit <= 0) return Long.MAX_VALUE;
-        return Math.max(0, limit - getOrCreateTodaySellData(player).amount());
-    }
-
-    private DailySellData getOrCreateTodaySellData(UUID player) {
-        long today = LocalDate.now().toEpochDay();
-        DailySellData data = dailySells.get(player);
-        if (data == null || data.day() != today) {
-            data = new DailySellData(today, 0L);
-            dailySells.put(player, data);
-        }
-        return data;
-    }
-
-    // --- Scoreboard ---
+    // --- File IO ---
 
     public boolean toggleScoreboard() {
         boolean newState = !EconomyConfig.get().scoreboardEnabled;
         EconomyConfig.get().scoreboardEnabled = newState;
-        
         if (!newState && objective != null) {
             server.getScoreboard().removeObjective(objective);
             objective = null;
@@ -295,8 +262,6 @@ public class EconomyManager {
         String name = getBestName(player);
         server.getScoreboard().getOrCreatePlayerScore(ScoreHolder.forNameOnly(name), objective).set((int) amount);
     }
-
-    // --- File IO ---
 
     private void loadAll() {
         try {
@@ -339,33 +304,16 @@ public class EconomyManager {
     public void handlePvpKill(ServerPlayer victim, ServerPlayer killer) {
         double pct = EconomyConfig.get().pvpBalanceLossPercentage;
         if (pct <= 0 || victim == null || killer == null || victim == killer) return;
-        
         long victimBal = getBalance(victim.getUUID(), true);
         long loss = (long) Math.floor(pct * victimBal);
         if (loss <= 0) return;
-        
         removeMoney(victim.getUUID(), loss);
         addMoney(killer.getUUID(), loss);
-        
-        victim.sendSystemMessage(Component.literal("Je verloor ")
-            .append(Component.literal(EconomyCraft.formatMoney(loss)).withStyle(ChatFormatting.GOLD))
-            .append(Component.literal(" omdat je bent vermoord door: "))
-            .append(Component.literal(killer.getName().getString()).withStyle(ChatFormatting.RED).withStyle(ChatFormatting.BOLD))
-            .withStyle(ChatFormatting.RED));
-
-        killer.sendSystemMessage(Component.literal("Je ontving ")
-            .append(Component.literal(EconomyCraft.formatMoney(loss)).withStyle(ChatFormatting.GOLD))
-            .append(Component.literal(" door het vermoorden van: "))
-            .append(Component.literal(victim.getName().getString()).withStyle(ChatFormatting.RED).withStyle(ChatFormatting.BOLD))
-            .withStyle(ChatFormatting.RED));
     }
 
     private long clamp(long value) { return Math.max(0, Math.min(MAX, value)); }
-    public com.reazip.economycraft.shop.ShopManager getShop() { return shop; }
-    public com.reazip.economycraft.orders.OrderManager getOrders() { return orders; }
     public PriceRegistry getPrices() { return prices; }
     public void shutdown() { scheduler.shutdown(); save(); }
-
     private static final class UserCacheEntry { String name; String uuid; }
     private record DailySellData(long day, long amount) {}
 }
