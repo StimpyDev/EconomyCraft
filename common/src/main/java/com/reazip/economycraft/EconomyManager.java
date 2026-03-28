@@ -197,14 +197,15 @@ public class EconomyManager {
     // --- Item Lore Price ---
 
     public void applyPriceLore(ItemStack stack) {
-        if (stack.isEmpty()) return;
+        if (stack == null || stack.isEmpty()) return;
 
         ItemLore currentLore = stack.getOrDefault(DataComponents.LORE, ItemLore.EMPTY);
         List<Component> lines = new ArrayList<>(currentLore.lines());
-        boolean removed = lines.removeIf(line -> line.getString().contains("Verkoopprijs:"));
+        
+        lines.removeIf(line -> line.getString().contains("Verkoopprijs:"));
 
         if (stack.is(ItemTags.SHULKER_BOXES)) {
-            if (removed) stack.set(DataComponents.LORE, new ItemLore(lines));
+            stack.set(DataComponents.LORE, new ItemLore(lines));
             return;
         }
 
@@ -213,17 +214,14 @@ public class EconomyManager {
             price = EXTRA_PRICES.get(stack.getItem());
         }
 
-        if (price != null && price > 0) {
-            MutableComponent priceLine = Component.literal("Verkoopprijs: ")
-                    .withStyle(s -> s.withColor(ChatFormatting.GRAY).withItalic(false))
-                    .append(Component.literal(EconomyCraft.formatMoney(price))
-                            .withStyle(s -> s.withColor(ChatFormatting.GOLD).withItalic(false)));
-            
-            lines.add(priceLine);
-            stack.set(DataComponents.LORE, new ItemLore(lines));
-        } else if (removed) {
-            stack.set(DataComponents.LORE, new ItemLore(lines));
-        }
+        MutableComponent priceLine = Component.literal("Verkoopprijs: ")
+                .withStyle(s -> s.withColor(ChatFormatting.GRAY).withItalic(false))
+                .append(Component.literal(EconomyCraft.formatMoney(price))
+                        .withStyle(s -> s.withColor(ChatFormatting.GOLD).withItalic(false)));
+        
+        lines.add(priceLine);
+        
+        stack.set(DataComponents.LORE, new ItemLore(lines));
     }
 
     public void refreshPlayerInventory(ServerPlayer player) {
