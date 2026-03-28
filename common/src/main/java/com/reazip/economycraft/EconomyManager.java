@@ -10,7 +10,10 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.tags.ItemTags;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.item.component.ItemLore;
 import net.minecraft.world.scores.DisplaySlot;
 import net.minecraft.world.scores.Objective;
@@ -36,6 +39,13 @@ public class EconomyManager {
     private static final Type TYPE = new TypeToken<Map<UUID, Long>>(){}.getType();
     private static final Type DAILY_SELL_TYPE = new TypeToken<Map<UUID, DailySellData>>(){}.getType();
     
+    private static final Map<Item, Long> EXTRA_PRICES = Map.of(
+        Items.MELON, 90L,
+        Items.MELON_SLICE, 90L,
+        Items.KELP, 90L,
+        Items.BLAZE_ROD, 200L
+    );
+
     private final MinecraftServer server;
     private final Path file, dailySellFile;
 
@@ -189,12 +199,19 @@ public class EconomyManager {
     public void applyPriceLore(ItemStack stack) {
         if (stack.isEmpty()) return;
 
-        Long price = prices.getUnitSell(stack); 
-        
         ItemLore currentLore = stack.getOrDefault(DataComponents.LORE, ItemLore.EMPTY);
         List<Component> lines = new ArrayList<>(currentLore.lines());
+        boolean removed = lines.removeIf(line -> line.getString().contains("Verkoopprijs:"));
 
-        lines.removeIf(line -> line.getString().contains("Verkoopprijs:"));
+        if (stack.is(ItemTags.SHULKER_BOXES)) {
+            if (removed) stack.set(DataComponents.LORE, new ItemLore(lines));
+            return;
+        }
+
+        Long price = prices.getUnitSell(stack);
+        if (price == null || price <= 0) {
+            price = EXTRA_PRICES.get(stack.getItem());
+        }
 
         if (price != null && price > 0) {
             MutableComponent priceLine = Component.literal("Verkoopprijs: ")
@@ -203,6 +220,8 @@ public class EconomyManager {
                             .withStyle(s -> s.withColor(ChatFormatting.GOLD).withItalic(false)));
             
             lines.add(priceLine);
+            stack.set(DataComponents.LORE, new ItemLore(lines));
+        } else if (removed) {
             stack.set(DataComponents.LORE, new ItemLore(lines));
         }
     }
