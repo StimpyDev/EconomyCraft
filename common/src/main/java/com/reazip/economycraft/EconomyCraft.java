@@ -43,7 +43,7 @@ public final class EconomyCraft {
         
         PlayerEvent.PICKUP_ITEM_PRE.register((player, entity, stack) -> {
             if (player instanceof ServerPlayer serverPlayer) {
-                MinecraftServer server = serverPlayer.level().getServer();
+                MinecraftServer server = serverPlayer.getServer();
                 if (server != null) {
                     getManager(server).applyPriceLore(stack);
                 }
@@ -53,20 +53,25 @@ public final class EconomyCraft {
 
         MenuEvent.OPEN.register((player, menu) -> {
             if (player instanceof ServerPlayer serverPlayer) {
-                MinecraftServer server = serverPlayer.server;
-                getManager(server).refreshPlayerInventory(serverPlayer);
+                MinecraftServer server = serverPlayer.getServer();
+                if (server != null) {
+                    getManager(server).refreshPlayerInventory(serverPlayer);
+                }
             }
         });
 
         PlayerEvent.CRAFT_ITEM.register((player, stack, inventory) -> {
             if (player instanceof ServerPlayer serverPlayer) {
-                getManager(serverPlayer.server).applyPriceLore(stack);
+                MinecraftServer server = serverPlayer.getServer();
+                if (server != null) {
+                    getManager(server).applyPriceLore(stack);
+                }
             }
         });
     }
 
     private static void onPlayerJoin(ServerPlayer player) {
-        MinecraftServer server = player.level().getServer();
+        MinecraftServer server = player.getServer();
         if (server == null) return;
 
         EconomyManager eco = getManager(server);
@@ -105,7 +110,7 @@ public final class EconomyCraft {
     }
 
     public static Component createBalanceTitle(String baseTitle, ServerPlayer player) {
-        MinecraftServer server = player.level().getServer();
+        MinecraftServer server = player.getServer();
         if (server == null) return Component.literal(baseTitle);
         
         EconomyManager eco = getManager(server);
