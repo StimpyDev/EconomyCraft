@@ -5,7 +5,6 @@ import com.reazip.economycraft.EconomyConfig;
 import com.reazip.economycraft.EconomyManager;
 import com.reazip.economycraft.util.ChatCompat;
 import com.reazip.economycraft.util.IdentityCompat;
-import com.reazip.economycraft.util.ProfileComponentCompat;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
@@ -22,10 +21,10 @@ import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.component.ItemLore;
-import com.mojang.authlib.GameProfile;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 public final class ShopUi {
     private ShopUi() {}
@@ -34,7 +33,6 @@ public final class ShopUi {
     private static final ChatFormatting LABEL_SECONDARY_COLOR = ChatFormatting.AQUA;
     private static final ChatFormatting VALUE_COLOR = ChatFormatting.DARK_PURPLE;
     private static final ChatFormatting BALANCE_NAME_COLOR = ChatFormatting.YELLOW;
-    private static final ChatFormatting BALANCE_LABEL_COLOR = ChatFormatting.GOLD;
     private static final ChatFormatting BALANCE_VALUE_COLOR = ChatFormatting.DARK_PURPLE;
 
     public static void open(ServerPlayer player, ShopManager shop) {
@@ -70,15 +68,13 @@ public final class ShopUi {
         return labeledValue("Prijs", value.toString(), LABEL_PRIMARY_COLOR);
     }
 
-   private static ItemStack createBalanceItem(ServerPlayer player) {
+    private static ItemStack createBalanceItem(ServerPlayer player) {
         ItemStack gold = new ItemStack(Items.GOLD_INGOT);
-        
-        var server = ((ServerLevel) player.level()).getServer();
+        var server = player.server;
         long balance = EconomyCraft.getManager(server).getBalance(player.getUUID(), true);
         
         gold.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME,
-                Component.literal("Saldo")
-                        .withStyle(s -> s.withItalic(true).withColor(BALANCE_NAME_COLOR)));
+                Component.literal("Saldo").withStyle(s -> s.withItalic(true).withColor(BALANCE_NAME_COLOR)));
         
         gold.set(net.minecraft.core.component.DataComponents.LORE, new ItemLore(List.of(
                 Component.literal(EconomyCraft.formatMoney(balance))
@@ -86,11 +82,6 @@ public final class ShopUi {
         )));
         
         return gold;
-    }
-
-    private static Component balanceLore(long balance) {
-        return Component.literal("Saldo: ").withStyle(s -> s.withItalic(false).withColor(BALANCE_LABEL_COLOR))
-                .append(Component.literal(EconomyCraft.formatMoney(balance)).withStyle(s -> s.withItalic(false).withColor(BALANCE_VALUE_COLOR)));
     }
 
     private static Component labeledValue(String label, String value, ChatFormatting labelColor) {
@@ -141,7 +132,7 @@ public final class ShopUi {
                 ShopListing l = listings.get(idx);
                 ItemStack display = l.item.copy();
                 
-                var server = ((ServerLevel) viewer.level()).getServer();
+                var server = viewer.server;
                 String sellerName;
                 ServerPlayer sellerPlayer = server.getPlayerList().getPlayer(l.seller);
                 if (sellerPlayer != null) {
@@ -202,6 +193,7 @@ public final class ShopUi {
         private final ShopManager shop;
         private final ShopListing listing;
         private final SimpleContainer container = new SimpleContainer(9);
+        private boolean isProcessing = false;
 
         ConfirmMenu(int id, Inventory inv, ShopManager shop, ShopListing listing, ServerPlayer viewer) {
             super(MenuType.GENERIC_9x1, id);
@@ -212,8 +204,7 @@ public final class ShopUi {
             confirm.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME, Component.literal("Bevestigen").withStyle(s -> s.withBold(true).withColor(ChatFormatting.GREEN)));
             container.setItem(2, confirm);
 
-            ItemStack display = listing.item.copy();
-            container.setItem(4, display);
+            container.setItem(4, listing.item.copy());
 
             ItemStack cancel = new ItemStack(Items.RED_STAINED_GLASS_PANE);
             cancel.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME, Component.literal("Annuleren").withStyle(s -> s.withBold(true).withColor(ChatFormatting.RED)));
@@ -225,30 +216,38 @@ public final class ShopUi {
         }
 
         @Override public void clicked(int slot, int dragType, ClickType type, Player player) {
+            if (isProcessing) return;
             if (type == ClickType.PICKUP && player instanceof ServerPlayer sp) {
                 if (slot == 2) {
-                    ShopListing current = shop.getListing(listing.id);
+                    isProcessing = true;
+                    ShopListing current = shop.removeListing(listing.id);
                     if (current == null) {
-                        sp.sendSystemMessage(Component.literal("Item niet meer beschikbaar.").withStyle(ChatFormatting.RED));
-                    } else {
-                        var server = ((ServerLevel) sp.level()).getServer();
-                        EconomyManager eco = EconomyCraft.getManager(server);
-                        long total = current.price + Math.round(current.price * EconomyConfig.get().taxRate);
-                        if (eco.getBalance(sp.getUUID(), true) < total) {
-                            sp.sendSystemMessage(Component.literal("Onvoldoende saldo.").withStyle(ChatFormatting.RED));
-                        } else {
-                            eco.removeMoney(sp.getUUID(), total);
-                            eco.addMoney(current.seller, current.price);
-                            shop.removeListing(current.id);
-                            ItemStack stack = current.item.copy();
-                            if (!sp.getInventory().add(stack)) {
-                                shop.addDelivery(sp.getUUID(), stack);
-                                sendClaimMessage(sp);
-                            }
-                            sp.sendSystemMessage(Component.literal("Item gekocht!").withStyle(ChatFormatting.GREEN));
-                        }
+                        sp.sendSystemMessage(Component.literal("Item niet meer beschikbaar of al verkocht.").withStyle(ChatFormatting.RED));
+                        sp.closeContainer();
+                        return;
                     }
-                    ShopUi.open(sp, shop);
+
+                    EconomyManager eco = EconomyCraft.getManager(sp.server);
+                    long total = current.price + Math.round(current.price * EconomyConfig.get().taxRate);
+
+                    if (eco.getBalance(sp.getUUID(), true) < total) {
+                        shop.addListing(current); 
+                        sp.sendSystemMessage(Component.literal("Onvoldoende saldo.").withStyle(ChatFormatting.RED));
+                        sp.closeContainer();
+                    } else {
+                        // Betaling uitvoeren
+                        eco.removeMoney(sp.getUUID(), total);
+                        eco.addMoney(current.seller, current.price);
+                        
+                        ItemStack stack = current.item.copy();
+                        if (!sp.getInventory().add(stack)) {
+                            shop.addDelivery(sp.getUUID(), stack);
+                            sendClaimMessage(sp);
+                        }
+                        sp.sendSystemMessage(Component.literal("Item gekocht!").withStyle(ChatFormatting.GREEN));
+                        sp.containerMenu.broadcastChanges();
+                        ShopUi.open(sp, shop);
+                    }
                 } else if (slot == 6) {
                     ShopUi.open(sp, shop);
                 }
@@ -262,6 +261,7 @@ public final class ShopUi {
         private final ShopManager shop;
         private final ShopListing listing;
         private final SimpleContainer container = new SimpleContainer(9);
+        private boolean isProcessing = false;
 
         RemoveMenu(int id, Inventory inv, ShopManager shop, ShopListing listing, ServerPlayer viewer) {
             super(MenuType.GENERIC_9x1, id);
@@ -283,8 +283,16 @@ public final class ShopUi {
         }
 
         @Override public void clicked(int slot, int dragType, ClickType type, Player player) {
+            if (isProcessing) return;
             if (type == ClickType.PICKUP && player instanceof ServerPlayer sp) {
                 if (slot == 2) {
+                    isProcessing = true;
+                    if (!listing.seller.equals(sp.getUUID())) {
+                        sp.sendSystemMessage(Component.literal("Dit is niet jouw item!").withStyle(ChatFormatting.RED));
+                        sp.closeContainer();
+                        return;
+                    }
+
                     ShopListing removed = shop.removeListing(listing.id);
                     if (removed != null) {
                         ItemStack stack = removed.item.copy();
@@ -292,7 +300,8 @@ public final class ShopUi {
                             shop.addDelivery(sp.getUUID(), stack);
                             sendClaimMessage(sp);
                         }
-                        sp.sendSystemMessage(Component.literal("Item verwijderd uit AH.").withStyle(ChatFormatting.GREEN));
+                        sp.sendSystemMessage(Component.literal("Item teruggenomen.").withStyle(ChatFormatting.GREEN));
+                        sp.containerMenu.broadcastChanges();
                     }
                     ShopUi.open(sp, shop);
                 } else if (slot == 6) {
@@ -306,8 +315,8 @@ public final class ShopUi {
 
     private static void sendClaimMessage(ServerPlayer sp) {
         ClickEvent ev = ChatCompat.runCommandEvent("/eco orders claim");
-        Component msg = Component.literal("Item opgeslagen: ").withStyle(ChatFormatting.YELLOW)
-            .append(Component.literal("[Claimen]").withStyle(s -> s.withColor(ChatFormatting.GREEN).withClickEvent(ev)));
+        Component msg = Component.literal("Geen ruimte in inventory! Item opgeslagen: ").withStyle(ChatFormatting.YELLOW)
+            .append(Component.literal("[Claimen]").withStyle(s -> s.withColor(ChatFormatting.GREEN).withBold(true).withClickEvent(ev)));
         sp.sendSystemMessage(msg);
     }
 }
