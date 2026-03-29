@@ -159,7 +159,6 @@ public final class OrdersUi {
                 container.setItem(i, display);
             }
 
-            // Navigatie
             if (page > 0) {
                 ItemStack prev = new ItemStack(Items.ARROW);
                 prev.set(DataComponents.CUSTOM_NAME, Component.literal("Vorige pagina").withStyle(s -> s.withItalic(false)));
@@ -450,7 +449,7 @@ public final class OrdersUi {
                             eco.getShop().removeDelivery(owner, stack);
                             updatePage();
                         } else {
-                            player.sendSystemMessage(Component.literal("Je inventaris zit vol!").withStyle(ChatFormatting.RED));
+                            ((ServerPlayer) player).sendSystemMessage(Component.literal("Je inventaris zit vol!").withStyle(ChatFormatting.RED));
                         }
                     }
                     return;
@@ -464,6 +463,7 @@ public final class OrdersUi {
         }
 
         @Override public boolean stillValid(Player p) { return true; }
+        
         @Override
         public ItemStack quickMoveStack(Player player, int idx) {
             if (idx < 45) {
@@ -473,6 +473,8 @@ public final class OrdersUi {
                         eco.getOrders().removeDelivery(owner, stack);
                         eco.getShop().removeDelivery(owner, stack);
                         updatePage();
+                    } else {
+                        ((ServerPlayer) player).sendSystemMessage(Component.literal("Je inventaris zit vol!").withStyle(ChatFormatting.RED));
                     }
                 }
             }
