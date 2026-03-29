@@ -36,19 +36,21 @@ public final class OrdersUi {
     private static final ChatFormatting BALANCE_NAME_COLOR = ChatFormatting.YELLOW;
     private static final ChatFormatting BALANCE_VALUE_COLOR = ChatFormatting.DARK_PURPLE;
 
-    public static void open(ServerPlayer player, EconomyManager eco) {
-        player.openMenu(new MenuProvider() {
-            @Override
-            public Component getDisplayName() {
-                return Component.literal("Bestellingen");
-            }
+public static void open(ServerPlayer player, EconomyManager eco) {
+    player.openMenu(new MenuProvider() {
+        @Override
+        public Component getDisplayName() {
+            return Component.literal("ʙᴇꜱᴛᴇʟʟɪɴɢᴇɴ")
+                    .withStyle(s -> s.withColor(net.minecraft.network.chat.TextColor.fromRgb(0xe6f51d))
+                                     .withItalic(false));
+        }
 
-            @Override
-            public AbstractContainerMenu createMenu(int id, Inventory inv, Player p) {
-                return new RequestMenu(id, inv, eco.getOrders(), eco, (ServerPlayer) p);
-            }
-        });
-    }
+        @Override
+        public AbstractContainerMenu createMenu(int id, Inventory inv, Player p) {
+            return new RequestMenu(id, inv, eco.getOrders(), eco, (ServerPlayer) p);
+        }
+    });
+}
 
     private static Component createRewardLore(long reward, long tax) {
         String value = EconomyCraft.formatMoney(reward);
