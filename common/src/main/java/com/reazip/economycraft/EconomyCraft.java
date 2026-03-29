@@ -4,6 +4,7 @@ import com.reazip.economycraft.util.ChatCompat;
 import dev.architectury.event.events.common.CommandRegistrationEvent;
 import dev.architectury.event.events.common.LifecycleEvent;
 import dev.architectury.event.events.common.PlayerEvent;
+import dev.architectury.event.events.common.MenuEvent;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
@@ -36,8 +37,10 @@ public final class EconomyCraft {
             }
         });
 
-        PlayerEvent.PLAYER_JOIN.register(EconomyCraft::onPlayerJoin);
+        // --- Lore Update Events ---
 
+        PlayerEvent.PLAYER_JOIN.register(EconomyCraft::onPlayerJoin);
+        
         PlayerEvent.PICKUP_ITEM_PRE.register((player, entity, stack) -> {
             if (player instanceof ServerPlayer serverPlayer) {
                 MinecraftServer server = serverPlayer.level().getServer();
@@ -46,6 +49,19 @@ public final class EconomyCraft {
                 }
             }
             return dev.architectury.event.EventResult.pass();
+        });
+
+        MenuEvent.OPEN.register((player, menu) -> {
+            if (player instanceof ServerPlayer serverPlayer) {
+                MinecraftServer server = serverPlayer.server;
+                getManager(server).refreshPlayerInventory(serverPlayer);
+            }
+        });
+
+        PlayerEvent.CRAFT_ITEM.register((player, stack, inventory) -> {
+            if (player instanceof ServerPlayer serverPlayer) {
+                getManager(serverPlayer.server).applyPriceLore(stack);
+            }
         });
     }
 
