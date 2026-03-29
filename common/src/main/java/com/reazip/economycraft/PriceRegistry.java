@@ -66,7 +66,6 @@ public final class PriceRegistry {
                 IdentifierCompat.Id id = IdentifierCompat.tryParse(e.getKey());
                 if (id == null) continue;
 
-                // Check of het item bestaat in de game OF een geldige virtuele ID is (potions/enchantments)
                 boolean isRealItem = IdentifierCompat.registryContainsKey(BuiltInRegistries.ITEM, id);
                 if (!isRealItem && !isVirtualPriceId(id)) {
                     continue; 
@@ -88,8 +87,6 @@ public final class PriceRegistry {
     }
 
     public void load() { reload(); }
-
-    // --- Verkoop & Status methoden (Nodig voor SellCommand & EconomyManager) ---
 
     public Long getUnitSell(ItemStack stack) {
         PriceEntry p = get(stack);
@@ -118,8 +115,6 @@ public final class PriceRegistry {
         return (p != null) ? p.stack() : null;
     }
 
-    // --- Resolving ---
-
     public ResolvedPrice resolve(ItemStack stack) {
         if (stack == null || stack.isEmpty()) return null;
         for (IdentifierCompat.Id key : resolvePriceKeys(stack)) {
@@ -133,8 +128,6 @@ public final class PriceRegistry {
         ResolvedPrice rp = resolve(stack);
         return rp != null ? rp.entry() : null;
     }
-
-    // --- GUI API (Nodig voor ServerShopUi) ---
 
     public Collection<String> buyCategories() {
         Set<String> out = new LinkedHashSet<>();
@@ -173,8 +166,6 @@ public final class PriceRegistry {
         return out;
     }
 
-    // --- Potion & Book Logica ---
-
     private static List<IdentifierCompat.Id> resolvePriceKeys(ItemStack stack) {
         List<IdentifierCompat.Id> out = new ArrayList<>();
         IdentifierCompat.Id itemId = IdentifierCompat.wrap(BuiltInRegistries.ITEM.getKey(stack.getItem()));
@@ -188,7 +179,10 @@ public final class PriceRegistry {
             ItemEnchantments stored = stack.getOrDefault(DataComponents.STORED_ENCHANTMENTS, ItemEnchantments.EMPTY);
             for (Object2IntMap.Entry<Holder<Enchantment>> e : stored.entrySet()) {
                 e.getKey().unwrapKey().map(IdentifierCompat::fromResourceKey).ifPresent(enchId -> {
-                    out.add(IdentifierCompat.fromNamespaceAndPath(enchId.namespace(), "enchanted_book_" + enchId.path() + "_" + e.getIntValue()));
+                    out.add(IdentifierCompat.fromNamespaceAndPath(
+                            enchId.namespace(), 
+                            "enchanted_book_" + enchId.path() + "_" + e.getIntValue()
+                    ));
                 });
             }
         }
@@ -231,8 +225,6 @@ public final class PriceRegistry {
         return p.contains("potion_of_") || p.contains("arrow_of_") || 
                p.startsWith("enchanted_book_") || p.contains("water_bottle");
     }
-
-    // --- Helpers ---
 
     private void createFromBundledDefault() {
         try (InputStream in = PriceRegistry.class.getResourceAsStream(DEFAULT_RESOURCE_PATH)) {
