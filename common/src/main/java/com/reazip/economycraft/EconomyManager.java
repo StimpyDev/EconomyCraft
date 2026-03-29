@@ -201,38 +201,31 @@ public class EconomyManager {
     // --- Item Lore Price ---
 
     public void applyPriceLore(ItemStack stack) {
-        if (stack == null || stack.isEmpty()) return;
+        if (stack == null || stack.isEmpty() || stack.is(ItemTags.SHULKER_BOXES)) return;
 
-        if (stack.is(ItemTags.SHULKER_BOXES)) return;
-        
-        Long rawPrice = (prices != null) ? prices.getUnitSell(stack) : null;
-        if (rawPrice == null || rawPrice <= 0) {
-            rawPrice = EXTRA_PRICES.get(stack.getItem());
+        Long price = (prices != null) ? prices.getUnitSell(stack) : null;
+        if (price == null || price <= 0) {
+            price = EXTRA_PRICES.get(stack.getItem());
         }
-        long finalPrice = (rawPrice != null) ? rawPrice : 1L;
-        String formattedPrice = EconomyCraft.formatMoney(finalPrice);
+
+        if (price == null || price <= 0) return;
+
+        String formattedPrice = EconomyCraft.formatMoney(price);
         ItemLore currentLore = stack.get(DataComponents.LORE);
         List<Component> lines = (currentLore != null) ? currentLore.lines() : Collections.emptyList();
         
-        boolean hasCorrectPrice = false;
-        int existingPriceIndex = -1;
-
-        for (int i = 0; i < lines.size(); i++) {
-            String lineContent = lines.get(i).getString();
-            if (lineContent.contains("Verkoopprijs:")) {
-                if (lineContent.contains(formattedPrice)) {
-                    hasCorrectPrice = true;
-                }
-                existingPriceIndex = i;
-                break;
+        for (Component line : lines) {
+            String str = line.getString();
+            if (str.contains("Verkoopprijs:") && str.contains(formattedPrice)) {
+                return;
             }
         }
 
-        if (hasCorrectPrice) return;
-
-        List<Component> newLines = new ArrayList<>(lines);
-        if (existingPriceIndex != -1) {
-            newLines.remove(existingPriceIndex);
+        List<Component> newLines = new ArrayList<>();
+        for (Component line : lines) {
+            if (!line.getString().contains("Verkoopprijs:")) {
+                newLines.add(line);
+            }
         }
 
         MutableComponent priceLine = Component.literal("Verkoopprijs: ")
@@ -249,9 +242,7 @@ public class EconomyManager {
             applyPriceLore(player.getInventory().getItem(i));
         }
         if (player.containerMenu != null) {
-            for (int i = 0; i < player.containerMenu.slots.size(); i++) {
-                applyPriceLore(player.containerMenu.slots.get(i).getItem());
-            }
+            player.containerMenu.slots.forEach(slot -> applyPriceLore(slot.getItem()));
         }
     }
 
