@@ -70,7 +70,8 @@ public final class ShopUi {
 
     private static ItemStack createBalanceItem(ServerPlayer player) {
         ItemStack gold = new ItemStack(Items.GOLD_INGOT);
-        var server = player.server;
+        // FIX: Gebruik getServer() in plaats van .server
+        var server = player.getServer();
         long balance = EconomyCraft.getManager(server).getBalance(player.getUUID(), true);
         
         gold.set(DataComponents.CUSTOM_NAME,
@@ -132,7 +133,7 @@ public final class ShopUi {
                 ShopListing l = listings.get(idx);
                 ItemStack display = l.item.copy();
                 
-                var server = viewer.server;
+                var server = viewer.getServer();
                 String sellerName;
                 ServerPlayer sellerPlayer = server.getPlayerList().getPlayer(l.seller);
                 if (sellerPlayer != null) {
@@ -227,7 +228,7 @@ public final class ShopUi {
                         return;
                     }
 
-                    EconomyManager eco = EconomyCraft.getManager(sp.server);
+                    EconomyManager eco = EconomyCraft.getManager(sp.getServer());
                     long total = current.price + Math.round(current.price * EconomyConfig.get().taxRate);
 
                     if (eco.getBalance(sp.getUUID(), true) < total) {
@@ -287,7 +288,7 @@ public final class ShopUi {
                 if (slot == 2) {
                     isProcessing = true;
                     if (!listing.seller.equals(sp.getUUID())) {
-                        sp.sendSystemMessage(Component.literal("Dit is niet jouw item! Probeer het opnieuw.").withStyle(ChatFormatting.RED));
+                        sp.sendSystemMessage(Component.literal("Dit is niet jouw item! Probeer het later.").withStyle(ChatFormatting.RED));
                         sp.closeContainer();
                         return;
                     }
