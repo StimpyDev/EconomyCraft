@@ -36,13 +36,19 @@ public final class ShopUi {
     private static final ChatFormatting BALANCE_VALUE_COLOR = ChatFormatting.DARK_PURPLE;
 
     public static void open(ServerPlayer player, ShopManager shop) {
-        player.openMenu(new MenuProvider() {
-            @Override public Component getDisplayName() { return Component.literal("Veilingshuis"); }
-            @Override public AbstractContainerMenu createMenu(int id, Inventory inv, Player p) {
-                return new ShopMenu(id, inv, shop, (ServerPlayer) p);
-            }
-        });
-    }
+    player.openMenu(new MenuProvider() {
+        @Override 
+        public Component getDisplayName() { 
+            return Component.literal("ᴠᴇɪʟɪɴɢꜱʜᴜɪꜱ")
+                    .withStyle(s -> s.withColor(ChatFormatting.AQUA).withItalic(false)); 
+        }
+        
+        @Override 
+        public AbstractContainerMenu createMenu(int id, Inventory inv, Player p) {
+            return new ShopMenu(id, inv, shop, (ServerPlayer) p);
+        }
+    });
+}
 
     static void openConfirm(ServerPlayer player, ShopManager shop, ShopListing listing) {
         player.openMenu(new MenuProvider() {
