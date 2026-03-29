@@ -6,9 +6,9 @@ import com.reazip.economycraft.EconomyManager;
 import com.reazip.economycraft.util.ChatCompat;
 import com.reazip.economycraft.util.IdentityCompat;
 import net.minecraft.ChatFormatting;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.MenuProvider;
 import net.minecraft.world.SimpleContainer;
@@ -73,12 +73,12 @@ public final class ShopUi {
         var server = player.server;
         long balance = EconomyCraft.getManager(server).getBalance(player.getUUID(), true);
         
-        gold.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME,
-                Component.literal("Saldo").withStyle(s -> s.withItalic(true).withColor(BALANCE_NAME_COLOR)));
+        gold.set(DataComponents.CUSTOM_NAME,
+                Component.literal("Saldo").withStyle(s -> s.withItalic(false).withColor(BALANCE_NAME_COLOR)));
         
-        gold.set(net.minecraft.core.component.DataComponents.LORE, new ItemLore(List.of(
+        gold.set(DataComponents.LORE, new ItemLore(List.of(
                 Component.literal(EconomyCraft.formatMoney(balance))
-                        .withStyle(s -> s.withItalic(true).withColor(BALANCE_VALUE_COLOR))
+                        .withStyle(s -> s.withItalic(false).withColor(BALANCE_VALUE_COLOR))
         )));
         
         return gold;
@@ -142,7 +142,7 @@ public final class ShopUi {
                 }
 
                 long tax = Math.round(l.price * EconomyConfig.get().taxRate);
-                display.set(net.minecraft.core.component.DataComponents.LORE, new ItemLore(List.of(
+                display.set(DataComponents.LORE, new ItemLore(List.of(
                         createPriceLore(l.price, tax),
                         labeledValue("Verkoper", sellerName, LABEL_SECONDARY_COLOR))));
                 container.setItem(i, display);
@@ -150,20 +150,20 @@ public final class ShopUi {
 
             if (page > 0) {
                 ItemStack prev = new ItemStack(Items.ARROW);
-                prev.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME, Component.literal("Vorige pagina").withStyle(s -> s.withItalic(false)));
+                prev.set(DataComponents.CUSTOM_NAME, Component.literal("Vorige pagina").withStyle(s -> s.withItalic(false)));
                 container.setItem(navRowStart + 3, prev);
             }
 
             if (start + 45 < listings.size()) {
                 ItemStack next = new ItemStack(Items.ARROW);
-                next.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME, Component.literal("Volgende pagina").withStyle(s -> s.withItalic(false)));
+                next.set(DataComponents.CUSTOM_NAME, Component.literal("Volgende pagina").withStyle(s -> s.withItalic(false)));
                 container.setItem(navRowStart + 5, next);
             }
 
             container.setItem(navRowStart, createBalanceItem(viewer));
             
             ItemStack info = new ItemStack(Items.PAPER);
-            info.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME, Component.literal("Pagina " + (page + 1) + "/" + Math.max(1, totalPages)).withStyle(s -> s.withItalic(false)));
+            info.set(DataComponents.CUSTOM_NAME, Component.literal("Pagina " + (page + 1) + "/" + Math.max(1, totalPages)).withStyle(s -> s.withItalic(false)));
             container.setItem(navRowStart + 4, info);
         }
 
@@ -201,13 +201,13 @@ public final class ShopUi {
             this.listing = listing;
 
             ItemStack confirm = new ItemStack(Items.LIME_STAINED_GLASS_PANE);
-            confirm.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME, Component.literal("Bevestigen").withStyle(s -> s.withBold(true).withColor(ChatFormatting.GREEN)));
+            confirm.set(DataComponents.CUSTOM_NAME, Component.literal("Bevestigen").withStyle(s -> s.withBold(true).withColor(ChatFormatting.GREEN).withItalic(false)));
             container.setItem(2, confirm);
 
             container.setItem(4, listing.item.copy());
 
             ItemStack cancel = new ItemStack(Items.RED_STAINED_GLASS_PANE);
-            cancel.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME, Component.literal("Annuleren").withStyle(s -> s.withBold(true).withColor(ChatFormatting.RED)));
+            cancel.set(DataComponents.CUSTOM_NAME, Component.literal("Annuleren").withStyle(s -> s.withBold(true).withColor(ChatFormatting.RED).withItalic(false)));
             container.setItem(6, cancel);
 
             for (int i = 0; i < 9; i++) {
@@ -235,7 +235,6 @@ public final class ShopUi {
                         sp.sendSystemMessage(Component.literal("Onvoldoende saldo.").withStyle(ChatFormatting.RED));
                         sp.closeContainer();
                     } else {
-                        // Betaling uitvoeren
                         eco.removeMoney(sp.getUUID(), total);
                         eco.addMoney(current.seller, current.price);
                         
@@ -269,12 +268,12 @@ public final class ShopUi {
             this.listing = listing;
 
             ItemStack confirm = new ItemStack(Items.LIME_STAINED_GLASS_PANE);
-            confirm.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME, Component.literal("Terugnemen").withStyle(ChatFormatting.GREEN));
+            confirm.set(DataComponents.CUSTOM_NAME, Component.literal("Terugnemen").withStyle(s -> s.withColor(ChatFormatting.GREEN).withItalic(false)));
             container.setItem(2, confirm);
             container.setItem(4, listing.item.copy());
             
             ItemStack cancel = new ItemStack(Items.RED_STAINED_GLASS_PANE);
-            cancel.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME, Component.literal("Annuleren").withStyle(ChatFormatting.RED));
+            cancel.set(DataComponents.CUSTOM_NAME, Component.literal("Annuleren").withStyle(s -> s.withColor(ChatFormatting.RED).withItalic(false)));
             container.setItem(6, cancel);
 
             for (int i = 0; i < 9; i++) {
@@ -288,7 +287,7 @@ public final class ShopUi {
                 if (slot == 2) {
                     isProcessing = true;
                     if (!listing.seller.equals(sp.getUUID())) {
-                        sp.sendSystemMessage(Component.literal("Dit is niet jouw item!").withStyle(ChatFormatting.RED));
+                        sp.sendSystemMessage(Component.literal("Dit is niet jouw item! Probeer het opnieuw.").withStyle(ChatFormatting.RED));
                         sp.closeContainer();
                         return;
                     }
@@ -315,7 +314,7 @@ public final class ShopUi {
 
     private static void sendClaimMessage(ServerPlayer sp) {
         ClickEvent ev = ChatCompat.runCommandEvent("/eco orders claim");
-        Component msg = Component.literal("Geen ruimte in inventory! Item opgeslagen: ").withStyle(ChatFormatting.YELLOW)
+        Component msg = Component.literal("Geen ruimte in je inventaris! Item opgeslagen: ").withStyle(ChatFormatting.YELLOW)
             .append(Component.literal("[Claimen]").withStyle(s -> s.withColor(ChatFormatting.GREEN).withBold(true).withClickEvent(ev)));
         sp.sendSystemMessage(msg);
     }
