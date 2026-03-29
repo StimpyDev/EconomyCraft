@@ -11,6 +11,7 @@ import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.ItemTags;
+import net.minecraft.world.Container;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -200,56 +201,64 @@ public class EconomyManager {
     // --- Item Lore Price ---
 
     public void applyPriceLore(ItemStack stack) {
-    if (stack == null || stack.isEmpty()) return;
+        if (stack == null || stack.isEmpty()) return;
 
-    if (stack.is(ItemTags.SHULKER_BOXES)) {
-        return; 
-    }
-
-    Long rawPrice = (prices != null) ? prices.getUnitSell(stack) : null;
-    if (rawPrice == null || rawPrice <= 0) {
-        rawPrice = EXTRA_PRICES.get(stack.getItem());
-    }
-    long finalPrice = (rawPrice != null) ? rawPrice : 1L;
-
-    ItemLore currentLore = stack.get(DataComponents.LORE);
-    List<Component> lines = (currentLore != null) ? currentLore.lines() : Collections.emptyList();
-    
-    String priceString = EconomyCraft.formatMoney(finalPrice);
-    boolean hasCorrectPrice = false;
-    int existingPriceIndex = -1;
-
-    for (int i = 0; i < lines.size(); i++) {
-        String lineContent = lines.get(i).getString();
-        if (lineContent.contains("Verkoopprijs:")) {
-            if (lineContent.contains(priceString)) {
-                hasCorrectPrice = true;
-            }
-            existingPriceIndex = i;
-            break;
+        if (stack.is(ItemTags.SHULKER_BOXES)) return;
+        
+        Long rawPrice = (prices != null) ? prices.getUnitSell(stack) : null;
+        if (rawPrice == null || rawPrice <= 0) {
+            rawPrice = EXTRA_PRICES.get(stack.getItem());
         }
+        long finalPrice = (rawPrice != null) ? rawPrice : 1L;
+        String formattedPrice = EconomyCraft.formatMoney(finalPrice);
+        ItemLore currentLore = stack.get(DataComponents.LORE);
+        List<Component> lines = (currentLore != null) ? currentLore.lines() : Collections.emptyList();
+        
+        boolean hasCorrectPrice = false;
+        int existingPriceIndex = -1;
+
+        for (int i = 0; i < lines.size(); i++) {
+            String lineContent = lines.get(i).getString();
+            if (lineContent.contains("Verkoopprijs:")) {
+                if (lineContent.contains(formattedPrice)) {
+                    hasCorrectPrice = true;
+                }
+                existingPriceIndex = i;
+                break;
+            }
+        }
+
+        if (hasCorrectPrice) return;
+
+        List<Component> newLines = new ArrayList<>(lines);
+        if (existingPriceIndex != -1) {
+            newLines.remove(existingPriceIndex);
+        }
+
+        MutableComponent priceLine = Component.literal("Verkoopprijs: ")
+                .withStyle(s -> s.withColor(ChatFormatting.GRAY).withItalic(false))
+                .append(Component.literal(formattedPrice)
+                        .withStyle(s -> s.withColor(ChatFormatting.GOLD).withItalic(false)));
+        
+        newLines.add(priceLine);
+        stack.set(DataComponents.LORE, new ItemLore(newLines));
     }
-
-    if (hasCorrectPrice) return;
-
-    List<Component> newLines = new ArrayList<>(lines);
-    
-    if (existingPriceIndex != -1) {
-        newLines.remove(existingPriceIndex);
-    }
-
-    MutableComponent priceLine = Component.literal("Verkoopprijs: ")
-            .withStyle(s -> s.withColor(ChatFormatting.GRAY).withItalic(false))
-            .append(Component.literal(priceString)
-                    .withStyle(s -> s.withColor(ChatFormatting.GOLD).withItalic(false)));
-    
-    newLines.add(priceLine);
-    stack.set(DataComponents.LORE, new ItemLore(newLines));
-}
 
     public void refreshPlayerInventory(ServerPlayer player) {
         for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
             applyPriceLore(player.getInventory().getItem(i));
+        }
+        if (player.containerMenu != null) {
+            for (int i = 0; i < player.containerMenu.slots.size(); i++) {
+                applyPriceLore(player.containerMenu.slots.get(i).getItem());
+            }
+        }
+    }
+
+    public void refreshContainer(Container container) {
+        if (container == null) return;
+        for (int i = 0; i < container.getContainerSize(); i++) {
+            applyPriceLore(container.getItem(i));
         }
     }
 
