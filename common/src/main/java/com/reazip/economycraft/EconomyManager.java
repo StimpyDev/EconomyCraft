@@ -200,32 +200,52 @@ public class EconomyManager {
     // --- Item Lore Price ---
 
     public void applyPriceLore(ItemStack stack) {
-        if (stack == null || stack.isEmpty()) return;
+    if (stack == null || stack.isEmpty()) return;
 
-        ItemLore currentLore = stack.getOrDefault(DataComponents.LORE, ItemLore.EMPTY);
-        List<Component> lines = new ArrayList<>(currentLore.lines());
-        
-        lines.removeIf(line -> line.getString().contains("Verkoopprijs:"));
-
-        if (stack.is(ItemTags.SHULKER_BOXES)) {
-            stack.set(DataComponents.LORE, new ItemLore(lines));
-            return;
-        }
-
-        Long price = prices.getUnitSell(stack);
-        if (price == null || price <= 0) {
-            price = EXTRA_PRICES.get(stack.getItem());
-        }
-
-        MutableComponent priceLine = Component.literal("Verkoopprijs: ")
-                .withStyle(s -> s.withColor(ChatFormatting.GRAY).withItalic(false))
-                .append(Component.literal(EconomyCraft.formatMoney(price))
-                        .withStyle(s -> s.withColor(ChatFormatting.GOLD).withItalic(false)));
-        
-        lines.add(priceLine);
-        
-        stack.set(DataComponents.LORE, new ItemLore(lines));
+    if (stack.is(ItemTags.SHULKER_BOXES)) {
+        return; 
     }
+
+    Long rawPrice = (prices != null) ? prices.getUnitSell(stack) : null;
+    if (rawPrice == null || rawPrice <= 0) {
+        rawPrice = EXTRA_PRICES.get(stack.getItem());
+    }
+    long finalPrice = (rawPrice != null) ? rawPrice : 1L;
+
+    ItemLore currentLore = stack.get(DataComponents.LORE);
+    List<Component> lines = (currentLore != null) ? currentLore.lines() : Collections.emptyList();
+    
+    String priceString = EconomyCraft.formatMoney(finalPrice);
+    boolean hasCorrectPrice = false;
+    int existingPriceIndex = -1;
+
+    for (int i = 0; i < lines.size(); i++) {
+        String lineContent = lines.get(i).getString();
+        if (lineContent.contains("Verkoopprijs:")) {
+            if (lineContent.contains(priceString)) {
+                hasCorrectPrice = true;
+            }
+            existingPriceIndex = i;
+            break;
+        }
+    }
+
+    if (hasCorrectPrice) return;
+
+    List<Component> newLines = new ArrayList<>(lines);
+    
+    if (existingPriceIndex != -1) {
+        newLines.remove(existingPriceIndex);
+    }
+
+    MutableComponent priceLine = Component.literal("Verkoopprijs: ")
+            .withStyle(s -> s.withColor(ChatFormatting.GRAY).withItalic(false))
+            .append(Component.literal(priceString)
+                    .withStyle(s -> s.withColor(ChatFormatting.GOLD).withItalic(false)));
+    
+    newLines.add(priceLine);
+    stack.set(DataComponents.LORE, new ItemLore(newLines));
+}
 
     public void refreshPlayerInventory(ServerPlayer player) {
         for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
