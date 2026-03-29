@@ -70,8 +70,7 @@ public final class ShopUi {
 
     private static ItemStack createBalanceItem(ServerPlayer player) {
         ItemStack gold = new ItemStack(Items.GOLD_INGOT);
-        // FIX: Gebruik getServer() in plaats van .server
-        var server = player.getServer();
+        var server = player.serverLevel().getServer();
         long balance = EconomyCraft.getManager(server).getBalance(player.getUUID(), true);
         
         gold.set(DataComponents.CUSTOM_NAME,
@@ -133,7 +132,7 @@ public final class ShopUi {
                 ShopListing l = listings.get(idx);
                 ItemStack display = l.item.copy();
                 
-                var server = viewer.getServer();
+                var server = viewer.serverLevel().getServer();
                 String sellerName;
                 ServerPlayer sellerPlayer = server.getPlayerList().getPlayer(l.seller);
                 if (sellerPlayer != null) {
@@ -228,7 +227,7 @@ public final class ShopUi {
                         return;
                     }
 
-                    EconomyManager eco = EconomyCraft.getManager(sp.getServer());
+                    EconomyManager eco = EconomyCraft.getManager(sp.serverLevel().getServer());
                     long total = current.price + Math.round(current.price * EconomyConfig.get().taxRate);
 
                     if (eco.getBalance(sp.getUUID(), true) < total) {
