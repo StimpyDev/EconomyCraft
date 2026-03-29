@@ -89,24 +89,27 @@ public final class ServerShopUi {
         openItems(player, eco, cat);
     }
 
-    private static void openRoot(ServerPlayer player, EconomyManager eco) {
-        Component title = Component.literal("DIEGOTJUH SHOP");
-        player.openMenu(new MenuProvider() {
-            @Override
-            public Component getDisplayName() {
-                return title;
-            }
+private static void openRoot(ServerPlayer player, EconomyManager eco) {
+    Component title = Component.literal("ᴅɪᴇɢᴏᴛᴊᴜʜ ꜱʜᴏᴘ")
+            .withStyle(s -> s.withColor(net.minecraft.network.chat.TextColor.fromRgb(0x81F571))
+                             .withItalic(false));
 
-            @Override
-            public AbstractContainerMenu createMenu(int id, Inventory inv, Player p) {
-                try {
-                    return new CategoryMenu(id, inv, eco, player);
-                } catch (Exception e) {
-                    throw e;
-                }
+    player.openMenu(new MenuProvider() {
+        @Override
+        public Component getDisplayName() {
+            return title;
+        }
+
+        @Override
+        public AbstractContainerMenu createMenu(int id, Inventory inv, Player p) {
+            try {
+                return new CategoryMenu(id, inv, eco, player);
+            } catch (Exception e) {
+                throw e;
             }
-        });
-    }
+        }
+    });
+}
 
     private static void openSubcategories(ServerPlayer player, EconomyManager eco, String topCategory) {
         Component title = Component.literal(formatCategoryTitle(topCategory));
