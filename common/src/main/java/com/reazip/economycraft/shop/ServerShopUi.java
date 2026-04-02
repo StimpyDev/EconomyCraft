@@ -39,6 +39,7 @@ import net.minecraft.world.item.enchantment.ItemEnchantments;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import org.jetbrains.annotations.Nullable;
+import net.minecraft.world.item.enchantment.Enchantments;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -471,6 +472,7 @@ public final class ServerShopUi {
         private void giveKitItems() {
             HolderLookup.Provider p = viewer.registryAccess();
             Inventory inv = viewer.getInventory();
+            
             inv.add(createEnchanted(Items.NETHERITE_HELMET, p, Map.of(Enchantments.PROTECTION, 4, Enchantments.UNBREAKING, 3, Enchantments.AQUA_AFFINITY, 1, Enchantments.RESPIRATION, 3, Enchantments.MENDING, 1)));
             inv.add(createEnchanted(Items.NETHERITE_CHESTPLATE, p, Map.of(Enchantments.PROTECTION, 4, Enchantments.UNBREAKING, 3, Enchantments.MENDING, 1)));
             inv.add(createEnchanted(Items.NETHERITE_LEGGINGS, p, Map.of(Enchantments.PROTECTION, 4, Enchantments.UNBREAKING, 3, Enchantments.MENDING, 1, Enchantments.SWIFT_SNEAK, 3)));
@@ -478,11 +480,18 @@ public final class ServerShopUi {
             inv.add(createEnchanted(Items.NETHERITE_SWORD, p, Map.of(Enchantments.SHARPNESS, 5, Enchantments.UNBREAKING, 3, Enchantments.MENDING, 1, Enchantments.FIRE_ASPECT, 2, Enchantments.SWEEPING_EDGE, 3, Enchantments.LOOTING, 3)));
             inv.add(createEnchanted(Items.NETHERITE_AXE, p, Map.of(Enchantments.UNBREAKING, 3, Enchantments.SHARPNESS, 5, Enchantments.MENDING, 1, Enchantments.SILK_TOUCH, 1)));
             
-            ItemStack spear = createEnchanted(Items.SPEAR, p, Map.of(Enchantments.SHARPNESS, 5, Enchantments.MENDING, 1, Enchantments.UNBREAKING, 3, Enchantments.KNOCKBACK, 2));
+            ItemStack spear = createEnchanted(Items.NETHERITE_SPEAR, p, Map.of(
+                Enchantments.SHARPNESS, 5, 
+                Enchantments.MENDING, 1, 
+                Enchantments.UNBREAKING, 3, 
+                Enchantments.KNOCKBACK, 2,
+                Enchantments.LUNGE, 3
+            ));
+
             spear.set(DataComponents.CUSTOM_NAME, Component.literal("Netherite Spear").withStyle(ChatFormatting.GOLD));
             inv.add(spear);
         }
-
+        
         private void handlePurchase(PriceRegistry.PriceEntry entry, ClickType clickType) {
             if (entry.unitBuy() <= 0) { viewer.sendSystemMessage(Component.literal("Niet te koop.").withStyle(ChatFormatting.RED)); return; }
             ItemStack base = createDisplayStack(entry, viewer);
