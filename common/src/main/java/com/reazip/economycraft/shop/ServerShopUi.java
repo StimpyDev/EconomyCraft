@@ -169,7 +169,7 @@ public final class ServerShopUi {
                     @Override public boolean mayPlace(ItemStack stack) { return false; }
                 });
             }
-            int y = 18 + 6 * 18 + 14;
+            int y = 140; 
             for (int r = 0; r < 3; r++) {
                 for (int c = 0; c < 9; c++) {
                     this.addSlot(new Slot(inv, c + r * 9 + 9, 8 + c * 18, y + r * 18));
@@ -368,7 +368,7 @@ public final class ServerShopUi {
             for (int c = 0; c < 9; c++) this.addSlot(new Slot(inv, c, 8 + c * 18, y + 58));
         }
 
-private void updatePage() {
+        private void updatePage() {
             container.clearContent();
             int start = page * itemsPerPage;
             int totalPages = (int) Math.ceil(entries.size() / (double) itemsPerPage);
@@ -378,35 +378,27 @@ private void updatePage() {
                 PriceRegistry.PriceEntry entry = entries.get(idx);
                 ItemStack display = createDisplayStack(entry, viewer);
                 if (display.isEmpty()) continue;
-                
-                int stackSize = Math.max(1, entry.stack());
+
                 List<Component> lore = new ArrayList<>();
-                
                 if (category.equalsIgnoreCase("kits")) {
                     lore.add(Component.literal("Inhoud:").withStyle(ChatFormatting.GRAY).withStyle(s -> s.withItalic(false)));
                     lore.add(Component.literal(" - Full Netherite Armor (Maxed)").withStyle(ChatFormatting.DARK_AQUA).withStyle(s -> s.withItalic(false)));
                     lore.add(Component.literal(" - Netherite Sword & Axe (Maxed)").withStyle(ChatFormatting.DARK_AQUA).withStyle(s -> s.withItalic(false)));
-                    lore.add(Component.literal(" - Netherite Spear").withStyle(ChatFormatting.GOLD).withStyle(s -> s.withItalic(false)));
+                    lore.add(Component.literal(" - Netherite Spear (Lunge 3)").withStyle(ChatFormatting.GOLD).withStyle(s -> s.withItalic(false)));
                     lore.add(Component.literal(""));
                 }
 
                 lore.add(labeledValue("Koop", EconomyCraft.formatMoney(entry.unitBuy()), LABEL_PRIMARY_COLOR));
-                
+                int stackSize = Math.max(1, entry.stack());
                 Long stackPrice = safeMultiply(entry.unitBuy(), stackSize);
-                if (stackSize > 1 && stackPrice != null) {
-                    lore.add(labeledValue("Stack (" + stackSize + ")", EconomyCraft.formatMoney(stackPrice), LABEL_PRIMARY_COLOR));
-                }
-                
+                if (stackSize > 1 && stackPrice != null) lore.add(labeledValue("Stack (" + stackSize + ")", EconomyCraft.formatMoney(stackPrice), LABEL_PRIMARY_COLOR));
                 lore.add(labeledValue("Linker muis", "Koop 1", LABEL_SECONDARY_COLOR));
-                if (stackSize > 1) {
-                    lore.add(labeledValue("Shift-klik", "Koop " + stackSize, LABEL_SECONDARY_COLOR));
-                }
-
+                if (stackSize > 1) lore.add(labeledValue("Shift-klik", "Koop " + stackSize, LABEL_SECONDARY_COLOR));
+                
                 display.set(DataComponents.LORE, new ItemLore(lore));
                 display.setCount(1);
                 container.setItem(i, display);
             }
-
             if (page > 0) {
                 ItemStack prev = new ItemStack(Items.ARROW);
                 prev.set(DataComponents.CUSTOM_NAME, Component.literal("Vorige pagina").withStyle(s -> s.withItalic(false)));
@@ -417,13 +409,10 @@ private void updatePage() {
                 next.set(DataComponents.CUSTOM_NAME, Component.literal("Volgende pagina").withStyle(s -> s.withItalic(false)));
                 container.setItem(navRowStart + 5, next);
             }
-            
             ItemStack back = new ItemStack(Items.BARRIER);
             back.set(DataComponents.CUSTOM_NAME, Component.literal("Terug").withStyle(s -> s.withItalic(false).withColor(ChatFormatting.DARK_RED).withBold(true)));
             container.setItem(navRowStart + 8, back);
-            
             container.setItem(navRowStart, createBalanceItem(viewer));
-            
             ItemStack paper = new ItemStack(Items.PAPER);
             paper.set(DataComponents.CUSTOM_NAME, Component.literal("Pagina " + (page + 1) + "/" + Math.max(1, totalPages)).withStyle(s -> s.withItalic(false)));
             container.setItem(navRowStart + 4, paper);
@@ -454,20 +443,15 @@ private void updatePage() {
                 Instant lastBuy = KIT_COOLDOWNS.get(viewer.getUUID());
                 if (lastBuy != null && Instant.now().isBefore(lastBuy.plusMillis(COOLDOWN_MILLIS))) {
                     long remaining = Duration.between(Instant.now(), lastBuy.plusMillis(COOLDOWN_MILLIS)).toMinutes();
-                    viewer.sendSystemMessage(Component.literal("Wacht nog " + remaining + " minuten voordat je weer een kit koopt!").withStyle(ChatFormatting.RED));
+                    viewer.sendSystemMessage(Component.literal("Wacht nog " + remaining + " minuten, voordat je deze kit weer koopt.").withStyle(ChatFormatting.RED));
                     return;
                 }
             }
-
-            if (entry.unitBuy() <= 0) { viewer.sendSystemMessage(Component.literal("Dit artikel kan niet worden gekocht.").withStyle(ChatFormatting.RED)); return; }
-            ItemStack base = createDisplayStack(entry, viewer);
-            if (base.isEmpty()) { viewer.sendSystemMessage(Component.literal("Artikel niet beschikbaar.").withStyle(ChatFormatting.RED)); return; }
 
             int amount = clickType == ClickType.QUICK_MOVE ? Math.max(1, entry.stack()) : 1;
             Long total = safeMultiply(entry.unitBuy(), amount);
             if (total == null || eco.getBalance(viewer.getUUID(), true) < total) {
                 sendPrivateSound(viewer, SoundEvents.VILLAGER_NO);
-                viewer.sendSystemMessage(Component.literal("Transactie mislukt of onvoldoende saldo.").withStyle(ChatFormatting.RED));
                 return;
             }
 
@@ -476,6 +460,7 @@ private void updatePage() {
                     giveKitItems(viewer, viewer.registryAccess());
                     KIT_COOLDOWNS.put(viewer.getUUID(), Instant.now());
                 } else {
+                    ItemStack base = createDisplayStack(entry, viewer);
                     giveToPlayer(viewer, base, amount);
                 }
                 sendPrivateSound(viewer, SoundEvents.EXPERIENCE_ORB_PICKUP);
@@ -494,6 +479,7 @@ private void updatePage() {
             inv.add(createEnchanted(Items.NETHERITE_AXE, p, Map.of(Enchantments.UNBREAKING, 3, Enchantments.SHARPNESS, 5, Enchantments.MENDING, 1, Enchantments.SILK_TOUCH, 1)));
             
             ItemStack spear = createEnchanted(Items.NETHERITE_SPEAR, p, Map.of(Enchantments.LUNGE, 3, Enchantments.SHARPNESS, 5, Enchantments.MENDING, 1, Enchantments.UNBREAKING, 3, Enchantments.KNOCKBACK, 2));
+            spear.set(DataComponents.CUSTOM_NAME, Component.literal("Netherite Spear"));
             inv.add(spear);
         }
 
@@ -544,35 +530,35 @@ private void updatePage() {
 
     private static Map<String, IdentifierCompat.Id> buildCategoryIcons() {
         Map<String, IdentifierCompat.Id> map = new HashMap<>();
-        map.put(normalizeCategoryKey("Kits"), IdentifierCompat.withDefaultNamespace("gray_wool"));
-        map.put(normalizeCategoryKey("Redstone"), IdentifierCompat.withDefaultNamespace("redstone"));
-        map.put(normalizeCategoryKey("Eten"), IdentifierCompat.withDefaultNamespace("cooked_beef"));
-        map.put(normalizeCategoryKey("Ores"), IdentifierCompat.withDefaultNamespace("iron_ingot"));
-        map.put(normalizeCategoryKey("Blokken"), IdentifierCompat.withDefaultNamespace("grass_block"));
-        map.put(normalizeCategoryKey("Stenen"), IdentifierCompat.withDefaultNamespace("cobblestone"));
-        map.put(normalizeCategoryKey("Bakstenen"), IdentifierCompat.withDefaultNamespace("bricks"));
-        map.put(normalizeCategoryKey("Koper"), IdentifierCompat.withDefaultNamespace("copper_block"));
-        map.put(normalizeCategoryKey("Aarde"), IdentifierCompat.withDefaultNamespace("dirt"));
-        map.put(normalizeCategoryKey("Zand"), IdentifierCompat.withDefaultNamespace("sand"));
-        map.put(normalizeCategoryKey("Hout"), IdentifierCompat.withDefaultNamespace("oak_log"));
-        map.put(normalizeCategoryKey("Drops"), IdentifierCompat.withDefaultNamespace("gunpowder"));
-        map.put(normalizeCategoryKey("Hulpmiddelen"), IdentifierCompat.withDefaultNamespace("totem_of_undying"));
-        map.put(normalizeCategoryKey("Vervoer"), IdentifierCompat.withDefaultNamespace("saddle"));
-        map.put(normalizeCategoryKey("Licht"), IdentifierCompat.withDefaultNamespace("lantern"));
-        map.put(normalizeCategoryKey("Planten"), IdentifierCompat.withDefaultNamespace("wheat"));
-        map.put(normalizeCategoryKey("Gereedschap"), IdentifierCompat.withDefaultNamespace("diamond_pickaxe"));
-        map.put(normalizeCategoryKey("Wapens"), IdentifierCompat.withDefaultNamespace("diamond_sword"));
-        map.put(normalizeCategoryKey("Armor"), IdentifierCompat.withDefaultNamespace("diamond_chestplate"));
-        map.put(normalizeCategoryKey("Enchantments"), IdentifierCompat.withDefaultNamespace("enchanted_book"));
-        map.put(normalizeCategoryKey("Brouwen"), IdentifierCompat.withDefaultNamespace("water_bottle"));
-        map.put(normalizeCategoryKey("Oceaan"), IdentifierCompat.withDefaultNamespace("tube_coral"));
-        map.put(normalizeCategoryKey("Nether"), IdentifierCompat.withDefaultNamespace("netherrack"));
-        map.put(normalizeCategoryKey("End"), IdentifierCompat.withDefaultNamespace("end_stone"));
-        map.put(normalizeCategoryKey("Diepe duisternis"), IdentifierCompat.withDefaultNamespace("sculk"));
-        map.put(normalizeCategoryKey("Archeologie"), IdentifierCompat.withDefaultNamespace("brush"));
-        map.put(normalizeCategoryKey("Ijs"), IdentifierCompat.withDefaultNamespace("ice"));
-        map.put(normalizeCategoryKey("Geverfd"), IdentifierCompat.withDefaultNamespace("blue_dye"));
-        map.put(normalizeCategoryKey("Platen"), IdentifierCompat.withDefaultNamespace("music_disc_strad"));
+        map.put("kits", IdentifierCompat.withDefaultNamespace("gray_wool"));
+        map.put("redstone", IdentifierCompat.withDefaultNamespace("redstone"));
+        map.put("eten", IdentifierCompat.withDefaultNamespace("cooked_beef"));
+        map.put("ores", IdentifierCompat.withDefaultNamespace("iron_ingot"));
+        map.put("blokken", IdentifierCompat.withDefaultNamespace("grass_block"));
+        map.put("stenen", IdentifierCompat.withDefaultNamespace("cobblestone"));
+        map.put("bakstenen", IdentifierCompat.withDefaultNamespace("bricks"));
+        map.put("koper", IdentifierCompat.withDefaultNamespace("copper_block"));
+        map.put("aarde", IdentifierCompat.withDefaultNamespace("dirt"));
+        map.put("zand", IdentifierCompat.withDefaultNamespace("sand"));
+        map.put("hout", IdentifierCompat.withDefaultNamespace("oak_log"));
+        map.put("drops", IdentifierCompat.withDefaultNamespace("gunpowder"));
+        map.put("hulpmiddelen", IdentifierCompat.withDefaultNamespace("totem_of_undying"));
+        map.put("vervoer", IdentifierCompat.withDefaultNamespace("saddle"));
+        map.put("licht", IdentifierCompat.withDefaultNamespace("lantern"));
+        map.put("planten", IdentifierCompat.withDefaultNamespace("wheat"));
+        map.put("gereedschap", IdentifierCompat.withDefaultNamespace("diamond_pickaxe"));
+        map.put("wapens", IdentifierCompat.withDefaultNamespace("diamond_sword"));
+        map.put("armor", IdentifierCompat.withDefaultNamespace("diamond_chestplate"));
+        map.put("enchantments", IdentifierCompat.withDefaultNamespace("enchanted_book"));
+        map.put("brouwen", IdentifierCompat.withDefaultNamespace("glass_bottle"));
+        map.put("oceaan", IdentifierCompat.withDefaultNamespace("tube_coral"));
+        map.put("nether", IdentifierCompat.withDefaultNamespace("netherrack"));
+        map.put("end", IdentifierCompat.withDefaultNamespace("end_stone"));
+        map.put("diepe duisternis", IdentifierCompat.withDefaultNamespace("sculk"));
+        map.put("archeologie", IdentifierCompat.withDefaultNamespace("brush"));
+        map.put("ijs", IdentifierCompat.withDefaultNamespace("ice"));
+        map.put("geverfd", IdentifierCompat.withDefaultNamespace("blue_dye"));
+        map.put("platen", IdentifierCompat.withDefaultNamespace("music_disc_strad"));
         return map;
     }
 
@@ -624,7 +610,7 @@ private void updatePage() {
             case "enchantments" -> ChatFormatting.LIGHT_PURPLE;
             case "brouwen", "oceaan" -> ChatFormatting.DARK_AQUA;
             case "nether" -> ChatFormatting.RED;
-            case "end", "enchanted" -> ChatFormatting.LIGHT_PURPLE;
+            case "end" -> ChatFormatting.LIGHT_PURPLE;
             case "diepe duisternis" -> ChatFormatting.DARK_BLUE;
             case "archeologie" -> ChatFormatting.GOLD;
             case "ijs" -> ChatFormatting.AQUA;
@@ -673,8 +659,8 @@ private void updatePage() {
     private static ItemStack createBalanceItem(ServerPlayer player) {
         ItemStack gold = new ItemStack(Items.GOLD_INGOT);
         long balance = EconomyCraft.getManager(((ServerLevel) player.level()).getServer()).getBalance(player.getUUID(), true);
-        gold.set(DataComponents.CUSTOM_NAME, Component.literal("Saldo").withStyle(s -> s.withItalic(true).withColor(BALANCE_NAME_COLOR)));
-        gold.set(DataComponents.LORE, new ItemLore(List.of(Component.literal(EconomyCraft.formatMoney(balance)).withStyle(s -> s.withItalic(true).withColor(BALANCE_VALUE_COLOR)))));
+        gold.set(DataComponents.CUSTOM_NAME, Component.literal("Saldo").withStyle(s -> s.withItalic(false).withColor(BALANCE_NAME_COLOR)));
+        gold.set(DataComponents.LORE, new ItemLore(List.of(Component.literal(EconomyCraft.formatMoney(balance)).withStyle(s -> s.withItalic(false).withColor(BALANCE_VALUE_COLOR)))));
         return gold;
     }
 
@@ -732,14 +718,20 @@ private void updatePage() {
 
     private static Item resolveItemValue(Object value, IdentifierCompat.Id id, String context) {
         if (value instanceof Item resolved) return resolved;
-        if (value instanceof Holder<?> holder && holder.value() instanceof Item resolved) return resolved;
+        if (value instanceof Holder<?> holder) {
+            Object inner = holder.value();
+            if (inner instanceof Item resolved) return resolved;
+        }
         return null;
     }
 
     @SuppressWarnings("unchecked")
     private static Holder<Potion> resolvePotionHolder(Object value, IdentifierCompat.Id id) {
         if (value instanceof Potion potion) return BuiltInRegistries.POTION.wrapAsHolder(potion);
-        if (value instanceof Holder<?> holder && holder.value() instanceof Potion) return (Holder<Potion>) holder;
+        if (value instanceof Holder<?> holder) {
+            Object inner = holder.value();
+            if (inner instanceof Potion) return (Holder<Potion>) holder;
+        }
         return null;
     }
 
