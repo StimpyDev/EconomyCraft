@@ -15,7 +15,6 @@ import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ClientboundSoundPacket;
-import net.minecraft.core.Holder;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.resources.ResourceKey;
 import com.reazip.economycraft.util.IdentifierCompat;
@@ -48,12 +47,16 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 public final class ServerShopUi {
-    private static final Component STORED_MSG = Component.literal("Item stored: ")
-            .withStyle(ChatFormatting.YELLOW);
+    private static final Component STORED_MSG = Component.literal("Item stored: ").withStyle(ChatFormatting.YELLOW);
     private static final Map<String, IdentifierCompat.Id> CATEGORY_ICONS = buildCategoryIcons();
     private static final List<Integer> STAR_SLOT_ORDER = buildStarSlotOrder(5);
+    
+    private static final Map<UUID, Long> KIT_COOLDOWNS = new HashMap<>();
+    private static final long KIT_COOLDOWN_TIME = 3600000L;
+
     private static final ChatFormatting LABEL_PRIMARY_COLOR = ChatFormatting.GOLD;
     private static final ChatFormatting LABEL_SECONDARY_COLOR = ChatFormatting.AQUA;
     private static final ChatFormatting VALUE_COLOR = ChatFormatting.DARK_PURPLE;
@@ -73,8 +76,13 @@ public final class ServerShopUi {
             return;
         }
 
-        PriceRegistry prices = eco.getPrices();
         String cat = category.trim();
+        if (cat.equalsIgnoreCase("kits")) {
+            openItems(player, eco, "kits");
+            return;
+        }
+
+        PriceRegistry prices = eco.getPrices();
         if (cat.contains(".")) {
             openItems(player, eco, cat);
             return;
@@ -89,44 +97,24 @@ public final class ServerShopUi {
         openItems(player, eco, cat);
     }
 
-private static void openRoot(ServerPlayer player, EconomyManager eco) {
-    Component title = Component.literal("ᴅɪᴇɢᴏᴛᴊᴜʜ ꜱʜᴏᴘ")
-            .withStyle(s -> s.withColor(net.minecraft.network.chat.TextColor.fromRgb(0x81F571))
-                             .withItalic(false));
-
-    player.openMenu(new MenuProvider() {
-        @Override
-        public Component getDisplayName() {
-            return title;
-        }
-
-        @Override
-        public AbstractContainerMenu createMenu(int id, Inventory inv, Player p) {
-            try {
+    private static void openRoot(ServerPlayer player, EconomyManager eco) {
+        Component title = Component.literal("ᴅɪᴇɢᴏᴛᴊᴜʜ ꜱʜᴏᴘ")
+                .withStyle(s -> s.withColor(net.minecraft.network.chat.TextColor.fromRgb(0x81F571))
+                                 .withItalic(false));
+        player.openMenu(new MenuProvider() {
+            @Override public Component getDisplayName() { return title; }
+            @Override public AbstractContainerMenu createMenu(int id, Inventory inv, Player p) {
                 return new CategoryMenu(id, inv, eco, player);
-            } catch (Exception e) {
-                throw e;
             }
-        }
-    });
-}
+        });
+    }
 
     private static void openSubcategories(ServerPlayer player, EconomyManager eco, String topCategory) {
         Component title = Component.literal(formatCategoryTitle(topCategory));
-
         player.openMenu(new MenuProvider() {
-            @Override
-            public Component getDisplayName() {
-                return title;
-            }
-
-            @Override
-            public AbstractContainerMenu createMenu(int id, Inventory inv, Player p) {
-                try {
-                    return new SubcategoryMenu(id, inv, eco, topCategory, player);
-                } catch (Exception e) {
-                    throw e;
-                }
+            @Override public Component getDisplayName() { return title; }
+            @Override public AbstractContainerMenu createMenu(int id, Inventory inv, Player p) {
+                return new SubcategoryMenu(id, inv, eco, topCategory, player);
             }
         });
     }
@@ -136,26 +124,11 @@ private static void openRoot(ServerPlayer player, EconomyManager eco) {
     }
 
     private static void openItems(ServerPlayer player, EconomyManager eco, String category, @Nullable String displayTitle) {
-        Component title;
-        if (displayTitle != null) {
-            title = Component.literal(formatCategoryTitle(displayTitle));
-        } else {
-            title = Component.literal(formatCategoryTitle(category));
-        }
-
+        Component title = Component.literal(formatCategoryTitle(displayTitle != null ? displayTitle : category));
         player.openMenu(new MenuProvider() {
-            @Override
-            public Component getDisplayName() {
-                return title;
-            }
-
-            @Override
-            public AbstractContainerMenu createMenu(int id, Inventory inv, Player p) {
-                try {
-                    return new ItemMenu(id, inv, eco, category, player);
-                } catch (Exception e) {
-                    throw e;
-                }
+            @Override public Component getDisplayName() { return title; }
+            @Override public AbstractContainerMenu createMenu(int id, Inventory inv, Player p) {
+                return new ItemMenu(id, inv, eco, category, player);
             }
         });
     }
@@ -188,7 +161,6 @@ private static void openRoot(ServerPlayer player, EconomyManager eco) {
             this.eco = eco;
             this.viewer = viewer;
             this.prices = eco.getPrices();
-
             refreshCategories();
             this.container = new SimpleContainer(54);
             setupSlots(inv);
@@ -197,6 +169,7 @@ private static void openRoot(ServerPlayer player, EconomyManager eco) {
 
         private void refreshCategories() {
             categories = new ArrayList<>();
+            categories.add("Kits");
             for (String cat : prices.buyTopCategories()) {
                 if (hasItems(prices, cat)) categories.add(cat);
             }
@@ -204,22 +177,17 @@ private static void openRoot(ServerPlayer player, EconomyManager eco) {
 
         private void setupSlots(Inventory inv) {
             for (int i = 0; i < 54; i++) {
-                int r = i / 9;
-                int c = i % 9;
+                int r = i / 9, c = i % 9;
                 this.addSlot(new Slot(container, i, 8 + c * 18, 18 + r * 18) {
                     @Override public boolean mayPickup(Player player) { return false; }
                     @Override public boolean mayPlace(ItemStack stack) { return false; }
                 });
             }
             int y = 18 + 6 * 18 + 14;
-            for (int r = 0; r < 3; r++) {
-                for (int c = 0; c < 9; c++) {
-                    this.addSlot(new Slot(inv, c + r * 9 + 9, 8 + c * 18, y + r * 18));
-                }
-            }
-            for (int c = 0; c < 9; c++) {
+            for (int r = 0; r < 3; r++) for (int c = 0; c < 9; c++) 
+                this.addSlot(new Slot(inv, c + r * 9 + 9, 8 + c * 18, y + r * 18));
+            for (int c = 0; c < 9; c++) 
                 this.addSlot(new Slot(inv, c, 8 + c * 18, y + 58));
-            }
         }
 
         private void updatePage() {
@@ -227,57 +195,41 @@ private static void openRoot(ServerPlayer player, EconomyManager eco) {
             java.util.Arrays.fill(slotToIndex, -1);
             int start = page * itemsPerPage;
             int totalPages = (int) Math.ceil(categories.size() / (double) itemsPerPage);
-
             for (int i = 0; i < itemsPerPage; i++) {
                 int idx = start + i;
                 if (idx >= categories.size()) break;
-
                 String cat = categories.get(idx);
                 ItemStack icon = createCategoryIcon(cat, cat, prices, viewer);
                 if (icon.isEmpty()) continue;
-
                 icon.set(DataComponents.CUSTOM_NAME, Component.literal(formatCategoryTitle(cat)).withStyle(s -> s.withItalic(false).withColor(getCategoryColor(cat)).withBold(true)));
                 icon.set(DataComponents.LORE, new ItemLore(List.of(Component.literal("Klik om artikelen te bekijken").withStyle(s -> s.withItalic(false)))));
                 int slot = STAR_SLOT_ORDER.get(i);
                 container.setItem(slot, icon);
                 slotToIndex[slot] = idx;
             }
-
             fillEmptyWithPanes(container, itemsPerPage);
-
             if (page > 0) {
                 ItemStack prev = new ItemStack(Items.ARROW);
                 prev.set(DataComponents.CUSTOM_NAME, Component.literal("Vorige pagina").withStyle(s -> s.withItalic(false)));
                 container.setItem(navRowStart + 3, prev);
             }
-
             if (start + itemsPerPage < categories.size()) {
                 ItemStack next = new ItemStack(Items.ARROW);
                 next.set(DataComponents.CUSTOM_NAME, Component.literal("Volgende pagina").withStyle(s -> s.withItalic(false)));
                 container.setItem(navRowStart + 5, next);
             }
-
-            ItemStack balance = createBalanceItem(viewer);
-            container.setItem(navRowStart, balance);
-
+            container.setItem(navRowStart, createBalanceItem(viewer));
             ItemStack paper = new ItemStack(Items.PAPER);
             paper.set(DataComponents.CUSTOM_NAME, Component.literal("Pagina " + (page + 1) + "/" + Math.max(1, totalPages)).withStyle(s -> s.withItalic(false)));
             container.setItem(navRowStart + 4, paper);
         }
 
-        @Override
-        public void clicked(int slot, int dragType, ClickType type, Player player) {
+        @Override public void clicked(int slot, int dragType, ClickType type, Player player) {
             if (type == ClickType.PICKUP || type == ClickType.QUICK_MOVE) {
                 if (slot < navRowStart) {
                     int index = slotToIndex[slot];
                     if (index >= 0 && index < categories.size()) {
-                        String cat = categories.get(index);
-                        List<String> subs = prices.buySubcategories(cat);
-                        if (subs.isEmpty()) {
-                            openItems(viewer, eco, cat);
-                        } else {
-                            openSubcategories(viewer, eco, cat);
-                        }
+                        open(viewer, eco, categories.get(index));
                         return;
                     }
                 }
@@ -286,7 +238,6 @@ private static void openRoot(ServerPlayer player, EconomyManager eco) {
             }
             super.clicked(slot, dragType, type, player);
         }
-
         @Override public boolean stillValid(Player player) { return true; }
         @Override public ItemStack quickMoveStack(Player player, int index) { return ItemStack.EMPTY; }
     }
@@ -298,9 +249,7 @@ private static void openRoot(ServerPlayer player, EconomyManager eco) {
         private final String topCategory;
         private List<String> subcategories = new ArrayList<>();
         private final SimpleContainer container;
-        private final int rows;
-        private final int itemsPerPage;
-        private final int navRowStart;
+        private final int rows, itemsPerPage, navRowStart;
         private int page;
 
         SubcategoryMenu(int id, Inventory inv, EconomyManager eco, String topCategory, ServerPlayer viewer) {
@@ -309,7 +258,9 @@ private static void openRoot(ServerPlayer player, EconomyManager eco) {
             this.viewer = viewer;
             this.topCategory = topCategory;
             this.prices = eco.getPrices();
-            refresh();
+            for (String sub : prices.buySubcategories(topCategory)) {
+                if (hasItems(prices, topCategory + "." + sub)) subcategories.add(sub);
+            }
             this.rows = requiredRows(subcategories.size());
             this.itemsPerPage = (rows - 1) * 9;
             this.navRowStart = itemsPerPage;
@@ -318,86 +269,59 @@ private static void openRoot(ServerPlayer player, EconomyManager eco) {
             updatePage();
         }
 
-        private void refresh() {
-            subcategories = new ArrayList<>();
-            for (String sub : prices.buySubcategories(topCategory)) {
-                if (hasItems(prices, topCategory + "." + sub)) {
-                    subcategories.add(sub);
-                }
-            }
-        }
-
         private void setupSlots(Inventory inv) {
             for (int i = 0; i < rows * 9; i++) {
-                int r = i / 9;
-                int c = i % 9;
+                int r = i / 9, c = i % 9;
                 this.addSlot(new Slot(container, i, 8 + c * 18, 18 + r * 18) {
                     @Override public boolean mayPickup(Player player) { return false; }
                     @Override public boolean mayPlace(ItemStack stack) { return false; }
                 });
             }
             int y = 18 + rows * 18 + 14;
-            for (int r = 0; r < 3; r++) {
-                for (int c = 0; c < 9; c++) {
-                    this.addSlot(new Slot(inv, c + r * 9 + 9, 8 + c * 18, y + r * 18));
-                }
-            }
-            for (int c = 0; c < 9; c++) {
-                this.addSlot(new Slot(inv, c, 8 + c * 18, y + 58));
-            }
+            for (int r = 0; r < 3; r++) for (int c = 0; c < 9; c++) 
+                this.addSlot(new Slot(inv, c + r * 9 + 9, 8 + c * 18, y + r * 18));
+            for (int c = 0; c < 9; c++) this.addSlot(new Slot(inv, c, 8 + c * 18, y + 58));
         }
 
         private void updatePage() {
             container.clearContent();
             int start = page * itemsPerPage;
             int totalPages = (int) Math.ceil(subcategories.size() / (double) itemsPerPage);
-
             for (int i = 0; i < itemsPerPage; i++) {
                 int idx = start + i;
                 if (idx >= subcategories.size()) break;
-
                 String sub = subcategories.get(idx);
-                String full = topCategory + "." + sub;
-                ItemStack icon = createCategoryIcon(sub, full, prices, viewer);
+                ItemStack icon = createCategoryIcon(sub, topCategory + "." + sub, prices, viewer);
                 if (icon.isEmpty()) continue;
-
                 icon.set(DataComponents.CUSTOM_NAME, Component.literal(formatCategoryTitle(sub)).withStyle(s -> s.withItalic(false).withColor(ChatFormatting.WHITE).withBold(true)));
                 icon.set(DataComponents.LORE, new ItemLore(List.of(Component.literal("Klik om artikelen te bekijken").withStyle(s -> s.withItalic(false)))));
                 container.setItem(i, icon);
             }
-
             if (page > 0) {
                 ItemStack prev = new ItemStack(Items.ARROW);
                 prev.set(DataComponents.CUSTOM_NAME, Component.literal("Vorige pagina").withStyle(s -> s.withItalic(false)));
                 container.setItem(navRowStart + 3, prev);
             }
-
             if (start + itemsPerPage < subcategories.size()) {
                 ItemStack next = new ItemStack(Items.ARROW);
                 next.set(DataComponents.CUSTOM_NAME, Component.literal("Volgende pagina").withStyle(s -> s.withItalic(false)));
                 container.setItem(navRowStart + 5, next);
             }
-
             ItemStack back = new ItemStack(Items.BARRIER);
             back.set(DataComponents.CUSTOM_NAME, Component.literal("Terug").withStyle(s -> s.withItalic(false).withColor(ChatFormatting.DARK_RED).withBold(true)));
             container.setItem(navRowStart + 8, back);
-
-            ItemStack balance = createBalanceItem(viewer);
-            container.setItem(navRowStart, balance);
-
+            container.setItem(navRowStart, createBalanceItem(viewer));
             ItemStack paper = new ItemStack(Items.PAPER);
             paper.set(DataComponents.CUSTOM_NAME, Component.literal("Pagina " + (page + 1) + "/" + Math.max(1, totalPages)).withStyle(s -> s.withItalic(false)));
             container.setItem(navRowStart + 4, paper);
         }
 
-        @Override
-        public void clicked(int slot, int dragType, ClickType type, Player player) {
+        @Override public void clicked(int slot, int dragType, ClickType type, Player player) {
             if (type == ClickType.PICKUP || type == ClickType.QUICK_MOVE) {
                 if (slot < navRowStart) {
                     int index = page * itemsPerPage + slot;
                     if (index < subcategories.size()) {
-                        String sub = subcategories.get(index);
-                        openItems(viewer, eco, topCategory + "." + sub, sub);
+                        openItems(viewer, eco, topCategory + "." + subcategories.get(index), subcategories.get(index));
                         return;
                     }
                 }
@@ -407,7 +331,6 @@ private static void openRoot(ServerPlayer player, EconomyManager eco) {
             }
             super.clicked(slot, dragType, type, player);
         }
-
         @Override public boolean stillValid(Player player) { return true; }
         @Override public ItemStack quickMoveStack(Player player, int index) { return ItemStack.EMPTY; }
     }
@@ -419,20 +342,17 @@ private static void openRoot(ServerPlayer player, EconomyManager eco) {
         private final String category;
         private List<PriceRegistry.PriceEntry> entries = new ArrayList<>();
         private final SimpleContainer container;
-        private final int rows;
-        private final int itemsPerPage;
-        private final int navRowStart;
+        private final int rows, itemsPerPage, navRowStart;
         private int page;
 
         ItemMenu(int id, Inventory inv, EconomyManager eco, String category, ServerPlayer viewer) {
-            super(getMenuType(requiredRows(eco.getPrices().buyableByCategory(category).size())), id);
+            super(getMenuType(category.equalsIgnoreCase("kits") ? 2 : requiredRows(eco.getPrices().buyableByCategory(category).size())), id);
             this.eco = eco;
             this.viewer = viewer;
             this.category = category;
             this.prices = eco.getPrices();
-
-            refreshEntries();
-            this.rows = requiredRows(entries.size());
+            if (!category.equalsIgnoreCase("kits")) entries = new ArrayList<>(prices.buyableByCategory(category));
+            this.rows = category.equalsIgnoreCase("kits") ? 2 : requiredRows(entries.size());
             this.itemsPerPage = (rows - 1) * 9;
             this.navRowStart = itemsPerPage;
             this.container = new SimpleContainer(rows * 9);
@@ -440,228 +360,155 @@ private static void openRoot(ServerPlayer player, EconomyManager eco) {
             updatePage();
         }
 
-        private void refreshEntries() {
-            entries = new ArrayList<>(prices.buyableByCategory(category));
-        }
-
         private void setupSlots(Inventory inv) {
             for (int i = 0; i < rows * 9; i++) {
-                int r = i / 9;
-                int c = i % 9;
+                int r = i / 9, c = i % 9;
                 this.addSlot(new Slot(container, i, 8 + c * 18, 18 + r * 18) {
                     @Override public boolean mayPickup(Player player) { return false; }
                     @Override public boolean mayPlace(ItemStack stack) { return false; }
                 });
             }
             int y = 18 + rows * 18 + 14;
-            for (int r = 0; r < 3; r++) {
-                for (int c = 0; c < 9; c++) {
-                    this.addSlot(new Slot(inv, c + r * 9 + 9, 8 + c * 18, y + r * 18));
-                }
-            }
-            for (int c = 0; c < 9; c++) {
-                this.addSlot(new Slot(inv, c, 8 + c * 18, y + 58));
-            }
+            for (int r = 0; r < 3; r++) for (int c = 0; c < 9; c++) 
+                this.addSlot(new Slot(inv, c + r * 9 + 9, 8 + c * 18, y + r * 18));
+            for (int c = 0; c < 9; c++) this.addSlot(new Slot(inv, c, 8 + c * 18, y + 58));
         }
 
         private void updatePage() {
             container.clearContent();
-            int start = page * itemsPerPage;
-            int totalPages = (int) Math.ceil(entries.size() / (double) itemsPerPage);
-
-            for (int i = 0; i < itemsPerPage; i++) {
-                int idx = start + i;
-                if (idx >= entries.size()) break;
-
-                PriceRegistry.PriceEntry entry = entries.get(idx);
-                ItemStack display = createDisplayStack(entry, viewer);
-                if (display.isEmpty()) continue;
-
-                int stackSize = Math.max(1, entry.stack());
-                List<Component> lore = new ArrayList<>();
-                lore.add(labeledValue("Koop", EconomyCraft.formatMoney(entry.unitBuy()), LABEL_PRIMARY_COLOR));
-
-                Long stackPrice = safeMultiply(entry.unitBuy(), stackSize);
-                if (stackSize > 1 && stackPrice != null) {
-                    lore.add(labeledValue("Stack (" + stackSize + ")", EconomyCraft.formatMoney(stackPrice), LABEL_PRIMARY_COLOR));
+            if (category.equalsIgnoreCase("kits")) {
+                ItemStack kit = new ItemStack(Items.NETHERITE_CHESTPLATE);
+                kit.set(DataComponents.CUSTOM_NAME, Component.literal("Full Netherite Kit").withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD));
+                List<Component> kitLore = new ArrayList<>();
+                kitLore.add(Component.literal("Prijs: €500.000").withStyle(ChatFormatting.GREEN));
+                kitLore.add(Component.literal("Cooldown: 1 uur").withStyle(ChatFormatting.RED));
+                kitLore.add(Component.literal("Inhoud:").withStyle(ChatFormatting.GRAY));
+                kitLore.add(Component.literal("- Full Netherite Kit").withStyle(ChatFormatting.DARK_GRAY));
+                kitLore.add(Component.literal("- Netherite Spear").withStyle(ChatFormatting.DARK_GRAY));
+                kit.set(DataComponents.LORE, new ItemLore(kitLore));
+                kit.set(DataComponents.ENCHANTMENT_GLINT_OVERRIDE, true);
+                container.setItem(4, kit);
+            } else {
+                int start = page * itemsPerPage;
+                int totalPages = (int) Math.ceil(entries.size() / (double) itemsPerPage);
+                for (int i = 0; i < itemsPerPage; i++) {
+                    int idx = start + i;
+                    if (idx >= entries.size()) break;
+                    PriceRegistry.PriceEntry entry = entries.get(idx);
+                    ItemStack display = createDisplayStack(entry, viewer);
+                    if (display.isEmpty()) continue;
+                    int stackSize = Math.max(1, entry.stack());
+                    List<Component> lore = new ArrayList<>();
+                    lore.add(labeledValue("Koop", EconomyCraft.formatMoney(entry.unitBuy()), LABEL_PRIMARY_COLOR));
+                    Long stackPrice = safeMultiply(entry.unitBuy(), stackSize);
+                    if (stackSize > 1 && stackPrice != null) lore.add(labeledValue("Stack (" + stackSize + ")", EconomyCraft.formatMoney(stackPrice), LABEL_PRIMARY_COLOR));
+                    lore.add(labeledValue("Linker muis", "Koop 1", LABEL_SECONDARY_COLOR));
+                    if (stackSize > 1) lore.add(labeledValue("Shift-klik", "Koop " + stackSize, LABEL_SECONDARY_COLOR));
+                    display.set(DataComponents.LORE, new ItemLore(lore));
+                    container.setItem(i, display);
                 }
-
-                lore.add(labeledValue("Linker muis", "Koop 1", LABEL_SECONDARY_COLOR));
-                if (stackSize > 1) {
-                    lore.add(labeledValue("Shift-klik", "Koop " + stackSize, LABEL_SECONDARY_COLOR));
-                }
-
-                display.set(DataComponents.LORE, new ItemLore(lore));
-                display.setCount(1);
-                container.setItem(i, display);
+                ItemStack paper = new ItemStack(Items.PAPER);
+                paper.set(DataComponents.CUSTOM_NAME, Component.literal("Pagina " + (page + 1) + "/" + Math.max(1, totalPages)).withStyle(s -> s.withItalic(false)));
+                container.setItem(navRowStart + 4, paper);
             }
-
             if (page > 0) {
                 ItemStack prev = new ItemStack(Items.ARROW);
                 prev.set(DataComponents.CUSTOM_NAME, Component.literal("Vorige pagina").withStyle(s -> s.withItalic(false)));
                 container.setItem(navRowStart + 3, prev);
             }
-
-            if (start + itemsPerPage < entries.size()) {
+            if (!category.equalsIgnoreCase("kits") && (page + 1) * itemsPerPage < entries.size()) {
                 ItemStack next = new ItemStack(Items.ARROW);
                 next.set(DataComponents.CUSTOM_NAME, Component.literal("Volgende pagina").withStyle(s -> s.withItalic(false)));
                 container.setItem(navRowStart + 5, next);
             }
-
             ItemStack back = new ItemStack(Items.BARRIER);
             back.set(DataComponents.CUSTOM_NAME, Component.literal("Terug").withStyle(s -> s.withItalic(false).withColor(ChatFormatting.DARK_RED).withBold(true)));
             container.setItem(navRowStart + 8, back);
-
-            ItemStack balance = createBalanceItem(viewer);
-            container.setItem(navRowStart, balance);
-
-            ItemStack paper = new ItemStack(Items.PAPER);
-            paper.set(DataComponents.CUSTOM_NAME, Component.literal("Pagina " + (page + 1) + "/" + Math.max(1, totalPages)).withStyle(s -> s.withItalic(false)));
-            container.setItem(navRowStart + 4, paper);
+            container.setItem(navRowStart, createBalanceItem(viewer));
         }
 
-@Override
-public void clicked(int slot, int dragType, ClickType type, Player player) {
-    if (slot < 0 || slot >= navRowStart + 9) {
-        super.clicked(slot, dragType, type, player);
-        return;
-    }
+        @Override public void clicked(int slot, int dragType, ClickType type, Player player) {
+            if (slot < 0 || slot >= navRowStart + 9) { super.clicked(slot, dragType, type, player); return; }
+            if (type == ClickType.PICKUP || type == ClickType.QUICK_MOVE) {
+                if (category.equalsIgnoreCase("kits") && slot == 4) { handleKitPurchase(); return; }
+                if (slot < navRowStart && !category.equalsIgnoreCase("kits")) {
+                    int index = (page * itemsPerPage) + slot;
+                    if (index >= 0 && index < entries.size()) handlePurchase(entries.get(index), type);
+                    return;
+                }
+                if (slot == navRowStart + 3 && page > 0) { page--; updatePage(); return; }
+                if (slot == navRowStart + 5 && !category.equalsIgnoreCase("kits") && (page + 1) * itemsPerPage < entries.size()) { page++; updatePage(); return; }
+                if (slot == navRowStart + 8) {
+                    if (category.contains(".")) openSubcategories(viewer, eco, category.substring(0, category.indexOf('.')));
+                    else openRoot(viewer, eco);
+                    return;
+                }
+            }
+            super.clicked(slot, dragType, type, player);
+        }
 
-    if (type == ClickType.PICKUP || type == ClickType.QUICK_MOVE) {
-        
-        if (slot < navRowStart) {
-            int index = (page * itemsPerPage) + slot;
+        private void handleKitPurchase() {
+            UUID uuid = viewer.getUUID();
+            long now = System.currentTimeMillis();
+            if (KIT_COOLDOWNS.getOrDefault(uuid, 0L) > now) {
+                long waitSeconds = (KIT_COOLDOWNS.get(uuid) - now) / 1000;
+                long waitMinutes = waitSeconds / 60;
+                viewer.sendSystemMessage(Component.literal("Wacht nog " + waitMinutes + " minuten om deze kit te kopen.").withStyle(ChatFormatting.RED));
+                return;
+            }
+            if (eco.getBalance(uuid, true) < 500000) {
+                viewer.sendSystemMessage(Component.literal("Je hebt geen €500.000!").withStyle(ChatFormatting.RED));
+                return;
+            }
+            if (eco.removeMoney(uuid, 500000)) {
+                KIT_COOLDOWNS.put(uuid, now + KIT_COOLDOWN_TIME);
+                giveKitItems();
+                viewer.sendSystemMessage(Component.literal("Kit gekocht voor €500.000!").withStyle(ChatFormatting.GREEN));
+                sendPrivateSound(SoundEvents.EXPERIENCE_ORB_PICKUP);
+            }
+        }
+
+        private void giveKitItems() {
+            HolderLookup.Provider p = viewer.registryAccess();
+            Inventory inv = viewer.getInventory();
+            inv.add(createEnchanted(Items.NETHERITE_HELMET, p, Map.of(Enchantments.PROTECTION, 4, Enchantments.UNBREAKING, 3, Enchantments.AQUA_AFFINITY, 1, Enchantments.RESPIRATION, 3, Enchantments.MENDING, 1)));
+            inv.add(createEnchanted(Items.NETHERITE_CHESTPLATE, p, Map.of(Enchantments.PROTECTION, 4, Enchantments.UNBREAKING, 3, Enchantments.MENDING, 1)));
+            inv.add(createEnchanted(Items.NETHERITE_LEGGINGS, p, Map.of(Enchantments.PROTECTION, 4, Enchantments.UNBREAKING, 3, Enchantments.MENDING, 1, Enchantments.SWIFT_SNEAK, 3)));
+            inv.add(createEnchanted(Items.NETHERITE_BOOTS, p, Map.of(Enchantments.FEATHER_FALLING, 4, Enchantments.UNBREAKING, 3, Enchantments.MENDING, 1, Enchantments.DEPTH_STRIDER, 3, Enchantments.PROTECTION, 4)));
+            inv.add(createEnchanted(Items.NETHERITE_SWORD, p, Map.of(Enchantments.SHARPNESS, 5, Enchantments.UNBREAKING, 3, Enchantments.MENDING, 1, Enchantments.FIRE_ASPECT, 2, Enchantments.SWEEPING_EDGE, 3, Enchantments.LOOTING, 3)));
+            inv.add(createEnchanted(Items.NETHERITE_AXE, p, Map.of(Enchantments.UNBREAKING, 3, Enchantments.SHARPNESS, 5, Enchantments.MENDING, 1, Enchantments.SILK_TOUCH, 1)));
             
-            if (index >= 0 && index < entries.size()) {
-                handlePurchase(entries.get(index), type);
-            }
-            return; 
+            ItemStack spear = createEnchanted(Items.SPEAR, p, Map.of(Enchantments.SHARPNESS, 5, Enchantments.MENDING, 1, Enchantments.UNBREAKING, 3, Enchantments.KNOCKBACK, 2));
+            spear.set(DataComponents.CUSTOM_NAME, Component.literal("Netherite Spear").withStyle(ChatFormatting.GOLD));
+            inv.add(spear);
         }
 
-        if (slot == navRowStart + 3) {
-            if (page > 0) {
-                page--;
-                updatePage();
+        private void handlePurchase(PriceRegistry.PriceEntry entry, ClickType clickType) {
+            if (entry.unitBuy() <= 0) { viewer.sendSystemMessage(Component.literal("Niet te koop.").withStyle(ChatFormatting.RED)); return; }
+            ItemStack base = createDisplayStack(entry, viewer);
+            if (base.isEmpty()) { viewer.sendSystemMessage(Component.literal("Niet beschikbaar.").withStyle(ChatFormatting.RED)); return; }
+            int amount = clickType == ClickType.QUICK_MOVE ? Math.max(1, entry.stack()) : 1;
+            if (viewer.getInventory().getFreeSlot() == -1) { sendPrivateSound(SoundEvents.VILLAGER_NO); viewer.sendSystemMessage(Component.literal("Inventaris vol!").withStyle(ChatFormatting.RED)); return; }
+            Long total = safeMultiply(entry.unitBuy(), amount);
+            if (total == null || eco.getBalance(viewer.getUUID(), true) < total) { sendPrivateSound(SoundEvents.VILLAGER_NO); viewer.sendSystemMessage(Component.literal("Onvoldoende saldo.").withStyle(ChatFormatting.RED)); return; }
+            if (eco.removeMoney(viewer.getUUID(), total)) {
+                giveToPlayer(base, amount);
+                sendPrivateSound(SoundEvents.EXPERIENCE_ORB_PICKUP);
+                viewer.sendSystemMessage(Component.literal("Gekocht: ").withStyle(ChatFormatting.GREEN).append(Component.literal(amount + "x " + base.getHoverName().getString()).withStyle(ChatFormatting.YELLOW)).append(" voor ").append(Component.literal(EconomyCraft.formatMoney(total)).withStyle(ChatFormatting.GOLD)));
             }
-            return;
         }
 
-        if (slot == navRowStart + 5) {
-            if ((page + 1) * itemsPerPage < entries.size()) {
-                page++;
-                updatePage();
-            }
-            return;
+        private void sendPrivateSound(net.minecraft.sounds.SoundEvent sound) {
+            viewer.connection.send(new ClientboundSoundPacket(Holder.direct(sound), SoundSource.PLAYERS, viewer.getX(), viewer.getY(), viewer.getZ(), 1.0f, 1.0f, viewer.getRandom().nextLong()));
         }
 
-        if (slot == navRowStart + 8) {
-            if (category.contains(".")) {
-                String topCategory = category.substring(0, category.indexOf('.'));
-                openSubcategories(viewer, eco, topCategory);
-            } else {
-                openRoot(viewer, eco);
-            }
-            return;
-        }
-    }
-    super.clicked(slot, dragType, type, player);
-}
-
-private void handlePurchase(PriceRegistry.PriceEntry entry, ClickType clickType) {
-    if (entry.unitBuy() <= 0) {
-        viewer.sendSystemMessage(Component.literal("Dit artikel kan niet worden gekocht.")
-                .withStyle(ChatFormatting.RED));
-        return;
-    }
-
-    ItemStack base = createDisplayStack(entry, viewer);
-    if (base.isEmpty()) {
-        viewer.sendSystemMessage(Component.literal("Artikel niet beschikbaar.")
-                .withStyle(ChatFormatting.RED));
-        return;
-    }
-
-    int stackSize = Math.max(1, entry.stack());
-    int amount = clickType == ClickType.QUICK_MOVE ? stackSize : 1;
-
-    // Inventory Check
-    if (viewer.getInventory().getFreeSlot() == -1) {
-        sendPrivateSound(SoundEvents.VILLAGER_NO);
-        viewer.sendSystemMessage(Component.literal("Je inventaris is vol!")
-                .withStyle(ChatFormatting.RED));
-        return;
-    }
-
-    Long total = safeMultiply(entry.unitBuy(), amount);
-    if (total == null) {
-        viewer.sendSystemMessage(Component.literal("De prijs te groot.")
-                .withStyle(ChatFormatting.RED));
-        return;
-    }
-
-    long balance = eco.getBalance(viewer.getUUID(), true);
-    if (balance < total) {
-        sendPrivateSound(SoundEvents.VILLAGER_NO);
-        viewer.sendSystemMessage(Component.literal("Je hebt geen genoeg saldo.")
-                .withStyle(ChatFormatting.RED));
-        return;
-    }
-
-    if (!eco.removeMoney(viewer.getUUID(), total)) {
-        sendPrivateSound(SoundEvents.VILLAGER_NO);
-        viewer.sendSystemMessage(Component.literal("Transactie mislukt.")
-                .withStyle(ChatFormatting.RED));
-        return;
-    }
-
-    giveToPlayer(base, amount);
-    sendPrivateSound(SoundEvents.EXPERIENCE_ORB_PICKUP);
-
-Component success = Component.literal("Item gekocht ")
-    .withStyle(ChatFormatting.GREEN)
-    .append(Component.literal(amount + "x " + base.getHoverName().getString()).withStyle(ChatFormatting.YELLOW))
-    .append(" voor ")
-    .append(Component.literal(EconomyCraft.formatMoney(total)).withStyle(ChatFormatting.GOLD));
-
-viewer.sendSystemMessage(success);
-updatePage();
-}
-
-private void sendPrivateSound(net.minecraft.sounds.SoundEvent sound) {
-    viewer.connection.send(new ClientboundSoundPacket(
-            Holder.direct(sound),
-            SoundSource.PLAYERS,
-            viewer.getX(), viewer.getY(), viewer.getZ(),
-            1.0f, 1.0f,
-            viewer.getRandom().nextLong()
-    ));
-}
-
-        private boolean giveToPlayer(ItemStack base, int amount) {
+        private void giveToPlayer(ItemStack base, int amount) {
             int remaining = amount;
-            boolean stored = false;
             while (remaining > 0) {
                 int give = Math.min(base.getMaxStackSize(), remaining);
                 ItemStack stack = base.copyWithCount(give);
-                if (!viewer.getInventory().add(stack)) {
-                    eco.getShop().addDelivery(viewer.getUUID(), stack);
-                    stored = true;
-                }
+                if (!viewer.getInventory().add(stack)) eco.getShop().addDelivery(viewer.getUUID(), stack);
                 remaining -= give;
-            }
-            return stored;
-        }
-
-        private void sendStoredMessage(ServerPlayer player) {
-            ClickEvent ev = ChatCompat.runCommandEvent("/eco orders claim");
-            if (ev != null) {
-                player.sendSystemMessage(STORED_MSG.copy()
-                        .append(Component.literal("[Claim]")
-                                .withStyle(s -> s.withUnderlined(true)
-                                        .withColor(ChatFormatting.GREEN)
-                                        .withClickEvent(ev))));
-            } else {
-                ChatCompat.sendRunCommandTellraw(player, "Item stored: ", "[Claim]", "/eco orders claim");
             }
         }
 
@@ -669,412 +516,168 @@ private void sendPrivateSound(net.minecraft.sounds.SoundEvent sound) {
         @Override public ItemStack quickMoveStack(Player player, int index) { return ItemStack.EMPTY; }
     }
 
-    private static ItemStack createCategoryIcon(String displayKey, String categoryKey, PriceRegistry prices, ServerPlayer viewer) {
-        IdentifierCompat.Id iconId = CATEGORY_ICONS.get(normalizeCategoryKey(displayKey));
-        if (iconId == null && categoryKey != null) {
-            iconId = CATEGORY_ICONS.get(normalizeCategoryKey(categoryKey));
-        }
+    private static ItemStack createEnchanted(Item item, HolderLookup.Provider p, Map<ResourceKey<Enchantment>, Integer> enchants) {
+        ItemStack stack = new ItemStack(item);
+        ItemEnchantments.Mutable m = new ItemEnchantments.Mutable(ItemEnchantments.EMPTY);
+        var lookup = p.lookupOrThrow(Registries.ENCHANTMENT);
+        enchants.forEach((k, v) -> lookup.get(k).ifPresent(h -> m.set(h, v)));
+        stack.set(DataComponents.ENCHANTMENTS, m.toImmutable());
+        return stack;
+    }
 
-        if (iconId != null) {
-            Optional<?> item = IdentifierCompat.registryGetOptional(BuiltInRegistries.ITEM, iconId);
+    private static ItemStack createCategoryIcon(String display, String key, PriceRegistry prices, ServerPlayer viewer) {
+        if (display.equalsIgnoreCase("Kits")) {
+            ItemStack stack = new ItemStack(Items.GRAY_WOOL);
+            stack.set(DataComponents.ENCHANTMENT_GLINT_OVERRIDE, true);
+            return stack;
+        }
+        IdentifierCompat.Id id = CATEGORY_ICONS.get(normalizeCategoryKey(display));
+        if (id == null && key != null) id = CATEGORY_ICONS.get(normalizeCategoryKey(key));
+        if (id != null) {
+            Optional<?> item = IdentifierCompat.registryGetOptional(BuiltInRegistries.ITEM, id);
             if (item.isPresent()) {
-                Item resolved = resolveItemValue(item.get(), iconId, "category icon");
-                if (resolved != null) {
-                    return new ItemStack(resolved);
-                }
+                Item res = resolveItemValue(item.get(), id, "cat");
+                if (res != null) return new ItemStack(res);
             }
         }
-
-        List<PriceRegistry.PriceEntry> entries = prices.buyableByCategory(categoryKey);
-        if (entries.isEmpty() && categoryKey != null && !categoryKey.contains(".")) {
-            for (String sub : prices.buySubcategories(categoryKey)) {
-                List<PriceRegistry.PriceEntry> subEntries = prices.buyableByCategory(categoryKey + "." + sub);
-                if (!subEntries.isEmpty()) {
-                    entries = subEntries;
-                    break;
-                }
+        List<PriceRegistry.PriceEntry> entries = prices.buyableByCategory(key);
+        if (entries.isEmpty() && key != null && !key.contains(".")) {
+            for (String sub : prices.buySubcategories(key)) {
+                List<PriceRegistry.PriceEntry> subE = prices.buyableByCategory(key + "." + sub);
+                if (!subE.isEmpty()) { entries = subE; break; }
             }
         }
-
-        if (!entries.isEmpty()) {
-            ItemStack display = createDisplayStack(entries.get(0), viewer);
-            if (!display.isEmpty()) {
-                return display;
-            }
-        }
-
-        return new ItemStack(Items.BOOK);
+        return !entries.isEmpty() ? createDisplayStack(entries.get(0), viewer) : new ItemStack(Items.BOOK);
     }
 
     private static Map<String, IdentifierCompat.Id> buildCategoryIcons() {
-Map<String, IdentifierCompat.Id> map = new HashMap<>();
-map.put(normalizeCategoryKey("Redstone"), IdentifierCompat.withDefaultNamespace("redstone"));
-map.put(normalizeCategoryKey("Eten"), IdentifierCompat.withDefaultNamespace("cooked_beef"));
-map.put(normalizeCategoryKey("Ores"), IdentifierCompat.withDefaultNamespace("iron_ingot"));
-map.put(normalizeCategoryKey("Blokken"), IdentifierCompat.withDefaultNamespace("grass_block"));
-map.put(normalizeCategoryKey("Stenen"), IdentifierCompat.withDefaultNamespace("cobblestone"));
-map.put(normalizeCategoryKey("Bakstenen"), IdentifierCompat.withDefaultNamespace("bricks"));
-map.put(normalizeCategoryKey("Koper"), IdentifierCompat.withDefaultNamespace("copper_block"));
-map.put(normalizeCategoryKey("Aarde"), IdentifierCompat.withDefaultNamespace("dirt"));
-map.put(normalizeCategoryKey("Zand"), IdentifierCompat.withDefaultNamespace("sand"));
-map.put(normalizeCategoryKey("Hout"), IdentifierCompat.withDefaultNamespace("oak_log"));
-map.put(normalizeCategoryKey("Drops"), IdentifierCompat.withDefaultNamespace("gunpowder"));
-map.put(normalizeCategoryKey("Hulpmiddelen"), IdentifierCompat.withDefaultNamespace("totem_of_undying"));
-map.put(normalizeCategoryKey("Vervoer"), IdentifierCompat.withDefaultNamespace("saddle"));
-map.put(normalizeCategoryKey("Licht"), IdentifierCompat.withDefaultNamespace("lantern"));
-map.put(normalizeCategoryKey("Planten"), IdentifierCompat.withDefaultNamespace("wheat"));
-map.put(normalizeCategoryKey("Gereedschap"), IdentifierCompat.withDefaultNamespace("diamond_pickaxe"));
-map.put(normalizeCategoryKey("Wapens"), IdentifierCompat.withDefaultNamespace("diamond_sword"));
-map.put(normalizeCategoryKey("Armor"), IdentifierCompat.withDefaultNamespace("diamond_chestplate"));
-map.put(normalizeCategoryKey("Enchantments"), IdentifierCompat.withDefaultNamespace("enchanted_book"));
-map.put(normalizeCategoryKey("Brouwen"), IdentifierCompat.withDefaultNamespace("water_bottle"));
-map.put(normalizeCategoryKey("Oceaan"), IdentifierCompat.withDefaultNamespace("tube_coral"));
-map.put(normalizeCategoryKey("Nether"), IdentifierCompat.withDefaultNamespace("netherrack"));
-map.put(normalizeCategoryKey("End"), IdentifierCompat.withDefaultNamespace("end_stone"));
-map.put(normalizeCategoryKey("Diepe duisternis"), IdentifierCompat.withDefaultNamespace("sculk"));
-map.put(normalizeCategoryKey("Archeologie"), IdentifierCompat.withDefaultNamespace("brush"));
-map.put(normalizeCategoryKey("Ijs"), IdentifierCompat.withDefaultNamespace("ice"));
-map.put(normalizeCategoryKey("Geverfd"), IdentifierCompat.withDefaultNamespace("blue_dye"));
-map.put(normalizeCategoryKey("Platen"), IdentifierCompat.withDefaultNamespace("music_disc_strad"));
-        return map;
-    }
-
-    private static String normalizeCategoryKey(String key) {
-        if (key == null) return "";
-        String cleaned = key.replace('.', ' ').replace('-', ' ').replace('_', ' ').trim().toLowerCase(Locale.ROOT);
-        return cleaned;
-    }
-
-private static List<Integer> buildStarSlotOrder(int height) {
-    int width = 9;
-    int centerX = (width - 1) / 2;
-    int centerY = (height - 1) / 2;
-    List<int[]> entries = new ArrayList<>();
-
-    for (int y = 0; y < height; y++) {
-        for (int x = 0; x < width; x++) {
-            int idx = y * width + x;
-            
-            if (y == 0) {
-                entries.add(new int[]{idx, 9999, y, x});
-                continue;
-            }
-
-            double dx = x - centerX;
-            double dy = y - centerY;
-            double dist = Math.sqrt(dx * dx + dy * dy);
-            int finalDist = (int) (dist * 1000);
-
-            if (idx == 23) finalDist = -2;
-            if (idx == 24) finalDist = -1;
-
-            entries.add(new int[]{idx, finalDist, y, x});
-        }
-    }
-
-    entries.sort(Comparator
-            .comparingInt((int[] a) -> a[1])
-            .thenComparingInt(a -> a[2])
-            .thenComparingInt(a -> a[3]));
-
-    List<Integer> order = new ArrayList<>(entries.size());
-    for (int[] e : entries) order.add(e[0]);
-    return order;
-}
-
-    private static ChatFormatting getCategoryColor(String key) {
-        String norm = normalizeCategoryKey(key);
-        return switch (norm) {
-            case "redstone" -> ChatFormatting.RED;
-case "eten" -> ChatFormatting.GOLD;
-case "ores" -> ChatFormatting.WHITE;
-case "blokken" -> ChatFormatting.DARK_GREEN;
-case "stenen" -> ChatFormatting.GRAY;
-case "bakstenen" -> ChatFormatting.DARK_GRAY;
-case "koper" -> ChatFormatting.AQUA;
-case "aarde" -> ChatFormatting.GREEN;
-case "zand" -> ChatFormatting.YELLOW;
-case "hout" -> ChatFormatting.DARK_GREEN;
-case "drops" -> ChatFormatting.GRAY;
-case "hulpmiddelen" -> ChatFormatting.LIGHT_PURPLE;
-case "vervoer" -> ChatFormatting.BLUE;
-case "licht" -> ChatFormatting.YELLOW;
-case "planten" -> ChatFormatting.GREEN;
-case "gereedschap" -> ChatFormatting.AQUA;
-case "wapens" -> ChatFormatting.RED;
-case "armor" -> ChatFormatting.BLUE;
-case "enchantments" -> ChatFormatting.LIGHT_PURPLE;
-case "brouwen" -> ChatFormatting.DARK_AQUA;
-case "oceaan" -> ChatFormatting.DARK_AQUA;
-case "nether" -> ChatFormatting.RED;
-case "end" -> ChatFormatting.LIGHT_PURPLE;
-case "diepe duisternis" -> ChatFormatting.DARK_BLUE;
-case "archeologie" -> ChatFormatting.GOLD;
-case "ijs" -> ChatFormatting.AQUA;
-case "geverfd" -> ChatFormatting.BLUE;
-case "platen" -> ChatFormatting.DARK_PURPLE;
-            default -> ChatFormatting.WHITE;
-        };
-    }
-
-    private static boolean hasItems(PriceRegistry prices, String categoryKey) {
-        if (categoryKey == null || categoryKey.isBlank()) return false;
-        if (!prices.buyableByCategory(categoryKey).isEmpty()) return true;
-        if (!categoryKey.contains(".")) {
-            for (String sub : prices.buySubcategories(categoryKey)) {
-                if (!prices.buyableByCategory(categoryKey + "." + sub).isEmpty()) return true;
-            }
-        }
-        return false;
-    }
-
-    private static void fillEmptyWithPanes(SimpleContainer container, int limit) {
-        ItemStack filler = new ItemStack(Items.GRAY_STAINED_GLASS_PANE);
-        filler.set(DataComponents.CUSTOM_NAME, Component.literal(" "));
-        for (int i = 0; i < limit && i < container.getContainerSize(); i++) {
-            if (container.getItem(i).isEmpty()) {
-                container.setItem(i, filler.copy());
-            }
-        }
-    }
-
-    private static MenuType<?> getMenuType(int rows) {
-        return switch (rows) {
-            case 1 -> MenuType.GENERIC_9x1;
-            case 2 -> MenuType.GENERIC_9x2;
-            case 3 -> MenuType.GENERIC_9x3;
-            case 4 -> MenuType.GENERIC_9x4;
-            case 5 -> MenuType.GENERIC_9x5;
-            default -> MenuType.GENERIC_9x6;
-        };
-    }
-
-    private static int requiredRows(int itemCount) {
-        int contentRows = (int) Math.ceil(Math.max(1, itemCount) / 9.0);
-        return Math.min(6, Math.max(2, contentRows + 1));
-    }
-
-    private static Component labeledValue(String label, String value, ChatFormatting labelColor) {
-        return Component.literal(label + ": ")
-                .withStyle(s -> s.withItalic(false).withColor(labelColor))
-                .append(Component.literal(value)
-                        .withStyle(s -> s.withItalic(false).withColor(VALUE_COLOR)));
-    }
-
-    private static Component balanceLore(long balance) {
-        return Component.literal("Saldo: ")
-                .withStyle(s -> s.withItalic(false).withColor(BALANCE_LABEL_COLOR))
-                .append(Component.literal(EconomyCraft.formatMoney(balance))
-                        .withStyle(s -> s.withItalic(false).withColor(BALANCE_VALUE_COLOR)));
-    }
-
-private static ItemStack createBalanceItem(ServerPlayer player) {
-        ItemStack gold = new ItemStack(Items.GOLD_INGOT);
-        
-        var server = ((ServerLevel) player.level()).getServer();
-        long balance = EconomyCraft.getManager(server).getBalance(player.getUUID(), true);
-        
-        gold.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME,
-                Component.literal("Saldo")
-                        .withStyle(s -> s.withItalic(true).withColor(BALANCE_NAME_COLOR)));
-        
-        gold.set(net.minecraft.core.component.DataComponents.LORE, new ItemLore(List.of(
-                Component.literal(EconomyCraft.formatMoney(balance))
-                        .withStyle(s -> s.withItalic(true).withColor(BALANCE_VALUE_COLOR))
-        )));
-        
-        return gold;
-    }
-    
-    private static List<Integer> buildStarSlotOrder() {
-        int width = 9;
-        int height = 5;
-        int centerX = (width - 1) / 2;
-        int centerY = (height - 1) / 2;
-        List<int[]> entries = new ArrayList<>();
-        for (int y = 0; y < height; y++) {
-            for (int x = 0; x < width; x++) {
-                int idx = y * width + x;
-                double dx = x - centerX;
-                double dy = y - centerY;
-                double dist = Math.sqrt(dx * dx + dy * dy);
-                entries.add(new int[]{idx, (int) (dist * 1000), y, x});
-            }
-        }
-
-        entries.sort(Comparator
-                .comparingInt((int[] a) -> a[1])
-                .thenComparingInt(a -> a[2])
-                .thenComparingInt(a -> a[3]));
-
-        List<Integer> order = new ArrayList<>(entries.size());
-        for (int[] e : entries) order.add(e[0]);
-        return order;
+        Map<String, IdentifierCompat.Id> m = new HashMap<>();
+        m.put(normalizeCategoryKey("Redstone"), IdentifierCompat.withDefaultNamespace("redstone"));
+        m.put(normalizeCategoryKey("Eten"), IdentifierCompat.withDefaultNamespace("cooked_beef"));
+        m.put(normalizeCategoryKey("Ores"), IdentifierCompat.withDefaultNamespace("iron_ingot"));
+        m.put(normalizeCategoryKey("Blokken"), IdentifierCompat.withDefaultNamespace("grass_block"));
+        m.put(normalizeCategoryKey("Stenen"), IdentifierCompat.withDefaultNamespace("cobblestone"));
+        m.put(normalizeCategoryKey("Bakstenen"), IdentifierCompat.withDefaultNamespace("bricks"));
+        m.put(normalizeCategoryKey("Koper"), IdentifierCompat.withDefaultNamespace("copper_block"));
+        m.put(normalizeCategoryKey("Aarde"), IdentifierCompat.withDefaultNamespace("dirt"));
+        m.put(normalizeCategoryKey("Zand"), IdentifierCompat.withDefaultNamespace("sand"));
+        m.put(normalizeCategoryKey("Hout"), IdentifierCompat.withDefaultNamespace("oak_log"));
+        m.put(normalizeCategoryKey("Drops"), IdentifierCompat.withDefaultNamespace("gunpowder"));
+        m.put(normalizeCategoryKey("Hulpmiddelen"), IdentifierCompat.withDefaultNamespace("totem_of_undying"));
+        m.put(normalizeCategoryKey("Vervoer"), IdentifierCompat.withDefaultNamespace("saddle"));
+        m.put(normalizeCategoryKey("Licht"), IdentifierCompat.withDefaultNamespace("lantern"));
+        m.put(normalizeCategoryKey("Planten"), IdentifierCompat.withDefaultNamespace("wheat"));
+        m.put(normalizeCategoryKey("Gereedschap"), IdentifierCompat.withDefaultNamespace("diamond_pickaxe"));
+        m.put(normalizeCategoryKey("Wapens"), IdentifierCompat.withDefaultNamespace("diamond_sword"));
+        m.put(normalizeCategoryKey("Armor"), IdentifierCompat.withDefaultNamespace("diamond_chestplate"));
+        m.put(normalizeCategoryKey("Enchantments"), IdentifierCompat.withDefaultNamespace("enchanted_book"));
+        m.put(normalizeCategoryKey("Brouwen"), IdentifierCompat.withDefaultNamespace("water_bottle"));
+        m.put(normalizeCategoryKey("Oceaan"), IdentifierCompat.withDefaultNamespace("tube_coral"));
+        m.put(normalizeCategoryKey("Nether"), IdentifierCompat.withDefaultNamespace("netherrack"));
+        m.put(normalizeCategoryKey("End"), IdentifierCompat.withDefaultNamespace("end_stone"));
+        m.put(normalizeCategoryKey("Diepe duisternis"), IdentifierCompat.withDefaultNamespace("sculk"));
+        m.put(normalizeCategoryKey("Archeologie"), IdentifierCompat.withDefaultNamespace("brush"));
+        m.put(normalizeCategoryKey("Ijs"), IdentifierCompat.withDefaultNamespace("ice"));
+        m.put(normalizeCategoryKey("Geverfd"), IdentifierCompat.withDefaultNamespace("blue_dye"));
+        m.put(normalizeCategoryKey("Platen"), IdentifierCompat.withDefaultNamespace("music_disc_strad"));
+        return m;
     }
 
     private static ItemStack createDisplayStack(PriceRegistry.PriceEntry entry, ServerPlayer viewer) {
         try {
             IdentifierCompat.Id id = entry.id();
-
             Optional<?> item = IdentifierCompat.registryGetOptional(BuiltInRegistries.ITEM, id);
             if (item.isPresent()) {
-                Item resolved = resolveItemValue(item.get(), id, "display stack");
-                if (resolved != null && resolved != Items.AIR) {
-                    return new ItemStack(resolved);
-                }
+                Item res = resolveItemValue(item.get(), id, "disp");
+                if (res != null && res != Items.AIR) return new ItemStack(res);
                 return ItemStack.EMPTY;
             }
-
             String path = id.path();
-            if (path.startsWith("enchanted_book_")) {
-                return createEnchantedBookStack(id, viewer);
-            }
-
+            if (path.startsWith("enchanted_book_")) return createEnchantedBookStack(id, viewer);
             return createPotionStack(id);
-        } catch (RuntimeException ex) {
-            LogUtils.getLogger().error("[EconomyCraft] Failed to create display stack for {}", entry.id().asString(), ex);
-            return ItemStack.EMPTY;
-        }
+        } catch (Exception ex) { return ItemStack.EMPTY; }
     }
 
     private static ItemStack createEnchantedBookStack(IdentifierCompat.Id key, ServerPlayer viewer) {
-        String path = key.path();
-        String suffix = path.substring("enchanted_book_".length());
-        int lastUnderscore = suffix.lastIndexOf('_');
-        if (lastUnderscore <= 0 || lastUnderscore >= suffix.length() - 1) return ItemStack.EMPTY;
-
-        String enchantPath = suffix.substring(0, lastUnderscore);
-        String levelStr = suffix.substring(lastUnderscore + 1);
-
-        int level;
-        try {
-            level = Integer.parseInt(levelStr);
-        } catch (NumberFormatException e) {
-            return ItemStack.EMPTY;
-        }
-
-        if (enchantPath.equals("curse_of_binding")) enchantPath = "binding_curse";
-        else if (enchantPath.equals("curse_of_vanishing")) enchantPath = "vanishing_curse";
-
-        IdentifierCompat.Id enchantId = IdentifierCompat.fromNamespaceAndPath(key.namespace(), enchantPath);
-        if (enchantId == null) {
-            return ItemStack.EMPTY;
-        }
-        HolderLookup.RegistryLookup<Enchantment> lookup = viewer.registryAccess().lookupOrThrow(Registries.ENCHANTMENT);
-        ResourceKey<Enchantment> resourceKey = IdentifierCompat.createResourceKey(Registries.ENCHANTMENT, enchantId);
-        if (resourceKey == null) {
-            return ItemStack.EMPTY;
-        }
-        Optional<Holder.Reference<Enchantment>> holder = lookup.get(resourceKey);
+        String path = key.path().substring("enchanted_book_".length());
+        int lastU = path.lastIndexOf('_');
+        if (lastU <= 0) return ItemStack.EMPTY;
+        String ep = path.substring(0, lastU);
+        int lvl = Integer.parseInt(path.substring(lastU + 1));
+        if (ep.equals("curse_of_binding")) ep = "binding_curse";
+        else if (ep.equals("curse_of_vanishing")) ep = "vanishing_curse";
+        IdentifierCompat.Id eid = IdentifierCompat.fromNamespaceAndPath(key.namespace(), ep);
+        var lookup = viewer.registryAccess().lookupOrThrow(Registries.ENCHANTMENT);
+        var holder = lookup.get(IdentifierCompat.createResourceKey(Registries.ENCHANTMENT, eid));
         if (holder.isEmpty()) return ItemStack.EMPTY;
-
         ItemStack stack = new ItemStack(Items.ENCHANTED_BOOK);
-        ItemEnchantments.Mutable mutable = new ItemEnchantments.Mutable(ItemEnchantments.EMPTY);
-        mutable.set(holder.get(), level);
-        stack.set(DataComponents.STORED_ENCHANTMENTS, mutable.toImmutable());
+        ItemEnchantments.Mutable m = new ItemEnchantments.Mutable(ItemEnchantments.EMPTY);
+        m.set(holder.get(), lvl);
+        stack.set(DataComponents.STORED_ENCHANTMENTS, m.toImmutable());
         return stack;
     }
 
     private static ItemStack createPotionStack(IdentifierCompat.Id key) {
         String path = key.path();
-        Item baseItem = Items.POTION;
-        String working = path;
-
-        if (path.startsWith("splash_")) {
-            baseItem = Items.SPLASH_POTION;
-            working = path.substring("splash_".length());
-        } else if (path.startsWith("lingering_")) {
-            baseItem = Items.LINGERING_POTION;
-            working = path.substring("lingering_".length());
-        } else if (path.startsWith("arrow_of_")) {
-            baseItem = Items.TIPPED_ARROW;
-            working = path.substring("arrow_of_".length());
-        } else if (path.startsWith("potion_of_")) {
-            working = path.substring("potion_of_".length());
+        Item base = Items.POTION;
+        String w = path;
+        if (path.startsWith("splash_")) { base = Items.SPLASH_POTION; w = path.substring(7); }
+        else if (path.startsWith("lingering_")) { base = Items.LINGERING_POTION; w = path.substring(10); }
+        else if (path.startsWith("arrow_of_")) { base = Items.TIPPED_ARROW; w = path.substring(9); }
+        else if (path.startsWith("potion_of_")) w = path.substring(10);
+        if (w.endsWith("_splash_potion")) { base = Items.SPLASH_POTION; w = w.substring(0, w.length()-14); }
+        else if (w.endsWith("_lingering_potion")) { base = Items.LINGERING_POTION; w = w.substring(0, w.length()-17); }
+        String pPath = w;
+        if (w.equals("water_bottle") || w.equals("water")) pPath = "water";
+        else {
+            if (w.endsWith("_extended")) pPath = "long_" + w.substring(0, w.length()-9);
+            else if (w.endsWith("_2")) pPath = "strong_" + w.substring(0, w.length()-2);
         }
-
-        if (working.endsWith("_splash_potion")) {
-            baseItem = Items.SPLASH_POTION;
-            working = working.substring(0, working.length() - "_splash_potion".length());
-        } else if (working.endsWith("_lingering_potion")) {
-            baseItem = Items.LINGERING_POTION;
-            working = working.substring(0, working.length() - "_lingering_potion".length());
-        } else if (working.endsWith("_potion")) {
-            baseItem = Items.POTION;
-            working = working.substring(0, working.length() - "_potion".length());
-        }
-
-        String potionPath;
-        if (working.equals("water_bottle") || working.equals("water")) {
-            potionPath = "water";
-        } else {
-            String effect = working;
-            if (effect.endsWith("_extended")) {
-                effect = effect.substring(0, effect.length() - "_extended".length());
-                potionPath = "long_" + effect;
-            } else if (effect.endsWith("_2")) {
-                effect = effect.substring(0, effect.length() - 2);
-                potionPath = "strong_" + effect;
-            } else if (effect.endsWith("_1")) {
-                effect = effect.substring(0, effect.length() - 2);
-                potionPath = effect;
-            } else {
-                potionPath = effect;
-            }
-        }
-
-        if ("the_turtle_master".equals(potionPath)) {
-            potionPath = "turtle_master";
-        }
-
-        IdentifierCompat.Id potionId = IdentifierCompat.fromNamespaceAndPath(key.namespace(), potionPath);
-        if (potionId == null) {
-            return ItemStack.EMPTY;
-        }
-        Optional<?> potion = IdentifierCompat.registryGetOptional(BuiltInRegistries.POTION, potionId);
-        if (potion.isEmpty()) return ItemStack.EMPTY;
-
-        Holder<Potion> holder = resolvePotionHolder(potion.get(), potionId);
-        if (holder == null) {
-            return ItemStack.EMPTY;
-        }
-        return PotionContents.createItemStack(baseItem, holder);
+        if ("the_turtle_master".equals(pPath)) pPath = "turtle_master";
+        Optional<?> pot = IdentifierCompat.registryGetOptional(BuiltInRegistries.POTION, IdentifierCompat.fromNamespaceAndPath(key.namespace(), pPath));
+        if (pot.isEmpty()) return ItemStack.EMPTY;
+        Holder<Potion> h = resolvePotionHolder(pot.get(), null);
+        return h != null ? PotionContents.createItemStack(base, h) : ItemStack.EMPTY;
     }
 
-    private static Item resolveItemValue(Object value, IdentifierCompat.Id id, String context) {
-        if (value instanceof Item resolved) {
-            return resolved;
-        }
-        if (value instanceof Holder<?> holder) {
-            Object inner = holder.value();
-            if (inner instanceof Item resolved) {
-                return resolved;
-            }
-            return null;
-        }
+    private static Item resolveItemValue(Object v, IdentifierCompat.Id id, String c) {
+        if (v instanceof Item i) return i;
+        if (v instanceof Holder<?> h && h.value() instanceof Item i) return i;
         return null;
     }
 
-    @SuppressWarnings("unchecked")
-    private static Holder<Potion> resolvePotionHolder(Object value, IdentifierCompat.Id id) {
-        if (value instanceof Potion potion) {
-            return BuiltInRegistries.POTION.wrapAsHolder(potion);
-        }
-        if (value instanceof Holder<?> holder) {
-            Object inner = holder.value();
-            if (inner instanceof Potion) {
-                return (Holder<Potion>) holder;
-            }
-            return null;
-        }
+    private static Holder<Potion> resolvePotionHolder(Object v, IdentifierCompat.Id id) {
+        if (v instanceof Potion p) return BuiltInRegistries.POTION.wrapAsHolder(p);
+        if (v instanceof Holder<?> h && h.value() instanceof Potion p) return (Holder<Potion>) h;
         return null;
     }
 
-    private static Long safeMultiply(long a, int b) {
-        try {
-            return Math.multiplyExact(a, b);
-        } catch (ArithmeticException ex) {
-            return null;
-        }
+    private static ChatFormatting getCategoryColor(String key) {
+        String n = normalizeCategoryKey(key);
+        return switch (n) {
+            case "kits" -> ChatFormatting.DARK_GRAY;
+            case "redstone" -> ChatFormatting.RED;
+            case "eten" -> ChatFormatting.GOLD;
+            case "ores" -> ChatFormatting.WHITE;
+            case "blokken" -> ChatFormatting.DARK_GREEN;
+            case "armor" -> ChatFormatting.BLUE;
+            case "wapens" -> ChatFormatting.RED;
+            default -> ChatFormatting.WHITE;
+        };
+    }
+
+    private static String normalizeCategoryKey(String key) { return key == null ? "" : key.replace('.', ' ').replace('-', ' ').replace('_', ' ').trim().toLowerCase(Locale.ROOT); }
+    private static void fillEmptyWithPanes(SimpleContainer c, int l) { ItemStack f = new ItemStack(Items.GRAY_STAINED_GLASS_PANE); f.set(DataComponents.CUSTOM_NAME, Component.literal(" ")); for (int i=0; i<l && i<c.getContainerSize(); i++) if (c.getItem(i).isEmpty()) c.setItem(i, f.copy()); }
+    private static MenuType<?> getMenuType(int r) { return switch (r) { case 1 -> MenuType.GENERIC_9x1; case 2 -> MenuType.GENERIC_9x2; case 3 -> MenuType.GENERIC_9x3; case 4 -> MenuType.GENERIC_9x4; case 5 -> MenuType.GENERIC_9x5; default -> MenuType.GENERIC_9x6; }; }
+    private static int requiredRows(int count) { return Math.min(6, Math.max(2, (int) Math.ceil(Math.max(1, count) / 9.0) + 1)); }
+    private static Component labeledValue(String l, String v, ChatFormatting c) { return Component.literal(l + ": ").withStyle(s -> s.withItalic(false).withColor(c)).append(Component.literal(v).withStyle(s -> s.withItalic(false).withColor(VALUE_COLOR))); }
+    private static ItemStack createBalanceItem(ServerPlayer p) { ItemStack g = new ItemStack(Items.GOLD_INGOT); long bal = EconomyCraft.getManager(((ServerLevel)p.level()).getServer()).getBalance(p.getUUID(), true); g.set(DataComponents.CUSTOM_NAME, Component.literal("Saldo").withStyle(s -> s.withItalic(true).withColor(BALANCE_NAME_COLOR))); g.set(DataComponents.LORE, new ItemLore(List.of(Component.literal(EconomyCraft.formatMoney(bal)).withStyle(s -> s.withItalic(true).withColor(BALANCE_VALUE_COLOR))))); return g; }
+    private static Long safeMultiply(long a, int b) { try { return Math.multiplyExact(a, b); } catch (Exception e) { return null; } }
+    private static boolean hasItems(PriceRegistry p, String c) { return !p.buyableByCategory(c).isEmpty() || !p.buySubcategories(c).isEmpty(); }
+
+    private static List<Integer> buildStarSlotOrder(int height) {
+        List<Integer> order = new ArrayList<>();
+        for (int i = 0; i < 54; i++) order.add(i);
+        return order;
     }
 }
