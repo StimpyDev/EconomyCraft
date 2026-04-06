@@ -415,7 +415,7 @@ private void updatePage() {
                trapperKit.set(DataComponents.ENCHANTMENT_GLINT_OVERRIDE, true); 
 
                List<Component> trapperLore = new ArrayList<>();
-               trapperLore.add(Component.literal("Prijs: ").withStyle(ChatFormatting.GREEN).append(Component.literal("€15.000").withStyle(ChatFormatting.GOLD)));
+               trapperLore.add(Component.literal("Prijs: ").withStyle(ChatFormatting.GREEN).append(Component.literal("€25.000").withStyle(ChatFormatting.GOLD)));
                trapperLore.add(Component.literal("Cooldown: 1 uur").withStyle(ChatFormatting.RED));
                trapperLore.add(Component.literal("Inhoud:").withStyle(ChatFormatting.GRAY));
                trapperLore.add(Component.literal("- Shulker met 32 TNT Minecarts").withStyle(ChatFormatting.DARK_GRAY));
@@ -513,10 +513,10 @@ private void handleTrapperKitPurchase() {
         return;
     }
 
-    long cost = 15000L;
+    long cost = 25000L;
     if (eco.getBalance(uuid, true) < cost) {
         viewer.sendSystemMessage(Component.literal("Je hebt geen ")
-            .append(Component.literal("€15.000").withStyle(ChatFormatting.GOLD))
+            .append(Component.literal("€25.000").withStyle(ChatFormatting.GOLD))
             .append("!").withStyle(ChatFormatting.RED));
         return;
     }
@@ -526,7 +526,7 @@ private void handleTrapperKitPurchase() {
         giveTrapperItems();
         
         viewer.sendSystemMessage(Component.literal("Trapper Kit gekocht voor ")
-            .append(Component.literal("€15.000").withStyle(ChatFormatting.GOLD))
+            .append(Component.literal("€25.000").withStyle(ChatFormatting.GOLD))
             .append("!").withStyle(ChatFormatting.GREEN));
         sendPrivateSound(SoundEvents.EXPERIENCE_ORB_PICKUP);
     }
