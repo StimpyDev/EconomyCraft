@@ -10,9 +10,13 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.world.item.component.ItemLore;
 
 import java.text.NumberFormat;
 import java.util.Locale;
+import java.util.ArrayList;
+import java.util.List;
 
 public final class EconomyCraft {
     public static final String MOD_ID = "economycraft";
@@ -38,25 +42,18 @@ public final class EconomyCraft {
         });
 
         PlayerEvent.PLAYER_JOIN.register(EconomyCraft::onPlayerJoin);
-
-        dev.architectury.event.events.common.MenuEvent.OPEN.register((menu, player) -> {
-            if (player instanceof ServerPlayer) {
-                for (net.minecraft.world.inventory.Slot slot : menu.slots) {
-                    cleanItemLore(slot.getItem());
-                }
-            }
-        });
+        
     }
 
     private static void cleanItemLore(ItemStack stack) {
         if (stack == null || stack.isEmpty()) return;
 
-        net.minecraft.world.item.component.ItemLore lore = stack.get(net.minecraft.core.component.DataComponents.LORE);
+        ItemLore lore = stack.get(DataComponents.LORE);
         if (lore == null) return;
 
-        java.util.List<Component> lines = lore.lines();
+        List<Component> lines = lore.lines();
         boolean changed = false;
-        java.util.List<Component> newLines = new java.util.ArrayList<>();
+        List<Component> newLines = new ArrayList<>();
 
         for (Component line : lines) {
             String text = line.getString();
@@ -69,9 +66,9 @@ public final class EconomyCraft {
 
         if (changed) {
             if (newLines.isEmpty()) {
-                stack.remove(net.minecraft.core.component.DataComponents.LORE);
+                stack.remove(DataComponents.LORE);
             } else {
-                stack.set(net.minecraft.core.component.DataComponents.LORE, new net.minecraft.world.item.component.ItemLore(newLines));
+                stack.set(DataComponents.LORE, new ItemLore(newLines));
             }
         }
     }
@@ -88,10 +85,13 @@ public final class EconomyCraft {
             cleanItemLore(player.getInventory().getItem(i));
         }
         
-        for (ItemStack armor : player.getArmorSlots()) {
+        for (ItemStack armor : player.getInventory().armor) {
             cleanItemLore(armor);
         }
-        cleanItemLore(player.getOffhandItem());
+        
+        for (ItemStack offhand : player.getInventory().offhand) {
+            cleanItemLore(offhand);
+        }
 
         if (eco.getOrders().hasDeliveries(player.getUUID()) || eco.getShop().hasDeliveries(player.getUUID())) {
             ClickEvent ev = ChatCompat.runCommandEvent("/eco orders claim");
