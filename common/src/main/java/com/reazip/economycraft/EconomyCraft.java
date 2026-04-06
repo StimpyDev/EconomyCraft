@@ -5,20 +5,18 @@ import dev.architectury.event.events.common.CommandRegistrationEvent;
 import dev.architectury.event.events.common.LifecycleEvent;
 import dev.architectury.event.events.common.PlayerEvent;
 import net.minecraft.ChatFormatting;
-import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.inventory.AbstractContainerMenu;
-import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.world.item.component.ItemLore;
 
 import java.text.NumberFormat;
+import java.util.Locale;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 
 public final class EconomyCraft {
     public static final String MOD_ID = "economycraft";
@@ -44,16 +42,11 @@ public final class EconomyCraft {
         });
 
         PlayerEvent.PLAYER_JOIN.register(EconomyCraft::onPlayerJoin);
-
-        dev.architectury.event.events.common.MenuEvent.OPEN.register((menu, player) -> {
-            if (player instanceof ServerPlayer) {
-                cleanMenuSlots(menu);
-            }
-        });
     }
 
     private static void cleanItemLore(ItemStack stack) {
         if (stack == null || stack.isEmpty()) return;
+
         ItemLore lore = stack.get(DataComponents.LORE);
         if (lore == null) return;
 
@@ -63,7 +56,7 @@ public final class EconomyCraft {
 
         for (Component line : lines) {
             String text = line.getString();
-            if (text.toLowerCase().contains("verkoopprijs:")) {
+            if (text.contains("Verkoopprijs:")) {
                 changed = true;
                 continue; 
             }
@@ -76,13 +69,6 @@ public final class EconomyCraft {
             } else {
                 stack.set(DataComponents.LORE, new ItemLore(newLines));
             }
-        }
-    }
-
-    private static void cleanMenuSlots(AbstractContainerMenu menu) {
-        if (menu == null) return;
-        for (Slot slot : menu.slots) {
-            cleanItemLore(slot.getItem());
         }
     }
 
@@ -99,20 +85,16 @@ public final class EconomyCraft {
         }
 
         if (eco.getOrders().hasDeliveries(player.getUUID()) || eco.getShop().hasDeliveries(player.getUUID())) {
-            sendDeliveryNotice(player);
-        }
-    }
-
-    private static void sendDeliveryNotice(ServerPlayer player) {
-        ClickEvent ev = ChatCompat.runCommandEvent("/eco orders claim");
-        if (ev != null) {
-            Component msg = Component.literal("Je hebt ongeclaimde items: ")
-                    .withStyle(ChatFormatting.YELLOW)
-                    .append(Component.literal("[Claim]")
-                            .withStyle(s -> s.withUnderlined(true).withColor(ChatFormatting.GREEN).withClickEvent(ev)));
-            player.sendSystemMessage(msg);
-        } else {
-            ChatCompat.sendRunCommandTellraw(player, "Je hebt ongeclaimde items: ", "[Claim]", "/eco orders claim");
+            ClickEvent ev = ChatCompat.runCommandEvent("/eco orders claim");
+            if (ev != null) {
+                Component msg = Component.literal("Je hebt ongeclaimde items: ")
+                        .withStyle(ChatFormatting.YELLOW)
+                        .append(Component.literal("[Claim]")
+                                .withStyle(s -> s.withUnderlined(true).withColor(ChatFormatting.GREEN).withClickEvent(ev)));
+                player.sendSystemMessage(msg);
+            } else {
+                ChatCompat.sendRunCommandTellraw(player, "Je hebt ongeclaimde items: ", "[Claim]", "/eco orders claim");
+            }
         }
     }
 
