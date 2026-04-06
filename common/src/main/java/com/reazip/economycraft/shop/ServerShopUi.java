@@ -191,49 +191,57 @@ public final class ServerShopUi {
                 this.addSlot(new Slot(inv, c, 8 + c * 18, y + 58));
         }
 
-        private void updatePage() {
-            container.clearContent();
-            java.util.Arrays.fill(slotToIndex, -1);
-            int start = page * itemsPerPage;
-            int totalPages = (int) Math.ceil(categories.size() / (double) itemsPerPage);
-            int filledCount = 0;
+private void updatePage() {
+    container.clearContent();
+    java.util.Arrays.fill(slotToIndex, -1);
+    int start = page * itemsPerPage;
+    int totalPages = (int) Math.ceil(categories.size() / (double) itemsPerPage);
+    int filledCount = 0;
 
-            for (int i = 0; i < categories.size(); i++) {
-                if (filledCount >= itemsPerPage) break;
-                int idx = start + i;
-                if (idx >= categories.size()) break;
+    for (int i = 0; i < categories.size(); i++) {
+        if (filledCount >= itemsPerPage) break;
+        int idx = start + i;
+        if (idx >= categories.size()) break;
 
-                String cat = categories.get(idx);
-                ItemStack icon = createCategoryIcon(cat, cat, prices, viewer);
-                
-                if (icon.isEmpty() || icon.is(Items.AIR)) continue;
+        String cat = categories.get(idx);
+        ItemStack icon = createCategoryIcon(cat, cat, prices, viewer);
+        
+        if (icon.isEmpty() || icon.is(Items.AIR)) continue;
 
-                icon.set(DataComponents.CUSTOM_NAME, Component.literal(formatCategoryTitle(cat))
-                    .withStyle(s -> s.withItalic(false).withColor(getCategoryColor(cat)).withBold(true)));
-                icon.set(DataComponents.LORE, new ItemLore(List.of(Component.literal("Klik om artikelen te bekijken").withStyle(s -> s.withItalic(false)))));
-                
-                int slot = STAR_SLOT_ORDER.get(filledCount);
-                container.setItem(slot, icon);
-                slotToIndex[slot] = idx;
-                filledCount++;
-            }
-            
-            fillEmptyWithPanes(container, itemsPerPage);
-            if (page > 0) {
-                ItemStack prev = new ItemStack(Items.ARROW);
-                prev.set(DataComponents.CUSTOM_NAME, Component.literal("Vorige pagina").withStyle(s -> s.withItalic(false)));
-                container.setItem(navRowStart + 3, prev);
-            }
-            if (start + itemsPerPage < categories.size()) {
-                ItemStack next = new ItemStack(Items.ARROW);
-                next.set(DataComponents.CUSTOM_NAME, Component.literal("Volgende pagina").withStyle(s -> s.withItalic(false)));
-                container.setItem(navRowStart + 5, next);
-            }
-            container.setItem(navRowStart, createBalanceItem(viewer));
-            ItemStack paper = new ItemStack(Items.PAPER);
-            paper.set(DataComponents.CUSTOM_NAME, Component.literal("Pagina " + (page + 1) + "/" + Math.max(1, totalPages)).withStyle(s -> s.withItalic(false)));
-            container.setItem(navRowStart + 4, paper);
+        icon.set(DataComponents.CUSTOM_NAME, Component.literal(formatCategoryTitle(cat))
+            .withStyle(s -> s.withItalic(false).withColor(getCategoryColor(cat)).withBold(true)));
+        icon.set(DataComponents.LORE, new ItemLore(List.of(Component.literal("Klik om artikelen te bekijken").withStyle(s -> s.withItalic(false)))));
+        
+        int slot = STAR_SLOT_ORDER.get(filledCount);
+        container.setItem(slot, icon);
+        slotToIndex[slot] = idx;
+        filledCount++;
+    }
+    
+    if (page > 0) {
+        ItemStack prev = new ItemStack(Items.ARROW);
+        prev.set(DataComponents.CUSTOM_NAME, Component.literal("Vorige pagina").withStyle(s -> s.withItalic(false)));
+        container.setItem(navRowStart + 3, prev);
+    }
+    if (start + itemsPerPage < categories.size()) {
+        ItemStack next = new ItemStack(Items.ARROW);
+        next.set(DataComponents.CUSTOM_NAME, Component.literal("Volgende pagina").withStyle(s -> s.withItalic(false)));
+        container.setItem(navRowStart + 5, next);
+    }
+    container.setItem(navRowStart, createBalanceItem(viewer));
+    ItemStack paper = new ItemStack(Items.PAPER);
+    paper.set(DataComponents.CUSTOM_NAME, Component.literal("Pagina " + (page + 1) + "/" + Math.max(1, totalPages)).withStyle(s -> s.withItalic(false)));
+    container.setItem(navRowStart + 4, paper);
+
+    ItemStack filler = new ItemStack(Items.GRAY_STAINED_GLASS_PANE);
+    filler.set(DataComponents.CUSTOM_NAME, Component.literal(""));
+
+    for (int i = 0; i < container.getContainerSize(); i++) {
+        if (container.getItem(i).isEmpty()) {
+            container.setItem(i, filler);
         }
+    }
+}
 
         @Override public void clicked(int slot, int dragType, ClickType type, Player player) {
             if (type == ClickType.PICKUP || type == ClickType.QUICK_MOVE) {
