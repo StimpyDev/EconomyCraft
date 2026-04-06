@@ -4,12 +4,17 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 import com.reazip.economycraft.util.IdentityCompat;
+import net.minecraft.ChatFormatting;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.tags.ItemTags;
+import net.minecraft.world.Container;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.item.component.ItemLore;
 import net.minecraft.world.scores.DisplaySlot;
 import net.minecraft.world.scores.Objective;
@@ -34,7 +39,16 @@ public class EconomyManager {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final Type TYPE = new TypeToken<Map<UUID, Long>>(){}.getType();
     private static final Type DAILY_SELL_TYPE = new TypeToken<Map<UUID, DailySellData>>(){}.getType();
-    private static final String PRICE_TAG = "Verkoopprijs:";
+    
+    private static final Map<Item, Long> EXTRA_PRICES = Map.of(
+        Items.MELON, 90L,
+        Items.MELON_SLICE, 90L,
+        Items.KELP, 90L,
+        Items.BLAZE_ROD, 200L,
+        Items.PUMPKIN, 90L,
+        Items.CACTUS, 45L,
+        Items.SUGAR_CANE, 45L
+    );
 
     private final MinecraftServer server;
     private final Path file, dailySellFile;
@@ -53,17 +67,16 @@ public class EconomyManager {
     private Objective objective;
     public static final long MAX = 999_999_999L;
     
-    private volatile boolean isDirty = false;
-    private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor(r -> {
-        Thread t = new Thread(r, "Economy-Save-Thread");
-        t.setDaemon(true);
-        return t;
-    });
+    private boolean isDirty = false;
+    private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
     public EconomyManager(MinecraftServer server) {
         this.server = server;
+        
         Path dataDir = server.getFile("config/economycraft/data");
-        try { Files.createDirectories(dataDir); } catch (IOException ignored) {}
+        try { 
+            Files.createDirectories(dataDir); 
+        } catch (IOException ignored) {}
 
         this.file = dataDir.resolve("balances.json");
         this.dailySellFile = dataDir.resolve("daily_sells.json");
@@ -81,13 +94,21 @@ public class EconomyManager {
 
     private void startAutoSave() {
         scheduler.scheduleAtFixedRate(() -> {
-            if (isDirty) save();
+            if (isDirty) {
+                save();
+            }
         }, 5, 5, TimeUnit.MINUTES);
     }
 
-    public void markDirty() { this.isDirty = true; }
+    public void markDirty() {
+        this.isDirty = true;
+    }
+
+    public MinecraftServer getServer() { return server; }
 
     // --- Core API ---
+
+    public Map<UUID, Long> getBalances() { return balances; }
 
     public synchronized List<Map.Entry<UUID, Long>> getSortedBalances() {
         long now = System.currentTimeMillis();
@@ -95,110 +116,278 @@ public class EconomyManager {
             cachedTopEntries = balances.entrySet().stream()
                     .sorted(Map.Entry.<UUID, Long>comparingByValue().reversed())
                     .limit(10)
-                    .toList();
+                    .collect(Collectors.toList());
             lastTopUpdate = now;
         }
         return cachedTopEntries;
     }
 
-    public Long getBalance(UUID player, boolean createIfMissing) {
-        return balances.computeIfAbsent(player, k -> createIfMissing ? clamp(EconomyConfig.get().startingBalance) : null);
+    @Nullable
+    public String getBestName(UUID id) {
+        ServerPlayer online = server.getPlayerList().getPlayer(id);
+        if (online != null) {
+            String name = IdentityCompat.of(online).name();
+            userCache.put(id, name);
+            return name;
+        }
+        return userCache.getOrDefault(id, id.toString());
     }
 
-    // --- Cleanup ---
+    public UUID tryResolveUuidByName(String name) {
+        if (name == null || name.isBlank()) return null;
+        
+        ServerPlayer online = server.getPlayerList().getPlayerByName(name);
+        if (online != null) return online.getUUID();
+        for (var e : userCache.entrySet()) {
+            if (name.equalsIgnoreCase(e.getValue())) return e.getKey();
+        }
+        
+        try { return UUID.fromString(name); } catch (Exception ignored) {}
+        return null;
+    }
 
-    public void globalLoreCleanup() {
-    for (ServerPlayer player : server.getPlayerList().getPlayers()) {
-        var inv = player.getInventory();
-        for (int i = 0; i < inv.getContainerSize(); i++) {
-            cleanItemLore(inv.getItem(i));
+    public Long getBalance(UUID player, boolean createIfMissing) {
+        Long bal = balances.get(player);
+        if (bal == null) {
+            if (!createIfMissing) return null;
+            long start = clamp(EconomyConfig.get().startingBalance);
+            balances.put(player, start);
+            updateScore(player, start);
+            markDirty();
+            return start;
+        }
+        return bal;
+    }
+
+    public void setMoney(UUID player, long amount) {
+        long newVal = clamp(amount);
+        balances.put(player, newVal);
+        updateScore(player, newVal);
+        markDirty();
+    }
+
+    public void addMoney(UUID player, long amount) {
+        long newVal = clamp(getBalance(player, true) + amount);
+        balances.put(player, newVal);
+        updateScore(player, newVal);
+        markDirty();
+    }
+
+    public boolean removeMoney(UUID player, long amount) {
+        long current = getBalance(player, true);
+        if (current < amount) return false;
+        long newVal = clamp(current - amount);
+        balances.put(player, newVal);
+        updateScore(player, newVal);
+        markDirty();
+        return true;
+    }
+
+    public boolean pay(UUID from, UUID to, long amount) {
+        if (amount <= 0) return false;
+        if (removeMoney(from, amount)) {
+            addMoney(to, amount);
+            return true;
+        }
+        return false;
+    }
+
+    public void removePlayer(UUID player) {
+        balances.remove(player);
+        dailySells.remove(player);
+        markDirty();
+    }
+
+    // --- Item Lore Price ---
+
+    public void applyPriceLore(ItemStack stack) {
+        if (stack == null || stack.isEmpty() || stack.is(ItemTags.SHULKER_BOXES)) return;
+
+        Long price = (prices != null) ? prices.getUnitSell(stack) : null;
+        if (price == null || price <= 0) {
+            price = EXTRA_PRICES.get(stack.getItem());
+        }
+
+        if (price == null || price <= 0) return;
+
+        String formattedPrice = EconomyCraft.formatMoney(price);
+        ItemLore currentLore = stack.get(DataComponents.LORE);
+        List<Component> lines = (currentLore != null) ? currentLore.lines() : Collections.emptyList();
+        
+        for (Component line : lines) {
+            String str = line.getString();
+            if (str.contains("Verkoopprijs:") && str.contains(formattedPrice)) {
+                return;
+            }
+        }
+
+        List<Component> newLines = new ArrayList<>();
+        for (Component line : lines) {
+            if (!line.getString().contains("Verkoopprijs:")) {
+                newLines.add(line);
+            }
+        }
+
+        MutableComponent priceLine = Component.literal("Verkoopprijs: ")
+                .withStyle(s -> s.withColor(ChatFormatting.GRAY).withItalic(false))
+                .append(Component.literal(formattedPrice)
+                        .withStyle(s -> s.withColor(ChatFormatting.GOLD).withItalic(false)));
+        
+        newLines.add(priceLine);
+        stack.set(DataComponents.LORE, new ItemLore(newLines));
+    }
+
+    public void refreshPlayerInventory(ServerPlayer player) {
+        for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
+            applyPriceLore(player.getInventory().getItem(i));
         }
         if (player.containerMenu != null) {
-            player.containerMenu.slots.forEach(slot -> cleanItemLore(slot.getItem()));
+            player.containerMenu.slots.forEach(slot -> applyPriceLore(slot.getItem()));
         }
     }
 
-    for (var level : server.getAllLevels()) {
-        level.getEntities(null, entity -> entity instanceof ItemEntity).forEach(entity -> {
-            if (entity instanceof ItemEntity itemEntity) {
-                cleanItemLore(itemEntity.getItem());
-            }
-        });
+    public void refreshContainer(Container container) {
+        if (container == null) return;
+        for (int i = 0; i < container.getContainerSize(); i++) {
+            applyPriceLore(container.getItem(i));
+        }
     }
-}
 
-    private void cleanItemLore(ItemStack stack) {
-        if (stack == null || stack.isEmpty()) return;
-        ItemLore lore = stack.get(DataComponents.LORE);
-        if (lore == null || lore.lines().isEmpty()) return;
+    // --- Daily Sell Logic ---
 
-        boolean hasTag = false;
-        for (Component line : lore.lines()) {
-            if (line.getString().contains(PRICE_TAG)) {
-                hasTag = true;
-                break;
-            }
+    public boolean tryRecordDailySell(UUID player, long saleAmount) {
+        long limit = EconomyConfig.get().dailySellLimit;
+        if (limit <= 0) return false;
+
+        DailySellData data = getOrCreateTodaySellData(player);
+        long newTotal = data.amount() + saleAmount;
+        if (newTotal > limit) return true;
+
+        dailySells.put(player, new DailySellData(data.day(), newTotal));
+        markDirty();
+        return false;
+    }
+
+    public long getDailySellRemaining(UUID player) {
+        long limit = EconomyConfig.get().dailySellLimit;
+        if (limit <= 0) return Long.MAX_VALUE;
+        return Math.max(0, limit - getOrCreateTodaySellData(player).amount());
+    }
+
+    private DailySellData getOrCreateTodaySellData(UUID player) {
+        long today = LocalDate.now().toEpochDay();
+        DailySellData data = dailySells.get(player);
+        if (data == null || data.day() != today) {
+            data = new DailySellData(today, 0L);
+            dailySells.put(player, data);
         }
-
-        if (!hasTag) return;
-
-        List<Component> filtered = lore.lines().stream()
-                .filter(line -> !line.getString().contains(PRICE_TAG))
-                .collect(Collectors.toList());
-
-        if (filtered.isEmpty()) {
-            stack.remove(DataComponents.LORE);
-        } else {
-            stack.set(DataComponents.LORE, new ItemLore(filtered));
-        }
+        return data;
     }
 
     // --- Scoreboard ---
 
+    public boolean toggleScoreboard() {
+        boolean newState = !EconomyConfig.get().scoreboardEnabled;
+        EconomyConfig.get().scoreboardEnabled = newState;
+        
+        if (!newState && objective != null) {
+            server.getScoreboard().removeObjective(objective);
+            objective = null;
+        } else if (newState) {
+            getOrCreateObjective();
+        }
+        return newState;
+    }
+
+    private void initScoreboard() {
+        if (EconomyConfig.get().scoreboardEnabled) getOrCreateObjective();
+    }
+
+    private void getOrCreateObjective() {
+        Scoreboard board = server.getScoreboard();
+        objective = board.getObjective("eco_balance");
+        if (objective == null) {
+            objective = board.addObjective("eco_balance", ObjectiveCriteria.DUMMY, Component.literal("Balance"), ObjectiveCriteria.RenderType.INTEGER, true, null);
+        }
+        board.setDisplayObjective(DisplaySlot.SIDEBAR, objective);
+        balances.forEach(this::updateScore);
+    }
+
     private void updateScore(UUID player, long amount) {
         if (!EconomyConfig.get().scoreboardEnabled || objective == null) return;
         String name = getBestName(player);
-        if (name == null) return;
-        
-        Scoreboard board = server.getScoreboard();
-        board.getOrCreatePlayerScore(ScoreHolder.forNameOnly(name), objective).set((int) amount);
+        server.getScoreboard().getOrCreatePlayerScore(ScoreHolder.forNameOnly(name), objective).set((int) amount);
     }
 
     // --- File IO ---
 
+    private void loadAll() {
+        try {
+            if (Files.exists(file)) {
+                Map<UUID, Long> map = GSON.fromJson(Files.readString(file), TYPE);
+                if (map != null) balances.putAll(map);
+            }
+            if (Files.exists(dailySellFile)) {
+                Map<UUID, DailySellData> map = GSON.fromJson(Files.readString(dailySellFile), DAILY_SELL_TYPE);
+                if (map != null) dailySells.putAll(map);
+            }
+        } catch (Exception ignored) {}
+    }
+
     public synchronized void save() {
         try {
-            Files.writeString(file, GSON.toJson(balances));
-            Files.writeString(dailySellFile, GSON.toJson(dailySells));
+            Files.writeString(file, GSON.toJson(balances, TYPE));
+            Files.writeString(dailySellFile, GSON.toJson(dailySells, DAILY_SELL_TYPE));
             isDirty = false;
-        } catch (IOException e) {
-            server.sendSystemMessage(Component.literal("§c[Economy] Fout bij opslaan data!"));
-        }
+        } catch (IOException ignored) {}
     }
 
     private void loadUserCache() {
         userCache.clear();
-        Path cachePath = server.getFile("usercache.json");
-        if (!Files.exists(cachePath)) return;
-
-        try (var reader = Files.newBufferedReader(cachePath)) {
-            UserCacheEntry[] entries = GSON.fromJson(reader, UserCacheEntry[].class);
-            if (entries != null) {
-                for (UserCacheEntry e : entries) {
-                    if (e.uuid != null && e.name != null) {
-                        userCache.put(UUID.fromString(e.uuid), e.name);
+        try {
+            Path cachePath = server.getFile("usercache.json");
+            if (Files.exists(cachePath)) {
+                UserCacheEntry[] entries = GSON.fromJson(Files.readString(cachePath), UserCacheEntry[].class);
+                if (entries != null) {
+                    for (UserCacheEntry e : entries) {
+                        if (e.uuid != null && e.name != null) {
+                            userCache.put(UUID.fromString(e.uuid), e.name);
+                        }
                     }
                 }
             }
         } catch (Exception ignored) {}
     }
 
+    public void handlePvpKill(ServerPlayer victim, ServerPlayer killer) {
+        double pct = EconomyConfig.get().pvpBalanceLossPercentage;
+        if (pct <= 0 || victim == null || killer == null || victim == killer) return;
+        
+        long victimBal = getBalance(victim.getUUID(), true);
+        long loss = (long) Math.floor(pct * victimBal);
+        if (loss <= 0) return;
+        
+        removeMoney(victim.getUUID(), loss);
+        addMoney(killer.getUUID(), loss);
+        
+        victim.sendSystemMessage(Component.literal("Je verloor ")
+            .append(Component.literal(EconomyCraft.formatMoney(loss)).withStyle(ChatFormatting.GOLD))
+            .append(Component.literal(" omdat je bent vermoord door: "))
+            .append(Component.literal(killer.getName().getString()).withStyle(ChatFormatting.RED).withStyle(ChatFormatting.BOLD))
+            .withStyle(ChatFormatting.RED));
+
+        killer.sendSystemMessage(Component.literal("Je ontving ")
+            .append(Component.literal(EconomyCraft.formatMoney(loss)).withStyle(ChatFormatting.GOLD))
+            .append(Component.literal(" door het vermoorden van: "))
+            .append(Component.literal(victim.getName().getString()).withStyle(ChatFormatting.RED).withStyle(ChatFormatting.BOLD))
+            .withStyle(ChatFormatting.RED));
+    }
+
     private long clamp(long value) { return Math.max(0, Math.min(MAX, value)); }
-    public void shutdown() { scheduler.shutdown(); save(); }
-    public Map<UUID, Long> getBalances() { return balances; }
-    public PriceRegistry getPrices() { return prices; }
     public com.reazip.economycraft.shop.ShopManager getShop() { return shop; }
     public com.reazip.economycraft.orders.OrderManager getOrders() { return orders; }
+    public PriceRegistry getPrices() { return prices; }
+    public void shutdown() { scheduler.shutdown(); save(); }
 
     private static final class UserCacheEntry { String name; String uuid; }
     private record DailySellData(long day, long amount) {}
