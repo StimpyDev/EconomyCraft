@@ -8,7 +8,7 @@ import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.Container;
+import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.ItemLore;
 import net.minecraft.world.scores.DisplaySlot;
@@ -183,41 +183,42 @@ public class EconomyManager {
         markDirty();
     }
 
-    // --- Lore Cleanup ---
+    // --- Global Cleanup Logic ---
+    
+    public void globalLoreCleanup() {
+        for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+            for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
+                cleanItemLore(player.getInventory().getItem(i));
+            }
+            if (player.containerMenu != null) {
+                player.containerMenu.slots.forEach(slot -> cleanItemLore(slot.getItem()));
+            }
+        }
 
-    public void applyPriceLore(ItemStack stack) {
+        server.getAllLevels().forEach(level -> {
+            level.getEntities().getAll().forEach(entity -> {
+                if (entity instanceof ItemEntity itemEntity) {
+                    cleanItemLore(itemEntity.getItem());
+                }
+            });
+        });
+    }
+
+    private void cleanItemLore(ItemStack stack) {
         if (stack == null || stack.isEmpty()) return;
+        ItemLore lore = stack.get(DataComponents.LORE);
+        if (lore == null) return;
 
-        ItemLore currentLore = stack.get(DataComponents.LORE);
-        if (currentLore == null) return;
-
-        List<Component> lines = currentLore.lines();
-        List<Component> newLines = lines.stream()
+        List<Component> filtered = lore.lines().stream()
                 .filter(line -> !line.getString().contains("Verkoopprijs:"))
                 .collect(Collectors.toList());
 
-        if (newLines.size() < lines.size()) {
-            if (newLines.isEmpty()) {
+        if (filtered.size() < lore.lines().size()) {
+            if (filtered.isEmpty()) {
                 stack.remove(DataComponents.LORE);
             } else {
-                stack.set(DataComponents.LORE, new ItemLore(newLines));
+                stack.set(DataComponents.LORE, new ItemLore(filtered));
             }
-        }
-    }
-
-    public void refreshPlayerInventory(ServerPlayer player) {
-        for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
-            applyPriceLore(player.getInventory().getItem(i));
-        }
-        if (player.containerMenu != null) {
-            player.containerMenu.slots.forEach(slot -> applyPriceLore(slot.getItem()));
-        }
-    }
-
-    public void refreshContainer(Container container) {
-        if (container == null) return;
-        for (int i = 0; i < container.getContainerSize(); i++) {
-            applyPriceLore(container.getItem(i));
         }
     }
 
