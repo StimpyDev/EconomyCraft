@@ -400,7 +400,7 @@ private void updatePage() {
                 starterKit.set(DataComponents.CUSTOM_NAME, Component.literal("Starter Kit").withStyle(ChatFormatting.AQUA, ChatFormatting.BOLD));
                 starterKit.set(DataComponents.ENCHANTMENT_GLINT_OVERRIDE, true);          
                 List<Component> starterLore = new ArrayList<>();
-                starterLore.add(Component.literal("Prijs: ").withStyle(ChatFormatting.GREEN).append(Component.literal("GRATIS").withStyle(ChatFormatting.YELLOW)));
+                starterLore.add(Component.literal("Prijs: ").withStyle(ChatFormatting.GREEN).append(Component.literal("GRATIS").withStyle(ChatFormatting.GOLD)));
                 starterLore.add(Component.literal("Cooldown: Eenmalig Gebruik").withStyle(ChatFormatting.RED));
                 starterLore.add(Component.literal("Inhoud:").withStyle(ChatFormatting.GRAY));
                 starterLore.add(Component.literal("- Full Diamond Kit (Prot 1)").withStyle(ChatFormatting.DARK_GRAY));
@@ -427,7 +427,7 @@ private void updatePage() {
                 ItemStack kit = new ItemStack(Items.NETHERITE_CHESTPLATE);
                 kit.set(DataComponents.CUSTOM_NAME, Component.literal("Full Netherite Kit").withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD));
                 List<Component> kitLore = new ArrayList<>();
-                kitLore.add(Component.literal("Prijs: ").withStyle(ChatFormatting.GREEN).append(Component.literal("€500.000").withStyle(ChatFormatting.YELLOW)));
+                kitLore.add(Component.literal("Prijs: ").withStyle(ChatFormatting.GREEN).append(Component.literal("€500.000").withStyle(ChatFormatting.GOLD)));
                 kitLore.add(Component.literal("Cooldown: 1 uur").withStyle(ChatFormatting.RED));
                 kitLore.add(Component.literal("Inhoud:").withStyle(ChatFormatting.GRAY));
                 kitLore.add(Component.literal("- Full Netherite Kit").withStyle(ChatFormatting.DARK_GRAY));
