@@ -815,7 +815,7 @@ private static ChatFormatting getCategoryColor(String key) {
             case "ores" -> ChatFormatting.AQUA;
             case "blokken" -> ChatFormatting.DARK_GREEN;
             case "armor" -> ChatFormatting.BLUE;
-            case "wapens" -> ChatFormatting.CYAN;
+            case "wapens" -> ChatFormatting.DARK_AQUA;
             case "enchantments" -> ChatFormatting.DARK_PURPLE;
             default -> ChatFormatting.YELLOW;
         };
