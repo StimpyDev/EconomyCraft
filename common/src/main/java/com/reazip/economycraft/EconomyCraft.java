@@ -5,18 +5,20 @@ import dev.architectury.event.events.common.CommandRegistrationEvent;
 import dev.architectury.event.events.common.LifecycleEvent;
 import dev.architectury.event.events.common.PlayerEvent;
 import net.minecraft.ChatFormatting;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.core.component.DataComponents;
 import net.minecraft.world.item.component.ItemLore;
 
 import java.text.NumberFormat;
-import java.util.Locale;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 public final class EconomyCraft {
     public static final String MOD_ID = "economycraft";
@@ -41,13 +43,17 @@ public final class EconomyCraft {
             }
         });
 
-        // Schoonmaak bij het inloggen
         PlayerEvent.PLAYER_JOIN.register(EconomyCraft::onPlayerJoin);
+
+        dev.architectury.event.events.common.MenuEvent.OPEN.register((menu, player) -> {
+            if (player instanceof ServerPlayer) {
+                cleanMenuSlots(menu);
+            }
+        });
     }
 
     private static void cleanItemLore(ItemStack stack) {
         if (stack == null || stack.isEmpty()) return;
-
         ItemLore lore = stack.get(DataComponents.LORE);
         if (lore == null) return;
 
@@ -57,7 +63,7 @@ public final class EconomyCraft {
 
         for (Component line : lines) {
             String text = line.getString();
-            if (text.contains("Verkoopprijs:")) {
+            if (text.toLowerCase().contains("verkoopprijs:")) {
                 changed = true;
                 continue; 
             }
@@ -73,6 +79,13 @@ public final class EconomyCraft {
         }
     }
 
+    private static void cleanMenuSlots(AbstractContainerMenu menu) {
+        if (menu == null) return;
+        for (Slot slot : menu.slots) {
+            cleanItemLore(slot.getItem());
+        }
+    }
+
     private static void onPlayerJoin(ServerPlayer player) {
         MinecraftServer server = player.level().getServer();
         if (server == null) return;
@@ -81,23 +94,25 @@ public final class EconomyCraft {
         eco.getBestName(player.getUUID()); 
         eco.getBalance(player.getUUID(), true);
 
-        // FULL FIX: Loop door ALLES in de inventory. 
-        // Bij een PlayerInventory bevat getContainerSize() ook de armor en offhand slots.
         for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
             cleanItemLore(player.getInventory().getItem(i));
         }
 
         if (eco.getOrders().hasDeliveries(player.getUUID()) || eco.getShop().hasDeliveries(player.getUUID())) {
-            ClickEvent ev = ChatCompat.runCommandEvent("/eco orders claim");
-            if (ev != null) {
-                Component msg = Component.literal("Je hebt ongeclaimde items: ")
-                        .withStyle(ChatFormatting.YELLOW)
-                        .append(Component.literal("[Claim]")
-                                .withStyle(s -> s.withUnderlined(true).withColor(ChatFormatting.GREEN).withClickEvent(ev)));
-                player.sendSystemMessage(msg);
-            } else {
-                ChatCompat.sendRunCommandTellraw(player, "Je hebt ongeclaimde items: ", "[Claim]", "/eco orders claim");
-            }
+            sendDeliveryNotice(player);
+        }
+    }
+
+    private static void sendDeliveryNotice(ServerPlayer player) {
+        ClickEvent ev = ChatCompat.runCommandEvent("/eco orders claim");
+        if (ev != null) {
+            Component msg = Component.literal("Je hebt ongeclaimde items: ")
+                    .withStyle(ChatFormatting.YELLOW)
+                    .append(Component.literal("[Claim]")
+                            .withStyle(s -> s.withUnderlined(true).withColor(ChatFormatting.GREEN).withClickEvent(ev)));
+            player.sendSystemMessage(msg);
+        } else {
+            ChatCompat.sendRunCommandTellraw(player, "Je hebt ongeclaimde items: ", "[Claim]", "/eco orders claim");
         }
     }
 
