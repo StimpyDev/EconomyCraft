@@ -526,10 +526,12 @@ private void handleTrapperKitPurchase() {
 private void giveTrapperItems() {
     Inventory inv = viewer.getInventory();
     
+    List<ItemStack> shulkerItems = new ArrayList<>();
+    shulkerItems.add(new ItemStack(Items.TNT_MINECART, 32));
+
     ItemStack shulker = new ItemStack(Items.RED_SHULKER_BOX);
-    SimpleContainer shulkerInv = new SimpleContainer(27);
-    shulkerInv.setItem(0, new ItemStack(Items.TNT_MINECART, 32));
-    shulker.set(DataComponents.CONTAINER, net.minecraft.core.component.TypedDataComponent.of(net.minecraft.world.inventory.tooltip.BundleTooltip.EMPTY)); 
+    
+    shulker.set(DataComponents.CONTAINER, net.minecraft.world.item.component.ItemContainerContents.fromItems(shulkerItems));
     
     inv.add(shulker);
     
