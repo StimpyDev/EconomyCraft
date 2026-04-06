@@ -54,10 +54,6 @@ public final class EconomyCommands {
         dispatcher.register(buildAH().requires(s -> EconomyConfig.get().standaloneCommands));
         dispatcher.register(buildOrders().requires(s -> EconomyConfig.get().standaloneCommands));
 
-        var serverShop = buildShop();
-        serverShop.requires(src -> EconomyConfig.get().standaloneCommands && EconomyConfig.get().serverShopEnabled);
-        dispatcher.register(serverShop);
-
         dispatcher.register(
                 buildAddMoney().requires(src ->
                         PermissionCompat.gamemaster().test(src)
