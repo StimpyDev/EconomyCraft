@@ -620,7 +620,6 @@ private void giveStarterItems() {
                 Enchantments.KNOCKBACK, 2,
                 Enchantments.LUNGE, 3
             ));
-            spear.set(DataComponents.CUSTOM_NAME, Component.literal("Netherite Spear").withStyle(ChatFormatting.GOLD));
             inv.add(spear);
         }
         
