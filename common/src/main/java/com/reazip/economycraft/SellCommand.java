@@ -48,19 +48,21 @@ public final class SellCommand {
             source.sendFailure(Component.literal("Je houdt geen item vast.").withStyle(ChatFormatting.RED));
             return 0;
         }
+        
         MinecraftServer server = source.getServer();
         EconomyManager manager = EconomyCraft.getManager(server);
         PriceRegistry prices = manager.getPrices();
 
         ResolvedPrice resolved = prices.resolve(hand);
         Long unitSell = prices.getUnitSell(hand);
+        
         if (resolved == null || unitSell == null) {
             source.sendFailure(Component.literal("Dit item kan niet worden verkocht.").withStyle(ChatFormatting.RED));
             return 0;
         }
 
         if (prices.isSellBlockedByDamage(hand)) {
-            source.sendFailure(Component.literal("Items die beschadigd zijn kan niet worden verkocht.").withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.literal("Items die beschadigd zijn kunnen niet worden verkocht.").withStyle(ChatFormatting.RED));
             return 0;
         }
 
@@ -72,7 +74,7 @@ public final class SellCommand {
         int available = hand.getCount();
         int toSell = amount < 0 ? available : amount;
         if (toSell < 1 || toSell > available) {
-            source.sendFailure(Component.literal("Ongeldig bedrag.").withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.literal("Ongeldig aantal.").withStyle(ChatFormatting.RED));
             return 0;
         }
 
@@ -90,8 +92,6 @@ public final class SellCommand {
         hand.shrink(toSell);
         if (hand.isEmpty()) {
             player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, ItemStack.EMPTY);
-        } else {
-            manager.applyPriceLore(hand);
         }
 
         manager.addMoney(player.getUUID(), total);
@@ -122,18 +122,9 @@ public final class SellCommand {
         PriceRegistry prices = manager.getPrices();
         ResolvedPrice resolved = prices.resolve(hand);
         Long unitSell = prices.getUnitSell(hand);
+        
         if (resolved == null || unitSell == null) {
             source.sendFailure(Component.literal("Dit item kan niet worden verkocht.").withStyle(ChatFormatting.RED));
-            return 0;
-        }
-
-        if (prices.isSellBlockedByDamage(hand)) {
-            source.sendFailure(Component.literal("Items die beschadigd zijn kan niet worden verkocht.").withStyle(ChatFormatting.RED));
-            return 0;
-        }
-
-        if (prices.isSellBlockedByContents(hand)) {
-            source.sendFailure(Component.literal("Items met inhoud mogen niet worden verkocht.").withStyle(ChatFormatting.RED));
             return 0;
         }
 
@@ -155,7 +146,7 @@ public final class SellCommand {
 
         String itemName = hand.getHoverName().getString();
         
-        MutableComponent base = Component.literal("Dit item kan worden verkocht ")
+        MutableComponent base = Component.literal("Dit item kan worden verkocht: ")
                 .withStyle(ChatFormatting.GREEN)
                 .append(Component.literal(totalCount + "x " + itemName).withStyle(ChatFormatting.YELLOW))
                 .append(Component.literal(" voor ").withStyle(ChatFormatting.GREEN))
@@ -184,6 +175,7 @@ public final class SellCommand {
             PENDING.remove(player.getUUID());
             return 0;
         }
+        
         MinecraftServer server = source.getServer();
         EconomyManager manager = EconomyCraft.getManager(server);
         PriceRegistry prices = manager.getPrices();
@@ -192,7 +184,7 @@ public final class SellCommand {
         ResolvedPrice current = prices.resolve(hand);
         
         if (current == null || !pending.key().equals(current.key())) {
-            source.sendFailure(Component.literal("Het vastgehouden item is gewijzigd.").withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.literal("Het item in je hand is gewijzigd.").withStyle(ChatFormatting.RED));
             PENDING.remove(player.getUUID());
             return 0;
         }
@@ -202,8 +194,7 @@ public final class SellCommand {
         }
 
         String itemName = hand.getHoverName().getString();
-        // FIX: Geef server mee aan removeMatching
-        removeMatching(player, prices, pending.key(), pending.count(), server);
+        removeMatching(player, prices, pending.key(), pending.count());
         manager.addMoney(player.getUUID(), pending.total());
 
         player.sendSystemMessage(Component.literal("Succesvol verkocht ")
@@ -233,11 +224,9 @@ public final class SellCommand {
         return total;
     }
 
-    // FIX: server toegevoegd als parameter om manager op te halen
-    private static void removeMatching(ServerPlayer player, PriceRegistry prices, IdentifierCompat.Id key, int toRemove, MinecraftServer server) {
+    private static void removeMatching(ServerPlayer player, PriceRegistry prices, IdentifierCompat.Id key, int toRemove) {
         var inv = player.getInventory();
         int remaining = toRemove;
-        EconomyManager manager = EconomyCraft.getManager(server);
 
         for (int i = 0; i < 36; i++) {
             ItemStack stack = inv.getItem(i);
@@ -245,12 +234,7 @@ public final class SellCommand {
                 int remove = Math.min(remaining, stack.getCount());
                 stack.shrink(remove);
                 remaining -= remove;
-                
-                if (stack.isEmpty()) {
-                    inv.setItem(i, ItemStack.EMPTY);
-                } else {
-                    manager.applyPriceLore(stack);
-                }
+                if (stack.isEmpty()) inv.setItem(i, ItemStack.EMPTY);
             }
             if (remaining <= 0) return;
         }
@@ -259,11 +243,7 @@ public final class SellCommand {
         if (remaining > 0 && isMatchingSellable(prices, offhand, key)) {
             int remove = Math.min(remaining, offhand.getCount());
             offhand.shrink(remove);
-            if (offhand.isEmpty()) {
-                player.setItemInHand(net.minecraft.world.InteractionHand.OFF_HAND, ItemStack.EMPTY);
-            } else {
-                manager.applyPriceLore(offhand);
-            }
+            if (offhand.isEmpty()) player.setItemInHand(net.minecraft.world.InteractionHand.OFF_HAND, ItemStack.EMPTY);
         }
     }
 
@@ -304,7 +284,7 @@ public final class SellCommand {
                     .withStyle(ChatFormatting.RED));
         } else {
             source.sendFailure(Component.literal("Overschrijdt limiet. Je kunt vandaag nog maximaal " +
-                            EconomyCraft.formatMoney(remaining) + " aan spullen verkopen.")
+                            EconomyCraft.formatMoney(remaining) + " verkopen.")
                     .withStyle(ChatFormatting.RED));
         }
         return 0;
