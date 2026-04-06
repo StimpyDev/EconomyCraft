@@ -17,6 +17,7 @@ public final class EconomyCraft {
     public static final String MOD_ID = "economycraft";
     private static EconomyManager manager;
     private static MinecraftServer lastServer;
+    public static final Logger LOGGER = LoggerFactory.getLogger("EconomyCraft");
     private static final NumberFormat FORMAT = NumberFormat.getInstance(Locale.GERMANY);
 
     public static void registerEvents() {
