@@ -384,14 +384,28 @@ public final class ServerShopUi {
                 this.addSlot(new Slot(inv, c + r * 9 + 9, 8 + c * 18, y + r * 18));
             for (int c = 0; c < 9; c++) this.addSlot(new Slot(inv, c, 8 + c * 18, y + 58));
         }
-
+        
         private void updatePage() {
             container.clearContent();
             if (category.equalsIgnoreCase("kits")) {
+                ItemStack starterKit = new ItemStack(Items.DIAMOND_CHESTPLATE);
+                starterKit.set(DataComponents.CUSTOM_NAME, Component.literal("Starter Kit").withStyle(ChatFormatting.AQUA, ChatFormatting.BOLD));
+                starterKit.set(DataComponents.ENCHANTMENT_GLINT_OVERRIDE, true);          
+                List<Component> starterLore = new ArrayList<>();
+                starterLore.add(Component.literal("Prijs: ").withStyle(ChatFormatting.GREEN).append(Component.literal("GRATIS").withStyle(ChatFormatting.YELLOW)));
+                starterLore.add(Component.literal("Cooldown: Eenmalig Gebruik").withStyle(ChatFormatting.RED));
+                starterLore.add(Component.literal("Inhoud:").withStyle(ChatFormatting.GRAY));
+                starterLore.add(Component.literal("- Full Diamond Kit (Prot 1)").withStyle(ChatFormatting.DARK_GRAY));
+                starterLore.add(Component.literal("- Diamond Tools (Sharp 1 / Eff 1)").withStyle(ChatFormatting.DARK_GRAY));
+                starterLore.add(Component.literal("- Shield & 32 Steak").withStyle(ChatFormatting.DARK_GRAY));
+                starterKit.set(DataComponents.LORE, new ItemLore(starterLore));
+                
+                container.setItem(2, starterKit);
+
                 ItemStack kit = new ItemStack(Items.NETHERITE_CHESTPLATE);
                 kit.set(DataComponents.CUSTOM_NAME, Component.literal("Full Netherite Kit").withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD));
                 List<Component> kitLore = new ArrayList<>();
-                kitLore.add(Component.literal("Prijs: ").withStyle(ChatFormatting.GREEN).append(Component.literal("€500.000").withStyle(ChatFormatting.GOLD)));
+                kitLore.add(Component.literal("Prijs: ").withStyle(ChatFormatting.GREEN).append(Component.literal("€500.000").withStyle(ChatFormatting.YELLOW)));
                 kitLore.add(Component.literal("Cooldown: 1 uur").withStyle(ChatFormatting.RED));
                 kitLore.add(Component.literal("Inhoud:").withStyle(ChatFormatting.GRAY));
                 kitLore.add(Component.literal("- Full Netherite Kit").withStyle(ChatFormatting.DARK_GRAY));
@@ -459,6 +473,41 @@ public final class ServerShopUi {
             }
             super.clicked(slot, dragType, type, player);
         }
+
+private void handleStarterKitPurchase() {
+    UUID uuid = viewer.getUUID();
+    long now = System.currentTimeMillis();
+
+    if (KIT_COOLDOWNS.containsKey(uuid)) {
+        viewer.sendSystemMessage(Component.literal("Je hebt deze kit al geclaimd!").withStyle(ChatFormatting.RED));
+        return;
+    }
+
+    giveStarterItems();
+
+    long infinite = now + (365L * 24 * 60 * 60 * 1000 * 100); 
+    KIT_COOLDOWNS.put(uuid, infinite);
+
+    viewer.sendSystemMessage(Component.literal("Starter Kit ontvangen!").withStyle(ChatFormatting.GREEN));
+    sendPrivateSound(SoundEvents.EXPERIENCE_ORB_PICKUP);
+}
+
+private void giveStarterItems() {
+    HolderLookup.Provider p = viewer.registryAccess();
+    Inventory inv = viewer.getInventory();
+
+    inv.add(createEnchanted(Items.DIAMOND_HELMET, p, Map.of(Enchantments.PROTECTION, 1)));
+    inv.add(createEnchanted(Items.DIAMOND_CHESTPLATE, p, Map.of(Enchantments.PROTECTION, 1)));
+    inv.add(createEnchanted(Items.DIAMOND_LEGGINGS, p, Map.of(Enchantments.PROTECTION, 1)));
+    inv.add(createEnchanted(Items.DIAMOND_BOOTS, p, Map.of(Enchantments.PROTECTION, 1)));
+
+    inv.add(createEnchanted(Items.DIAMOND_SWORD, p, Map.of(Enchantments.SHARPNESS, 1)));
+    inv.add(createEnchanted(Items.DIAMOND_PICKAXE, p, Map.of(Enchantments.EFFICIENCY, 1)));
+    inv.add(createEnchanted(Items.DIAMOND_AXE, p, Map.of(Enchantments.EFFICIENCY, 1)));
+    
+    inv.add(new ItemStack(Items.SHIELD));
+    inv.add(new ItemStack(Items.COOKED_BEEF, 32));
+}
 
         private void handleKitPurchase() {
             UUID uuid = viewer.getUUID();
