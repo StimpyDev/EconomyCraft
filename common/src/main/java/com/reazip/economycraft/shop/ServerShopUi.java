@@ -54,7 +54,7 @@ public final class ServerShopUi {
     private static final Component STORED_MSG = Component.literal("Item stored: ").withStyle(ChatFormatting.YELLOW);
     private static final Map<String, IdentifierCompat.Id> CATEGORY_ICONS = buildCategoryIcons();
     private static final List<Integer> STAR_SLOT_ORDER = buildStarSlotOrder(5);
-    private static final Map<UUID, Long> KIT_COOLDOWNS = new HashMap<>();
+    private static final Map<String, Long> KIT_COOLDOWNS = new HashMap<>();
     private static final long KIT_COOLDOWN_TIME = 3600000L;
     
     private static final ChatFormatting LABEL_PRIMARY_COLOR = ChatFormatting.GOLD;
@@ -503,12 +503,13 @@ private void updatePage() {
         }
 private void handleTrapperKitPurchase() {
     UUID uuid = viewer.getUUID();
+    String kitKey = uuid.toString() + "_trapper";
     long now = System.currentTimeMillis();
     
-    if (KIT_COOLDOWNS.getOrDefault(uuid, 0L) > now) {
-        long waitSeconds = (KIT_COOLDOWNS.get(uuid) - now) / 1000;
-        long waitMinutes = waitSeconds / 60;
-        viewer.sendSystemMessage(Component.literal("Wacht nog " + waitMinutes + " minuten om deze kit te kopen.").withStyle(ChatFormatting.RED));
+    if (KIT_COOLDOWNS.getOrDefault(kitKey, 0L) > now) {
+        long waitMinutes = (KIT_COOLDOWNS.get(kitKey) - now) / 60000;
+        viewer.sendSystemMessage(Component.literal("Wacht nog " + waitMinutes + " minuten voor de Trapper Kit.")
+            .withStyle(ChatFormatting.RED));
         return;
     }
 
@@ -521,7 +522,7 @@ private void handleTrapperKitPurchase() {
     }
 
     if (eco.removeMoney(uuid, cost)) {
-        KIT_COOLDOWNS.put(uuid, now + 3600000L); 
+        KIT_COOLDOWNS.put(kitKey, now + 3600000L); 
         giveTrapperItems();
         
         viewer.sendSystemMessage(Component.literal("Trapper Kit gekocht voor ")
@@ -554,8 +555,9 @@ private void giveTrapperItems() {
 private void handleStarterKitPurchase() {
     UUID uuid = viewer.getUUID();
     long now = System.currentTimeMillis();
+    String kitKey = uuid.toString() + "_starter";
 
-    if (KIT_COOLDOWNS.getOrDefault(uuid, 0L) > now) {
+    if (KIT_COOLDOWNS.getOrDefault(kitKey, 0L) > now) {
         viewer.sendSystemMessage(Component.literal("Je hebt deze kit al geclaimd!").withStyle(ChatFormatting.RED));
         return;
     }
@@ -563,7 +565,7 @@ private void handleStarterKitPurchase() {
     giveStarterItems();
 
     long infinite = now + (365L * 24 * 60 * 60 * 1000 * 100);
-    KIT_COOLDOWNS.put(uuid, infinite);
+    KIT_COOLDOWNS.put(kitKey, infinite);
 
     viewer.sendSystemMessage(Component.literal("Starter Kit ontvangen!").withStyle(ChatFormatting.GREEN));
     sendPrivateSound(SoundEvents.EXPERIENCE_ORB_PICKUP);
@@ -586,32 +588,36 @@ private void giveStarterItems() {
     inv.add(new ItemStack(Items.COOKED_BEEF, 32));
 }
 
-        private void handleKitPurchase() {
-            UUID uuid = viewer.getUUID();
-            long now = System.currentTimeMillis();
-            if (KIT_COOLDOWNS.getOrDefault(uuid, 0L) > now) {
-                long waitSeconds = (KIT_COOLDOWNS.get(uuid) - now) / 1000;
-                long waitMinutes = waitSeconds / 60;
-                viewer.sendSystemMessage(Component.literal("Wacht nog " + waitMinutes + " minuten om deze kit te kopen.").withStyle(ChatFormatting.RED));
-                return;
-            }
-            long cost = 500000L;
-            if (eco.getBalance(uuid, true) < cost) {
-                viewer.sendSystemMessage(Component.literal("Je hebt geen ")
-                    .append(Component.literal("€500.000").withStyle(ChatFormatting.GOLD))
-                    .append("!").withStyle(ChatFormatting.RED));
-                return;
-            }
-    
-            if (eco.removeMoney(uuid, cost)) {
-                KIT_COOLDOWNS.put(uuid, now + KIT_COOLDOWN_TIME);
-                giveKitItems();
-                viewer.sendSystemMessage(Component.literal("Kit gekocht voor ")
-                    .append(Component.literal("€500.000").withStyle(ChatFormatting.GOLD))
-                    .append("!").withStyle(ChatFormatting.GREEN));
-                sendPrivateSound(SoundEvents.EXPERIENCE_ORB_PICKUP);
-            }
-        }
+private void handleKitPurchase() {
+    UUID uuid = viewer.getUUID();
+    long now = System.currentTimeMillis();
+    String kitKey = uuid.toString() + "_netherite"; 
+
+    if (KIT_COOLDOWNS.getOrDefault(kitKey, 0L) > now) {
+        long waitSeconds = (KIT_COOLDOWNS.get(kitKey) - now) / 1000;
+        long waitMinutes = waitSeconds / 60;
+        viewer.sendSystemMessage(Component.literal("Wacht nog " + waitMinutes + " minuten om deze kit te kopen.").withStyle(ChatFormatting.RED));
+        return;
+    }
+
+    long cost = 500000L;
+    if (eco.getBalance(uuid, true) < cost) {
+        viewer.sendSystemMessage(Component.literal("Je hebt geen ")
+            .append(Component.literal("€500.000").withStyle(ChatFormatting.GOLD))
+            .append("!").withStyle(ChatFormatting.RED));
+        return;
+    }
+
+    if (eco.removeMoney(uuid, cost)) {
+        KIT_COOLDOWNS.put(kitKey, now + KIT_COOLDOWN_TIME);
+        giveKitItems();
+        
+        viewer.sendSystemMessage(Component.literal("Netherite Kit gekocht voor ")
+            .append(Component.literal("€500.000").withStyle(ChatFormatting.GOLD))
+            .append("!").withStyle(ChatFormatting.GREEN));
+        sendPrivateSound(SoundEvents.EXPERIENCE_ORB_PICKUP);
+    }
+}
 
         private void giveKitItems() {
             HolderLookup.Provider p = viewer.registryAccess();
