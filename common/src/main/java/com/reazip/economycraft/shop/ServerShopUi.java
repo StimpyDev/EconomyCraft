@@ -402,6 +402,20 @@ public final class ServerShopUi {
                 
                 container.setItem(2, starterKit);
 
+               ItemStack trapperKit = new ItemStack(Items.TNT_MINECART);
+               trapperKit.set(DataComponents.CUSTOM_NAME, Component.literal("Trapper Kit").withStyle(ChatFormatting.RED, ChatFormatting.BOLD));
+               trapperKit.set(DataComponents.ENCHANTMENT_GLINT_OVERRIDE, true); 
+
+               List<Component> trapperLore = new ArrayList<>();
+               trapperLore.add(Component.literal("Prijs: ").withStyle(ChatFormatting.GREEN).append(Component.literal("€15.000").withStyle(ChatFormatting.GOLD)));
+               trapperLore.add(Component.literal("Cooldown: 1 uur").withStyle(ChatFormatting.RED));
+               trapperLore.add(Component.literal("Inhoud:").withStyle(ChatFormatting.GRAY));
+               trapperLore.add(Component.literal("- Shulker met 32 TNT Minecarts").withStyle(ChatFormatting.DARK_GRAY));
+               trapperLore.add(Component.literal("- Redstone, Rails & Observers").withStyle(ChatFormatting.DARK_GRAY));
+
+               trapperKit.set(DataComponents.LORE, new ItemLore(trapperLore));
+               container.setItem(6, trapperKit);
+
                 ItemStack kit = new ItemStack(Items.NETHERITE_CHESTPLATE);
                 kit.set(DataComponents.CUSTOM_NAME, Component.literal("Full Netherite Kit").withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD));
                 List<Component> kitLore = new ArrayList<>();
@@ -454,10 +468,16 @@ public final class ServerShopUi {
             container.setItem(navRowStart, createBalanceItem(viewer));
         }
 
-        @Override public void clicked(int slot, int dragType, ClickType type, Player player) {
+@Override public void clicked(int slot, int dragType, ClickType type, Player player) {
             if (slot < 0 || slot >= navRowStart + 9) { super.clicked(slot, dragType, type, player); return; }
             if (type == ClickType.PICKUP || type == ClickType.QUICK_MOVE) {
-                if (category.equalsIgnoreCase("kits") && slot == 4) { handleKitPurchase(); return; }
+                
+                if (category.equalsIgnoreCase("kits")) {
+                    if (slot == 2) { handleStarterKitPurchase(); return; }
+                    if (slot == 4) { handleKitPurchase(); return; }
+                    if (slot == 6) { handleTrapperKitPurchase(); return; }
+                }
+
                 if (slot < navRowStart && !category.equalsIgnoreCase("kits")) {
                     int index = (page * itemsPerPage) + slot;
                     if (index >= 0 && index < entries.size()) handlePurchase(entries.get(index), type);
@@ -473,19 +493,66 @@ public final class ServerShopUi {
             }
             super.clicked(slot, dragType, type, player);
         }
+private void handleTrapperKitPurchase() {
+    UUID uuid = viewer.getUUID();
+    long now = System.currentTimeMillis();
+    
+    if (KIT_COOLDOWNS.getOrDefault(uuid, 0L) > now) {
+        long waitSeconds = (KIT_COOLDOWNS.get(uuid) - now) / 1000;
+        long waitMinutes = waitSeconds / 60;
+        viewer.sendSystemMessage(Component.literal("Wacht nog " + waitMinutes + " minuten om deze kit te kopen.").withStyle(ChatFormatting.RED));
+        return;
+    }
+
+    long cost = 15000L;
+    if (eco.getBalance(uuid, true) < cost) {
+        viewer.sendSystemMessage(Component.literal("Je hebt geen ")
+            .append(Component.literal("€15.000").withStyle(ChatFormatting.GOLD))
+            .append("!").withStyle(ChatFormatting.RED));
+        return;
+    }
+
+    if (eco.removeMoney(uuid, cost)) {
+        KIT_COOLDOWNS.put(uuid, now + 3600000L); 
+        giveTrapperItems();
+        
+        viewer.sendSystemMessage(Component.literal("Trapper Kit gekocht voor ")
+            .append(Component.literal("€15.000").withStyle(ChatFormatting.GOLD))
+            .append("!").withStyle(ChatFormatting.GREEN));
+        sendPrivateSound(SoundEvents.EXPERIENCE_ORB_PICKUP);
+    }
+}
+
+private void giveTrapperItems() {
+    Inventory inv = viewer.getInventory();
+    
+    ItemStack shulker = new ItemStack(Items.RED_SHULKER_BOX);
+    SimpleContainer shulkerInv = new SimpleContainer(27);
+    shulkerInv.setItem(0, new ItemStack(Items.TNT_MINECART, 32));
+    shulker.set(DataComponents.CONTAINER, net.minecraft.core.component.TypedDataComponent.of(net.minecraft.world.inventory.tooltip.BundleTooltip.EMPTY)); 
+    
+    inv.add(shulker);
+    
+    inv.add(new ItemStack(Items.REDSTONE, 64));
+    inv.add(new ItemStack(Items.REPEATER, 12));
+    inv.add(new ItemStack(Items.POWERED_RAIL, 64));
+    inv.add(new ItemStack(Items.STONE, 64));
+    inv.add(new ItemStack(Items.OBSERVER, 12));
+    inv.add(new ItemStack(Items.RAIL, 64));
+}
 
 private void handleStarterKitPurchase() {
     UUID uuid = viewer.getUUID();
     long now = System.currentTimeMillis();
 
-    if (KIT_COOLDOWNS.containsKey(uuid)) {
+    if (KIT_COOLDOWNS.getOrDefault(uuid, 0L) > now) {
         viewer.sendSystemMessage(Component.literal("Je hebt deze kit al geclaimd!").withStyle(ChatFormatting.RED));
         return;
     }
 
     giveStarterItems();
 
-    long infinite = now + (365L * 24 * 60 * 60 * 1000 * 100); 
+    long infinite = now + (365L * 24 * 60 * 60 * 1000 * 100);
     KIT_COOLDOWNS.put(uuid, infinite);
 
     viewer.sendSystemMessage(Component.literal("Starter Kit ontvangen!").withStyle(ChatFormatting.GREEN));
