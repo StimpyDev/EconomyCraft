@@ -5,17 +5,9 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 import com.reazip.economycraft.util.IdentityCompat;
 import net.minecraft.ChatFormatting;
-import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.tags.ItemTags;
-import net.minecraft.world.Container;
-import net.minecraft.world.item.Item;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
-import net.minecraft.world.item.component.ItemLore;
 import net.minecraft.world.scores.DisplaySlot;
 import net.minecraft.world.scores.Objective;
 import net.minecraft.world.scores.Scoreboard;
@@ -39,16 +31,6 @@ public class EconomyManager {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final Type TYPE = new TypeToken<Map<UUID, Long>>(){}.getType();
     private static final Type DAILY_SELL_TYPE = new TypeToken<Map<UUID, DailySellData>>(){}.getType();
-    
-    private static final Map<Item, Long> EXTRA_PRICES = Map.of(
-        Items.MELON, 90L,
-        Items.MELON_SLICE, 90L,
-        Items.KELP, 90L,
-        Items.BLAZE_ROD, 200L,
-        Items.PUMPKIN, 90L,
-        Items.CACTUS, 45L,
-        Items.SUGAR_CANE, 45L
-    );
 
     private final MinecraftServer server;
     private final Path file, dailySellFile;
@@ -196,61 +178,6 @@ public class EconomyManager {
         balances.remove(player);
         dailySells.remove(player);
         markDirty();
-    }
-
-    // --- Item Lore Price ---
-
-    public void applyPriceLore(ItemStack stack) {
-        if (stack == null || stack.isEmpty() || stack.is(ItemTags.SHULKER_BOXES)) return;
-
-        Long price = (prices != null) ? prices.getUnitSell(stack) : null;
-        if (price == null || price <= 0) {
-            price = EXTRA_PRICES.get(stack.getItem());
-        }
-
-        if (price == null || price <= 0) return;
-
-        String formattedPrice = EconomyCraft.formatMoney(price);
-        ItemLore currentLore = stack.get(DataComponents.LORE);
-        List<Component> lines = (currentLore != null) ? currentLore.lines() : Collections.emptyList();
-        
-        for (Component line : lines) {
-            String str = line.getString();
-            if (str.contains("Verkoopprijs:") && str.contains(formattedPrice)) {
-                return;
-            }
-        }
-
-        List<Component> newLines = new ArrayList<>();
-        for (Component line : lines) {
-            if (!line.getString().contains("Verkoopprijs:")) {
-                newLines.add(line);
-            }
-        }
-
-        MutableComponent priceLine = Component.literal("Verkoopprijs: ")
-                .withStyle(s -> s.withColor(ChatFormatting.GRAY).withItalic(false))
-                .append(Component.literal(formattedPrice)
-                        .withStyle(s -> s.withColor(ChatFormatting.GOLD).withItalic(false)));
-        
-        newLines.add(priceLine);
-        stack.set(DataComponents.LORE, new ItemLore(newLines));
-    }
-
-    public void refreshPlayerInventory(ServerPlayer player) {
-        for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
-            applyPriceLore(player.getInventory().getItem(i));
-        }
-        if (player.containerMenu != null) {
-            player.containerMenu.slots.forEach(slot -> applyPriceLore(slot.getItem()));
-        }
-    }
-
-    public void refreshContainer(Container container) {
-        if (container == null) return;
-        for (int i = 0; i < container.getContainerSize(); i++) {
-            applyPriceLore(container.getItem(i));
-        }
     }
 
     // --- Daily Sell Logic ---
