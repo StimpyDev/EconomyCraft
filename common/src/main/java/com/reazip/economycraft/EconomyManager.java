@@ -108,23 +108,24 @@ public class EconomyManager {
     // --- Cleanup ---
 
     public void globalLoreCleanup() {
-        for (ServerPlayer player : server.getPlayerList().getPlayers()) {
-            var inv = player.getInventory();
-            for (int i = 0; i < inv.getContainerSize(); i++) {
-                cleanItemLore(inv.getItem(i));
-            }
-            if (player.containerMenu != null) {
-                player.containerMenu.slots.forEach(slot -> cleanItemLore(slot.getItem()));
-            }
+    for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+        var inv = player.getInventory();
+        for (int i = 0; i < inv.getContainerSize(); i++) {
+            cleanItemLore(inv.getItem(i));
         }
-        for (var level : server.getAllLevels()) {
-            for (var entity : level.getEntities().getAll()) {
-                if (entity instanceof ItemEntity itemEntity) {
-                    cleanItemLore(itemEntity.getItem());
-                }
-            }
+        if (player.containerMenu != null) {
+            player.containerMenu.slots.forEach(slot -> cleanItemLore(slot.getItem()));
         }
     }
+
+    for (var level : server.getAllLevels()) {
+        level.getEntities(null, entity -> entity instanceof ItemEntity).forEach(entity -> {
+            if (entity instanceof ItemEntity itemEntity) {
+                cleanItemLore(itemEntity.getItem());
+            }
+        });
+    }
+}
 
     private void cleanItemLore(ItemStack stack) {
         if (stack == null || stack.isEmpty()) return;
