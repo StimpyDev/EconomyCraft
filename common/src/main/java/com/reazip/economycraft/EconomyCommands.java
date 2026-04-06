@@ -44,7 +44,8 @@ public final class EconomyCommands {
                 buildRemoveMoney(),
                 buildRemovePlayer(),
                 buildToggleScoreboard(),
-                buildReload()
+                buildReload(),
+                buildClearCooldown()
         ));
 
         dispatcher.register(buildBalance().requires(s -> EconomyConfig.get().standaloneCommands));
@@ -52,6 +53,10 @@ public final class EconomyCommands {
         dispatcher.register(SellCommand.register().requires(s -> EconomyConfig.get().standaloneCommands));
         dispatcher.register(buildAH().requires(s -> EconomyConfig.get().standaloneCommands));
         dispatcher.register(buildOrders().requires(s -> EconomyConfig.get().standaloneCommands));
+
+        var serverShop = buildShop();
+        serverShop.requires(src -> EconomyConfig.get().standaloneCommands && EconomyConfig.get().serverShopEnabled);
+        dispatcher.register(serverShop);
 
         dispatcher.register(
                 buildAddMoney().requires(src ->
@@ -102,7 +107,8 @@ public final class EconomyCommands {
             LiteralArgumentBuilder<CommandSourceStack> removeMoney,
             LiteralArgumentBuilder<CommandSourceStack> removePlayer,
             LiteralArgumentBuilder<CommandSourceStack> toggleScoreboard,
-            LiteralArgumentBuilder<CommandSourceStack> reload
+            LiteralArgumentBuilder<CommandSourceStack> reload,
+            LiteralArgumentBuilder<CommandSourceStack> clearCooldown
     ) {
         LiteralArgumentBuilder<CommandSourceStack> root = literal("eco");
 
@@ -118,12 +124,38 @@ public final class EconomyCommands {
         root.then(removeMoney);
         root.then(removePlayer);
         root.then(toggleScoreboard);
+        root.then(clearCooldown);
 
         if (EconomyConfig.get().serverShopEnabled) {
             root.then(buildShop());
         }
 
         return root;
+    }
+
+    // =====================================================================
+    // === Admin: Clear Cooldown Function ==================================
+    // =====================================================================
+
+    private static LiteralArgumentBuilder<CommandSourceStack> buildClearCooldown() {
+        return literal("clearcooldown")
+                .requires(PermissionCompat.gamemaster())
+                .then(argument("player", GameProfileArgument.gameProfile())
+                        .executes(ctx -> {
+                            var refs = IdentityCompat.getArgAsPlayerRefs(ctx, "player");
+                            if (refs.isEmpty()) {
+                                ctx.getSource().sendFailure(Component.literal("Geen speler gevonden.").withStyle(ChatFormatting.RED));
+                                return 0;
+                            }
+                            
+                            for (var ref : refs) {
+                                ServerShopUi.clearPlayerCooldowns(ref.id());
+                            }
+                            
+                            ctx.getSource().sendSuccess(() -> Component.literal("Cooldowns succesvol gewist voor de geselecteerde speler(s).")
+                                    .withStyle(ChatFormatting.GREEN), true);
+                            return 1;
+                        }));
     }
 
     // =====================================================================
