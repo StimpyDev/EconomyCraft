@@ -9,6 +9,7 @@ import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.item.ItemStack;
 
 import java.text.NumberFormat;
 import java.util.Locale;
@@ -37,6 +38,42 @@ public final class EconomyCraft {
         });
 
         PlayerEvent.PLAYER_JOIN.register(EconomyCraft::onPlayerJoin);
+
+        dev.architectury.event.events.common.MenuEvent.OPEN.register((menu, player) -> {
+            if (player instanceof ServerPlayer) {
+                for (net.minecraft.world.inventory.Slot slot : menu.slots) {
+                    cleanItemLore(slot.getItem());
+                }
+            }
+        });
+    }
+
+    private static void cleanItemLore(ItemStack stack) {
+        if (stack == null || stack.isEmpty()) return;
+
+        net.minecraft.world.item.component.ItemLore lore = stack.get(net.minecraft.core.component.DataComponents.LORE);
+        if (lore == null) return;
+
+        java.util.List<Component> lines = lore.lines();
+        boolean changed = false;
+        java.util.List<Component> newLines = new java.util.ArrayList<>();
+
+        for (Component line : lines) {
+            String text = line.getString();
+            if (text.contains("Verkoopprijs:")) {
+                changed = true;
+                continue; 
+            }
+            newLines.add(line);
+        }
+
+        if (changed) {
+            if (newLines.isEmpty()) {
+                stack.remove(net.minecraft.core.component.DataComponents.LORE);
+            } else {
+                stack.set(net.minecraft.core.component.DataComponents.LORE, new net.minecraft.world.item.component.ItemLore(newLines));
+            }
+        }
     }
 
     private static void onPlayerJoin(ServerPlayer player) {
@@ -44,13 +81,20 @@ public final class EconomyCraft {
         if (server == null) return;
 
         EconomyManager eco = getManager(server);
-        
         eco.getBestName(player.getUUID()); 
         eco.getBalance(player.getUUID(), true);
 
+        for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
+            cleanItemLore(player.getInventory().getItem(i));
+        }
+        
+        for (ItemStack armor : player.getArmorSlots()) {
+            cleanItemLore(armor);
+        }
+        cleanItemLore(player.getOffhandItem());
+
         if (eco.getOrders().hasDeliveries(player.getUUID()) || eco.getShop().hasDeliveries(player.getUUID())) {
             ClickEvent ev = ChatCompat.runCommandEvent("/eco orders claim");
-
             if (ev != null) {
                 Component msg = Component.literal("Je hebt ongeclaimde items: ")
                         .withStyle(ChatFormatting.YELLOW)
@@ -58,12 +102,7 @@ public final class EconomyCraft {
                                 .withStyle(s -> s.withUnderlined(true).withColor(ChatFormatting.GREEN).withClickEvent(ev)));
                 player.sendSystemMessage(msg);
             } else {
-                ChatCompat.sendRunCommandTellraw(
-                        player,
-                        "Je hebt ongeclaimde items: ",
-                        "[Claim]",
-                        "/eco orders claim"
-                );
+                ChatCompat.sendRunCommandTellraw(player, "Je hebt ongeclaimde items: ", "[Claim]", "/eco orders claim");
             }
         }
     }
@@ -74,15 +113,6 @@ public final class EconomyCraft {
             lastServer = server;
         }
         return manager;
-    }
-
-    public static Component createBalanceTitle(String baseTitle, ServerPlayer player) {
-        MinecraftServer server = player.level().getServer();
-        if (server == null) return Component.literal(baseTitle);
-        
-        EconomyManager eco = getManager(server);
-        long balance = eco.getBalance(player.getUUID(), true);
-        return Component.literal(baseTitle + "Saldo: " + formatMoney(balance));
     }
 
     public static String formatMoney(long amount) {
