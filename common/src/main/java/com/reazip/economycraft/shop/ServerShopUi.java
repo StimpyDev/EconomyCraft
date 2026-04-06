@@ -867,6 +867,10 @@ private static ChatFormatting getCategoryColor(String key) {
     private static boolean hasItems(PriceRegistry p, String c) { 
         return !p.buyableByCategory(c).isEmpty() || !p.buySubcategories(c).isEmpty(); 
     }
+    
+    public static void clearPlayerCooldowns(UUID uuid) {
+    KIT_COOLDOWNS.remove(uuid);
+}
 
     private static List<Integer> buildStarSlotOrder(int rows) {
         List<Integer> order = new ArrayList<>();
