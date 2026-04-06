@@ -385,143 +385,80 @@ public final class ServerShopUi {
             for (int c = 0; c < 9; c++) this.addSlot(new Slot(inv, c, 8 + c * 18, y + 58));
         }
 
-private void updatePage() {
-    container.clearContent();
-    
-    if (category.equalsIgnoreCase("kits")) {
-        fillEmptyWithPanes(container, navRowStart);
-
-        ItemStack kit = new ItemStack(Items.NETHERITE_CHESTPLATE);
-        kit.set(DataComponents.CUSTOM_NAME, Component.literal("Full Netherite Kit").withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD));
-        List<Component> kitLore = new ArrayList<>();
-        kitLore.add(Component.literal("Prijs: ").withStyle(ChatFormatting.GREEN).append(Component.literal("€500.000").withStyle(ChatFormatting.YELLOW)));
-        kitLore.add(Component.literal("Cooldown: 1 uur").withStyle(ChatFormatting.RED));
-        kitLore.add(Component.literal("Inhoud:").withStyle(ChatFormatting.GRAY));
-        kitLore.add(Component.literal("- Full Netherite Kit").withStyle(ChatFormatting.DARK_GRAY));
-        kitLore.add(Component.literal("- Netherite Spear").withStyle(ChatFormatting.DARK_GRAY));
-        kitLore.add(Component.literal("- Netherite Zwaard").withStyle(ChatFormatting.DARK_GRAY));
-        kitLore.add(Component.literal("- Netherite Axe").withStyle(ChatFormatting.DARK_GRAY));
-        kit.set(DataComponents.LORE, new ItemLore(kitLore));
-        kit.set(DataComponents.ENCHANTMENT_GLINT_OVERRIDE, true);
-        container.setItem(4, kit);
-        
-        ItemStack starterKit = new ItemStack(Items.DIAMOND_CHESTPLATE);
-        starterKit.set(DataComponents.CUSTOM_NAME, Component.literal("Starter Kit").withStyle(ChatFormatting.AQUA, ChatFormatting.BOLD));
-        List<Component> starterLore = new ArrayList<>();
-        starterLore.add(Component.literal("Prijs: ").withStyle(ChatFormatting.GREEN).append(Component.literal("GRATIS").withStyle(ChatFormatting.YELLOW)));
-        starterLore.add(Component.literal("Cooldown: ").withStyle(ChatFormatting.GRAY).append(Component.literal("Slechts éénmalig").withStyle(ChatFormatting.RED)));
-        starterLore.add(Component.literal("Inhoud:").withStyle(ChatFormatting.GRAY));
-        starterLore.add(Component.literal("- Diamond Set (Prot 1)").withStyle(ChatFormatting.DARK_GRAY));
-        starterLore.add(Component.literal("- Diamond Tools (Sharp 1 / Eff 1)").withStyle(ChatFormatting.DARK_GRAY));
-        starterLore.add(Component.literal("- Shield & 32x Steak").withStyle(ChatFormatting.DARK_GRAY));
-        starterKit.set(DataComponents.LORE, new ItemLore(starterLore));
-        container.setItem(5, starterKit);
-
-    } else {
-        int start = page * itemsPerPage;
-        int totalPages = (int) Math.ceil(entries.size() / (double) itemsPerPage);
-        
-        for (int i = 0; i < itemsPerPage; i++) {
-            int idx = start + i;
-            if (idx >= entries.size()) break;
-            
-            PriceRegistry.PriceEntry entry = entries.get(idx);
-            ItemStack display = createDisplayStack(entry, viewer);
-            if (display.isEmpty()) continue;
-            
-            int stackSize = Math.max(1, entry.stack());
-            List<Component> lore = new ArrayList<>();
-            lore.add(labeledValue("Koop", EconomyCraft.formatMoney(entry.unitBuy()), LABEL_PRIMARY_COLOR));
-            
-            Long stackPrice = safeMultiply(entry.unitBuy(), stackSize);
-            if (stackSize > 1 && stackPrice != null) {
-                lore.add(labeledValue("Stack (" + stackSize + ")", EconomyCraft.formatMoney(stackPrice), LABEL_PRIMARY_COLOR));
+        private void updatePage() {
+            container.clearContent();
+            if (category.equalsIgnoreCase("kits")) {
+                ItemStack kit = new ItemStack(Items.NETHERITE_CHESTPLATE);
+                kit.set(DataComponents.CUSTOM_NAME, Component.literal("Full Netherite Kit").withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD));
+                List<Component> kitLore = new ArrayList<>();
+                kitLore.add(Component.literal("Prijs: ").withStyle(ChatFormatting.GREEN).append(Component.literal("€500.000").withStyle(ChatFormatting.GOLD)));
+                kitLore.add(Component.literal("Cooldown: 1 uur").withStyle(ChatFormatting.RED));
+                kitLore.add(Component.literal("Inhoud:").withStyle(ChatFormatting.GRAY));
+                kitLore.add(Component.literal("- Full Netherite Kit").withStyle(ChatFormatting.DARK_GRAY));
+                kitLore.add(Component.literal("- Netherite Spear").withStyle(ChatFormatting.DARK_GRAY));
+                kitLore.add(Component.literal("- Netherite Zwaard").withStyle(ChatFormatting.DARK_GRAY));
+                kitLore.add(Component.literal("- Netherite Axe").withStyle(ChatFormatting.DARK_GRAY));
+                kit.set(DataComponents.LORE, new ItemLore(kitLore));
+                kit.set(DataComponents.ENCHANTMENT_GLINT_OVERRIDE, true);
+                container.setItem(4, kit);
+            } else {
+                int start = page * itemsPerPage;
+                int totalPages = (int) Math.ceil(entries.size() / (double) itemsPerPage);
+                for (int i = 0; i < itemsPerPage; i++) {
+                    int idx = start + i;
+                    if (idx >= entries.size()) break;
+                    PriceRegistry.PriceEntry entry = entries.get(idx);
+                    ItemStack display = createDisplayStack(entry, viewer);
+                    if (display.isEmpty()) continue;
+                    int stackSize = Math.max(1, entry.stack());
+                    List<Component> lore = new ArrayList<>();
+                    lore.add(labeledValue("Koop", EconomyCraft.formatMoney(entry.unitBuy()), LABEL_PRIMARY_COLOR));
+                    Long stackPrice = safeMultiply(entry.unitBuy(), stackSize);
+                    if (stackSize > 1 && stackPrice != null) lore.add(labeledValue("Stack (" + stackSize + ")", EconomyCraft.formatMoney(stackPrice), LABEL_PRIMARY_COLOR));
+                    lore.add(labeledValue("Linker muis", "Koop 1", LABEL_SECONDARY_COLOR));
+                    if (stackSize > 1) lore.add(labeledValue("Shift-klik", "Koop " + stackSize, LABEL_SECONDARY_COLOR));
+                    display.set(DataComponents.LORE, new ItemLore(lore));
+                    container.setItem(i, display);
+                }
+                ItemStack paper = new ItemStack(Items.PAPER);
+                paper.set(DataComponents.CUSTOM_NAME, Component.literal("Pagina " + (page + 1) + "/" + Math.max(1, totalPages)).withStyle(s -> s.withItalic(false)));
+                container.setItem(navRowStart + 4, paper);
             }
-            
-            lore.add(labeledValue("Linker muis", "Koop 1", LABEL_SECONDARY_COLOR));
-            if (stackSize > 1) {
-                lore.add(labeledValue("Shift-klik", "Koop " + stackSize, LABEL_SECONDARY_COLOR));
+            if (page > 0) {
+                ItemStack prev = new ItemStack(Items.ARROW);
+                prev.set(DataComponents.CUSTOM_NAME, Component.literal("Vorige pagina").withStyle(s -> s.withItalic(false)));
+                container.setItem(navRowStart + 3, prev);
             }
-            
-            display.set(DataComponents.LORE, new ItemLore(lore));
-            container.setItem(i, display);
+            if (!category.equalsIgnoreCase("kits") && (page + 1) * itemsPerPage < entries.size()) {
+                ItemStack next = new ItemStack(Items.ARROW);
+                next.set(DataComponents.CUSTOM_NAME, Component.literal("Volgende pagina").withStyle(s -> s.withItalic(false)));
+                container.setItem(navRowStart + 5, next);
+            }
+            ItemStack back = new ItemStack(Items.BARRIER);
+            back.set(DataComponents.CUSTOM_NAME, Component.literal("Terug").withStyle(s -> s.withItalic(false).withColor(ChatFormatting.DARK_RED).withBold(true)));
+            container.setItem(navRowStart + 8, back);
+            container.setItem(navRowStart, createBalanceItem(viewer));
         }
-        
-        ItemStack paper = new ItemStack(Items.PAPER);
-        paper.set(DataComponents.CUSTOM_NAME, Component.literal("Pagina " + (page + 1) + "/" + Math.max(1, totalPages)).withStyle(s -> s.withItalic(false)));
-        container.setItem(navRowStart + 4, paper);
-        
-        fillEmptyWithPanes(container, itemsPerPage);
-    }
-
-    if (page > 0) {
-        ItemStack prev = new ItemStack(Items.ARROW);
-        prev.set(DataComponents.CUSTOM_NAME, Component.literal("Vorige pagina").withStyle(s -> s.withItalic(false)));
-        container.setItem(navRowStart + 3, prev);
-    }
-    
-    if (!category.equalsIgnoreCase("kits") && (page + 1) * itemsPerPage < entries.size()) {
-        ItemStack next = new ItemStack(Items.ARROW);
-        next.set(DataComponents.CUSTOM_NAME, Component.literal("Volgende pagina").withStyle(s -> s.withItalic(false)));
-        container.setItem(navRowStart + 5, next);
-    }
-
-    ItemStack back = new ItemStack(Items.BARRIER);
-    back.set(DataComponents.CUSTOM_NAME, Component.literal("Terug").withStyle(s -> s.withItalic(false).withColor(ChatFormatting.DARK_RED).withBold(true)));
-    container.setItem(navRowStart + 8, back);
-    
-    container.setItem(navRowStart, createBalanceItem(viewer));
-}
 
         @Override public void clicked(int slot, int dragType, ClickType type, Player player) {
-    if (slot < 0 || slot >= navRowStart + 9) { 
-        super.clicked(slot, dragType, type, player); 
-        return; 
-    }
-    
-    if (type == ClickType.PICKUP || type == ClickType.QUICK_MOVE) {
-        if (category.equalsIgnoreCase("kits")) {
-            if (slot == 4) { 
-                handleKitPurchase(); 
-                return; 
+            if (slot < 0 || slot >= navRowStart + 9) { super.clicked(slot, dragType, type, player); return; }
+            if (type == ClickType.PICKUP || type == ClickType.QUICK_MOVE) {
+                if (category.equalsIgnoreCase("kits") && slot == 4) { handleKitPurchase(); return; }
+                if (slot < navRowStart && !category.equalsIgnoreCase("kits")) {
+                    int index = (page * itemsPerPage) + slot;
+                    if (index >= 0 && index < entries.size()) handlePurchase(entries.get(index), type);
+                    return;
+                }
+                if (slot == navRowStart + 3 && page > 0) { page--; updatePage(); return; }
+                if (slot == navRowStart + 5 && !category.equalsIgnoreCase("kits") && (page + 1) * itemsPerPage < entries.size()) { page++; updatePage(); return; }
+                if (slot == navRowStart + 8) {
+                    if (category.contains(".")) openSubcategories(viewer, eco, category.substring(0, category.indexOf('.')));
+                    else openRoot(viewer, eco);
+                    return;
+                }
             }
-            if (slot == 5) { 
-                handleStarterKitPurchase(); 
-                return; 
-            }
+            super.clicked(slot, dragType, type, player);
         }
-
-        if (slot < navRowStart && !category.equalsIgnoreCase("kits")) {
-            int index = (page * itemsPerPage) + slot;
-            if (index >= 0 && index < entries.size()) {
-                handlePurchase(entries.get(index), type);
-            }
-            return;
-        }
-        
-        if (slot == navRowStart + 3 && page > 0) { 
-            page--; 
-            updatePage(); 
-            return; 
-        }
-        
-        if (slot == navRowStart + 5 && !category.equalsIgnoreCase("kits") && (page + 1) * itemsPerPage < entries.size()) { 
-            page++; 
-            updatePage(); 
-            return; 
-        }
-        
-        if (slot == navRowStart + 8) {
-            if (category.contains(".")) {
-                openSubcategories(viewer, eco, category.substring(0, category.indexOf('.')));
-            } else {
-                openRoot(viewer, eco);
-            }
-            return;
-        }
-    }
-    super.clicked(slot, dragType, type, player);
-}
 
         private void handleKitPurchase() {
             UUID uuid = viewer.getUUID();
@@ -570,37 +507,6 @@ private void updatePage() {
             spear.set(DataComponents.CUSTOM_NAME, Component.literal("Netherite Spear").withStyle(ChatFormatting.GOLD));
             inv.add(spear);
         }
-
-        private void handleStarterKitPurchase() {
-    UUID uuid = viewer.getUUID();
-    if (KIT_COOLDOWNS.containsKey(uuid) && KIT_COOLDOWNS.get(uuid) == -1L) {
-        viewer.sendSystemMessage(Component.literal("Je hebt de Starter Kit al geclaimd!").withStyle(ChatFormatting.RED));
-        return;
-    }
-
-    giveStarterItems();
-    KIT_COOLDOWNS.put(uuid, -1L); 
-    
-    viewer.sendSystemMessage(Component.literal("Je hebt de Starter Kit ontvangen!").withStyle(ChatFormatting.AQUA));
-    sendPrivateSound(SoundEvents.PLAYER_LEVELUP);
-}
-
-private void giveStarterItems() {
-    HolderLookup.Provider p = viewer.registryAccess();
-    Inventory inv = viewer.getInventory();
-
-    inv.add(createEnchanted(Items.DIAMOND_HELMET, p, Map.of(Enchantments.PROTECTION, 1)));
-    inv.add(createEnchanted(Items.DIAMOND_CHESTPLATE, p, Map.of(Enchantments.PROTECTION, 1)));
-    inv.add(createEnchanted(Items.DIAMOND_LEGGINGS, p, Map.of(Enchantments.PROTECTION, 1)));
-    inv.add(createEnchanted(Items.DIAMOND_BOOTS, p, Map.of(Enchantments.PROTECTION, 1, Enchantments.FEATHER_FALLING, 1)));
-
-    inv.add(createEnchanted(Items.DIAMOND_SWORD, p, Map.of(Enchantments.SHARPNESS, 1)));
-    inv.add(createEnchanted(Items.DIAMOND_PICKAXE, p, Map.of(Enchantments.EFFICIENCY, 1)));
-    inv.add(createEnchanted(Items.DIAMOND_AXE, p, Map.of(Enchantments.EFFICIENCY, 1)));
-    
-    inv.add(new ItemStack(Items.SHIELD));
-    inv.add(new ItemStack(Items.COOKED_BEEF, 32));
-}
         
         private void handlePurchase(PriceRegistry.PriceEntry entry, ClickType clickType) {
             if (entry.unitBuy() <= 0) { viewer.sendSystemMessage(Component.literal("Niet te koop.").withStyle(ChatFormatting.RED)); return; }
