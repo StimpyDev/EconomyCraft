@@ -21,7 +21,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-/** Manages shop listings and deliveries I/O. */
+/** Manages shop listings and deliveries. */
 public class ShopManager {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private final MinecraftServer server;
@@ -32,7 +32,6 @@ public class ShopManager {
     private final List<Runnable> listeners = new CopyOnWriteArrayList<>();
     
     private int nextId = 1;
-    private volatile boolean isDirty = false;
 
     public ShopManager(MinecraftServer server) {
         this.server = server;
@@ -56,39 +55,37 @@ public class ShopManager {
     public void addListing(ShopListing listing) {
         listing.id = nextId++;
         listings.put(listing.id, listing);
-        markDirtyAndNotify();
+        saveAndNotify();
     }
 
     public ShopListing removeListing(int id) {
         ShopListing l = listings.remove(id);
-        if (l != null) markDirtyAndNotify();
+        if (l != null) saveAndNotify();
         return l;
     }
 
     public void addDelivery(UUID player, ItemStack stack) {
         if (stack.isEmpty()) return;
         deliveries.computeIfAbsent(player, k -> new ArrayList<>()).add(stack.copy());
-        this.isDirty = true;
+        save();
     }
 
     public List<ItemStack> getDeliveries(UUID player) {
-        List<ItemStack> list = deliveries.get(player);
-        return list != null ? Collections.unmodifiableList(list) : Collections.emptyList();
+        return deliveries.getOrDefault(player, new ArrayList<>());
     }
 
     public List<ItemStack> claimDeliveries(UUID player) {
         List<ItemStack> list = deliveries.remove(player);
-        if (list != null) this.isDirty = true;
+        if (list != null) save();
         return list;
     }
     
     public void removeDelivery(UUID player, ItemStack stack) {
         List<ItemStack> list = deliveries.get(player);
         if (list != null) {
-            if (list.remove(stack)) {
-                if (list.isEmpty()) deliveries.remove(player);
-                this.isDirty = true;
-            }
+            list.remove(stack);
+            if (list.isEmpty()) deliveries.remove(player);
+            save();
         }
     }
 
@@ -97,41 +94,38 @@ public class ShopManager {
         return list != null && !list.isEmpty();
     }
 
-    private void markDirtyAndNotify() {
-        this.isDirty = true;
+    private void saveAndNotify() {
         notifyListeners();
+        save();
     }
 
     public void load() {
         if (!Files.exists(file)) return;
-        try (var reader = Files.newBufferedReader(file)) {
-            JsonObject root = GSON.fromJson(reader, JsonObject.class);
+        try {
+            JsonObject root = GSON.fromJson(Files.readString(file), JsonObject.class);
             if (root == null) return;
 
             nextId = root.has("nextId") ? root.get("nextId").getAsInt() : 1;
             listings.clear();
             deliveries.clear();
 
-            var registry = server.registryAccess();
-
             if (root.has("listings")) {
                 for (var el : root.getAsJsonArray("listings")) {
-                    ShopListing l = ShopListing.load(el.getAsJsonObject(), registry);
+                    ShopListing l = ShopListing.load(el.getAsJsonObject(), server.registryAccess());
                     listings.put(l.id, l);
                 }
             }
 
             if (root.has("deliveries")) {
                 JsonObject dObj = root.getAsJsonObject("deliveries");
-                var ops = RegistryOps.create(JsonOps.INSTANCE, registry);
+                var ops = RegistryOps.create(JsonOps.INSTANCE, server.registryAccess());
 
                 for (String key : dObj.keySet()) {
                     UUID id = UUID.fromString(key);
-                    JsonArray arr = dObj.getAsJsonArray(key);
-                    List<ItemStack> list = new ArrayList<>(arr.size());
-                    
-                    for (var sEl : arr) {
-                        ItemStack stack = ItemStack.CODEC.parse(ops, sEl.getAsJsonObject().get("stack"))
+                    List<ItemStack> list = new ArrayList<>();
+                    for (var sEl : dObj.getAsJsonArray(key)) {
+                        JsonObject o = sEl.getAsJsonObject();
+                        ItemStack stack = ItemStack.CODEC.parse(ops, o.get("stack"))
                                 .result()
                                 .orElse(ItemStack.EMPTY);
                         
@@ -140,27 +134,24 @@ public class ShopManager {
                     deliveries.put(id, list);
                 }
             }
-        } catch (Exception e) {
-            EconomyCraft.LOGGER.error("Fout bij laden shop.json", e);
-        } 
+        } catch (Exception ignored) {} 
     }
 
-    public synchronized void save() {
-        if (!isDirty) return;
+    public void save() {
         try {
+            Files.createDirectories(file.getParent());
             JsonObject root = new JsonObject();
             root.addProperty("nextId", nextId);
 
-            var registry = server.registryAccess();
-            var ops = RegistryOps.create(JsonOps.INSTANCE, registry);
-
             JsonArray listArr = new JsonArray();
             for (ShopListing l : listings.values()) {
-                listArr.add(l.save(registry));
+                listArr.add(l.save(server.registryAccess()));
             }
             root.add("listings", listArr);
 
             JsonObject dObj = new JsonObject();
+            var ops = RegistryOps.create(JsonOps.INSTANCE, server.registryAccess());
+
             for (var entry : deliveries.entrySet()) {
                 JsonArray arr = new JsonArray();
                 for (ItemStack s : entry.getValue()) {
@@ -173,10 +164,7 @@ public class ShopManager {
             root.add("deliveries", dObj);
 
             Files.writeString(file, GSON.toJson(root));
-            this.isDirty = false;
-        } catch (IOException e) {
-            EconomyCraft.LOGGER.error("Fout bij opslaan shop.json", e);
-        }
+        } catch (IOException ignored) {}
     }
 
     public void addListener(Runnable run) { listeners.add(run); }
@@ -189,11 +177,16 @@ public class ShopManager {
         if (seller == null) return;
 
         ItemStack stack = listing.item;
-        int amount = stack.getCount();
-        String itemName = stack.getHoverName().getString();
+        int amount = stack.isEmpty() ? 0 : stack.getCount();
+        String itemName = stack.isEmpty() ? "item" : stack.getHoverName().getString();
         String buyerName = IdentityCompat.of(buyer).name();
 
-        seller.sendSystemMessage(Component.literal("§aVerkocht " + amount + "x " + itemName + 
-                                  " naar " + buyerName + " voor " + EconomyCraft.formatMoney(listing.price)));
+        Component msg = Component.literal(
+                "Verkocht " + amount + "x " + itemName +
+                " naar " + buyerName +
+                " voor " + EconomyCraft.formatMoney(listing.price)
+        ).withStyle(ChatFormatting.GREEN);
+
+        seller.sendSystemMessage(msg);
     }
 }
