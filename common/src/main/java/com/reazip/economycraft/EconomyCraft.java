@@ -12,14 +12,11 @@ import net.minecraft.server.level.ServerPlayer;
 
 import java.text.NumberFormat;
 import java.util.Locale;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public final class EconomyCraft {
     public static final String MOD_ID = "economycraft";
     private static EconomyManager manager;
     private static MinecraftServer lastServer;
-    public static final Logger LOGGER = LoggerFactory.getLogger("EconomyCraft");
     private static final NumberFormat FORMAT = NumberFormat.getInstance(Locale.GERMANY);
 
     public static void registerEvents() {
