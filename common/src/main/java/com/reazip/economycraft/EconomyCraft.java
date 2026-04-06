@@ -1,7 +1,6 @@
 package com.reazip.economycraft;
 
 import com.reazip.economycraft.util.ChatCompat;
-import com.mojang.logging.LogUtils;
 import dev.architectury.event.events.common.CommandRegistrationEvent;
 import dev.architectury.event.events.common.LifecycleEvent;
 import dev.architectury.event.events.common.PlayerEvent;
@@ -10,14 +9,12 @@ import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
-import org.slf4j.Logger;
 
 import java.text.NumberFormat;
 import java.util.Locale;
 
 public final class EconomyCraft {
     public static final String MOD_ID = "economycraft";
-    public static final Logger LOGGER = LogUtils.getLogger();
     private static EconomyManager manager;
     private static MinecraftServer lastServer;
     private static final NumberFormat FORMAT = NumberFormat.getInstance(Locale.GERMANY);
@@ -39,8 +36,28 @@ public final class EconomyCraft {
             }
         });
 
+        // --- Lore Update Events ---
+
         PlayerEvent.PLAYER_JOIN.register(EconomyCraft::onPlayerJoin);
 
+        PlayerEvent.PICKUP_ITEM_PRE.register((player, entity, stack) -> {
+            if (player instanceof ServerPlayer serverPlayer) {
+                MinecraftServer server = serverPlayer.level().getServer();
+                if (server != null) {
+                    getManager(server).applyPriceLore(stack);
+                }
+            }
+            return dev.architectury.event.EventResult.pass();
+        });
+
+        PlayerEvent.CRAFT_ITEM.register((player, stack, inventory) -> {
+            if (player instanceof ServerPlayer serverPlayer) {
+                MinecraftServer server = serverPlayer.level().getServer();
+                if (server != null) {
+                    getManager(server).applyPriceLore(stack);
+                }
+            }
+        });
     }
 
     private static void onPlayerJoin(ServerPlayer player) {
@@ -51,6 +68,8 @@ public final class EconomyCraft {
         
         eco.getBestName(player.getUUID()); 
         eco.getBalance(player.getUUID(), true);
+        
+        eco.refreshPlayerInventory(player);
 
         if (eco.getOrders().hasDeliveries(player.getUUID()) || eco.getShop().hasDeliveries(player.getUUID())) {
             ClickEvent ev = ChatCompat.runCommandEvent("/eco orders claim");
