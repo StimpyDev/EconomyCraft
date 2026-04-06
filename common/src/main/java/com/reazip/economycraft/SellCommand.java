@@ -90,9 +90,7 @@ public final class SellCommand {
         hand.shrink(toSell);
         if (hand.isEmpty()) {
             player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, ItemStack.EMPTY);
-        } else {
-            manager.applyPriceLore(hand);
-        }
+        } 
 
         manager.addMoney(player.getUUID(), total);
         
@@ -202,8 +200,7 @@ public final class SellCommand {
         }
 
         String itemName = hand.getHoverName().getString();
-        // FIX: Geef server mee aan removeMatching
-        removeMatching(player, prices, pending.key(), pending.count(), server);
+        removeMatching(player, prices, pending.key(), pending.count());
         manager.addMoney(player.getUUID(), pending.total());
 
         player.sendSystemMessage(Component.literal("Succesvol verkocht ")
@@ -233,11 +230,9 @@ public final class SellCommand {
         return total;
     }
 
-    // FIX: server toegevoegd als parameter om manager op te halen
-    private static void removeMatching(ServerPlayer player, PriceRegistry prices, IdentifierCompat.Id key, int toRemove, MinecraftServer server) {
+    private static void removeMatching(ServerPlayer player, PriceRegistry prices, IdentifierCompat.Id key, int toRemove) {
         var inv = player.getInventory();
         int remaining = toRemove;
-        EconomyManager manager = EconomyCraft.getManager(server);
 
         for (int i = 0; i < 36; i++) {
             ItemStack stack = inv.getItem(i);
@@ -248,9 +243,7 @@ public final class SellCommand {
                 
                 if (stack.isEmpty()) {
                     inv.setItem(i, ItemStack.EMPTY);
-                } else {
-                    manager.applyPriceLore(stack);
-                }
+                } 
             }
             if (remaining <= 0) return;
         }
@@ -261,8 +254,6 @@ public final class SellCommand {
             offhand.shrink(remove);
             if (offhand.isEmpty()) {
                 player.setItemInHand(net.minecraft.world.InteractionHand.OFF_HAND, ItemStack.EMPTY);
-            } else {
-                manager.applyPriceLore(offhand);
             }
         }
     }
