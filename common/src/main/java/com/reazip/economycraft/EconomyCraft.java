@@ -41,8 +41,8 @@ public final class EconomyCraft {
             }
         });
 
+        // Schoonmaak bij het inloggen
         PlayerEvent.PLAYER_JOIN.register(EconomyCraft::onPlayerJoin);
-        
     }
 
     private static void cleanItemLore(ItemStack stack) {
@@ -81,16 +81,10 @@ public final class EconomyCraft {
         eco.getBestName(player.getUUID()); 
         eco.getBalance(player.getUUID(), true);
 
+        // FULL FIX: Loop door ALLES in de inventory. 
+        // Bij een PlayerInventory bevat getContainerSize() ook de armor en offhand slots.
         for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
             cleanItemLore(player.getInventory().getItem(i));
-        }
-        
-        for (ItemStack armor : player.getInventory().armor) {
-            cleanItemLore(armor);
-        }
-        
-        for (ItemStack offhand : player.getInventory().offhand) {
-            cleanItemLore(offhand);
         }
 
         if (eco.getOrders().hasDeliveries(player.getUUID()) || eco.getShop().hasDeliveries(player.getUUID())) {
