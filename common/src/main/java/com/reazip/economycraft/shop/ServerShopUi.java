@@ -823,6 +823,9 @@ private static ChatFormatting getCategoryColor(String key) {
             case "armor" -> ChatFormatting.BLUE;
             case "wapens" -> ChatFormatting.DARK_AQUA;
             case "enchantments" -> ChatFormatting.DARK_PURPLE;
+            case "drops" -> ChatFormatting.GRAY;
+            case "brouwen" -> ChatFormatting.DARK_BLUE;
+            case "gereedschap" -> ChatFormatting.DARK_RED;
             default -> ChatFormatting.YELLOW;
         };
     }
