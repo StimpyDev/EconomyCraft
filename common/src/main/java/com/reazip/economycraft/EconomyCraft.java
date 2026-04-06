@@ -36,28 +36,7 @@ public final class EconomyCraft {
             }
         });
 
-        // --- Lore Update Events ---
-
         PlayerEvent.PLAYER_JOIN.register(EconomyCraft::onPlayerJoin);
-
-        PlayerEvent.PICKUP_ITEM_PRE.register((player, entity, stack) -> {
-            if (player instanceof ServerPlayer serverPlayer) {
-                MinecraftServer server = serverPlayer.level().getServer();
-                if (server != null) {
-                    getManager(server).applyPriceLore(stack);
-                }
-            }
-            return dev.architectury.event.EventResult.pass();
-        });
-
-        PlayerEvent.CRAFT_ITEM.register((player, stack, inventory) -> {
-            if (player instanceof ServerPlayer serverPlayer) {
-                MinecraftServer server = serverPlayer.level().getServer();
-                if (server != null) {
-                    getManager(server).applyPriceLore(stack);
-                }
-            }
-        });
     }
 
     private static void onPlayerJoin(ServerPlayer player) {
@@ -68,8 +47,6 @@ public final class EconomyCraft {
         
         eco.getBestName(player.getUUID()); 
         eco.getBalance(player.getUUID(), true);
-        
-        eco.refreshPlayerInventory(player);
 
         if (eco.getOrders().hasDeliveries(player.getUUID()) || eco.getShop().hasDeliveries(player.getUUID())) {
             ClickEvent ev = ChatCompat.runCommandEvent("/eco orders claim");
