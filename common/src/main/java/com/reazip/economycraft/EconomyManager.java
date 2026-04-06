@@ -4,17 +4,12 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 import com.reazip.economycraft.util.IdentityCompat;
-import net.minecraft.ChatFormatting;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.tags.ItemTags;
 import net.minecraft.world.Container;
-import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 import net.minecraft.world.item.component.ItemLore;
 import net.minecraft.world.scores.DisplaySlot;
 import net.minecraft.world.scores.Objective;
@@ -39,16 +34,6 @@ public class EconomyManager {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final Type TYPE = new TypeToken<Map<UUID, Long>>(){}.getType();
     private static final Type DAILY_SELL_TYPE = new TypeToken<Map<UUID, DailySellData>>(){}.getType();
-    
-    private static final Map<Item, Long> EXTRA_PRICES = Map.of(
-        Items.MELON, 90L,
-        Items.MELON_SLICE, 90L,
-        Items.KELP, 90L,
-        Items.BLAZE_ROD, 200L,
-        Items.PUMPKIN, 90L,
-        Items.CACTUS, 45L,
-        Items.SUGAR_CANE, 45L
-    );
 
     private final MinecraftServer server;
     private final Path file, dailySellFile;
@@ -198,43 +183,26 @@ public class EconomyManager {
         markDirty();
     }
 
-    // --- Item Lore Price ---
+    // --- Lore Cleanup ---
 
     public void applyPriceLore(ItemStack stack) {
-        if (stack == null || stack.isEmpty() || stack.is(ItemTags.SHULKER_BOXES)) return;
+        if (stack == null || stack.isEmpty()) return;
 
-        Long price = (prices != null) ? prices.getUnitSell(stack) : null;
-        if (price == null || price <= 0) {
-            price = EXTRA_PRICES.get(stack.getItem());
-        }
-
-        if (price == null || price <= 0) return;
-
-        String formattedPrice = EconomyCraft.formatMoney(price);
         ItemLore currentLore = stack.get(DataComponents.LORE);
-        List<Component> lines = (currentLore != null) ? currentLore.lines() : Collections.emptyList();
-        
-        for (Component line : lines) {
-            String str = line.getString();
-            if (str.contains("Verkoopprijs:") && str.contains(formattedPrice)) {
-                return;
+        if (currentLore == null) return;
+
+        List<Component> lines = currentLore.lines();
+        List<Component> newLines = lines.stream()
+                .filter(line -> !line.getString().contains("Verkoopprijs:"))
+                .collect(Collectors.toList());
+
+        if (newLines.size() < lines.size()) {
+            if (newLines.isEmpty()) {
+                stack.remove(DataComponents.LORE);
+            } else {
+                stack.set(DataComponents.LORE, new ItemLore(newLines));
             }
         }
-
-        List<Component> newLines = new ArrayList<>();
-        for (Component line : lines) {
-            if (!line.getString().contains("Verkoopprijs:")) {
-                newLines.add(line);
-            }
-        }
-
-        MutableComponent priceLine = Component.literal("Verkoopprijs: ")
-                .withStyle(s -> s.withColor(ChatFormatting.GRAY).withItalic(false))
-                .append(Component.literal(formattedPrice)
-                        .withStyle(s -> s.withColor(ChatFormatting.GOLD).withItalic(false)));
-        
-        newLines.add(priceLine);
-        stack.set(DataComponents.LORE, new ItemLore(newLines));
     }
 
     public void refreshPlayerInventory(ServerPlayer player) {
@@ -370,17 +338,8 @@ public class EconomyManager {
         removeMoney(victim.getUUID(), loss);
         addMoney(killer.getUUID(), loss);
         
-        victim.sendSystemMessage(Component.literal("Je verloor ")
-            .append(Component.literal(EconomyCraft.formatMoney(loss)).withStyle(ChatFormatting.GOLD))
-            .append(Component.literal(" omdat je bent vermoord door: "))
-            .append(Component.literal(killer.getName().getString()).withStyle(ChatFormatting.RED).withStyle(ChatFormatting.BOLD))
-            .withStyle(ChatFormatting.RED));
-
-        killer.sendSystemMessage(Component.literal("Je ontving ")
-            .append(Component.literal(EconomyCraft.formatMoney(loss)).withStyle(ChatFormatting.GOLD))
-            .append(Component.literal(" door het vermoorden van: "))
-            .append(Component.literal(victim.getName().getString()).withStyle(ChatFormatting.RED).withStyle(ChatFormatting.BOLD))
-            .withStyle(ChatFormatting.RED));
+        victim.sendSystemMessage(Component.literal("Je verloor " + EconomyCraft.formatMoney(loss) + " omdat je bent vermoord door: " + killer.getName().getString()));
+        killer.sendSystemMessage(Component.literal("Je ontving " + EconomyCraft.formatMoney(loss) + " door het vermoorden van: " + victim.getName().getString()));
     }
 
     private long clamp(long value) { return Math.max(0, Math.min(MAX, value)); }
