@@ -806,17 +806,18 @@ private void giveStarterItems() {
         return null;
     }
 
-    private static ChatFormatting getCategoryColor(String key) {
+private static ChatFormatting getCategoryColor(String key) {
         String n = normalizeCategoryKey(key);
         return switch (n) {
             case "kits" -> ChatFormatting.DARK_GRAY;
             case "redstone" -> ChatFormatting.RED;
             case "eten" -> ChatFormatting.GOLD;
-            case "ores" -> ChatFormatting.WHITE;
+            case "ores" -> ChatFormatting.AQUA;
             case "blokken" -> ChatFormatting.DARK_GREEN;
             case "armor" -> ChatFormatting.BLUE;
-            case "wapens" -> ChatFormatting.RED;
-            default -> ChatFormatting.WHITE;
+            case "wapens" -> ChatFormatting.CYAN;
+            case "enchantments" -> ChatFormatting.DARK_PURPLE;
+            default -> ChatFormatting.YELLOW;
         };
     }
 
