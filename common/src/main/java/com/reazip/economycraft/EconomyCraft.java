@@ -74,7 +74,7 @@ public static void registerEvents() {
     }
 
 private static void onPlayerJoin(ServerPlayer player) {
-    MinecraftServer server = player.getServer();
+    MinecraftServer server = player.level().getServer();
     if (server == null) return;
 
     EconomyManager eco = getManager(server);
