@@ -181,18 +181,21 @@ public class EconomyManager {
     }
 
     // --- Daily Sell Logic ---
-
     public boolean tryRecordDailySell(UUID player, long saleAmount) {
         long limit = EconomyConfig.get().dailySellLimit;
-        if (limit <= 0) return false;
+        
+        if (limit <= 0) return true;
 
         DailySellData data = getOrCreateTodaySellData(player);
-        long newTotal = data.amount() + saleAmount;
-        if (newTotal > limit) return true;
+        long currentTotal = data.amount();
+        
+        if (currentTotal + saleAmount > limit) {
+            return false;
+        }
 
-        dailySells.put(player, new DailySellData(data.day(), newTotal));
+        dailySells.put(player, new DailySellData(data.day(), currentTotal + saleAmount));
         markDirty();
-        return false;
+        return true;
     }
 
     public long getDailySellRemaining(UUID player) {
@@ -204,6 +207,7 @@ public class EconomyManager {
     private DailySellData getOrCreateTodaySellData(UUID player) {
         long today = LocalDate.now().toEpochDay();
         DailySellData data = dailySells.get(player);
+        
         if (data == null || data.day() != today) {
             data = new DailySellData(today, 0L);
             dailySells.put(player, data);
