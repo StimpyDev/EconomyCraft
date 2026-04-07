@@ -24,25 +24,26 @@ public final class EconomyCraft {
     private static MinecraftServer lastServer;
     private static final NumberFormat FORMAT = NumberFormat.getInstance(Locale.GERMANY);
 
-    public static void registerEvents() {
-        LifecycleEvent.SERVER_STARTING.register(EconomyConfig::load);
+public static void registerEvents() {
+    LifecycleEvent.SERVER_STARTING.register(server -> {
+        EconomyConfig.load(server);
+        getManager(server); 
+    });
 
-        CommandRegistrationEvent.EVENT.register((dispatcher, registry, selection) -> {
-            EconomyCommands.register(dispatcher);
-        });
+    CommandRegistrationEvent.EVENT.register((dispatcher, registry, selection) -> {
+        EconomyCommands.register(dispatcher);
+    });
+    
+    LifecycleEvent.SERVER_STOPPING.register(server -> {
+        if (manager != null && lastServer == server) {
+            manager.shutdown();
+            manager = null;
+            lastServer = null;
+        }
+    });
 
-        LifecycleEvent.SERVER_STARTED.register(EconomyCraft::getManager);
-
-        LifecycleEvent.SERVER_STOPPING.register(server -> {
-            if (manager != null && lastServer == server) {
-                manager.shutdown();
-                manager = null;
-                lastServer = null;
-            }
-        });
-
-        PlayerEvent.PLAYER_JOIN.register(EconomyCraft::onPlayerJoin);
-    }
+    PlayerEvent.PLAYER_JOIN.register(EconomyCraft::onPlayerJoin);
+}
 
     private static void cleanItemLore(ItemStack stack) {
         if (stack == null || stack.isEmpty()) return;
