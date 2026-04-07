@@ -51,7 +51,7 @@ public class ShopManager {
         ShopListing listing = getListing(listingId);
         if (listing == null) return false;
 
-        EconomyManager eco = EconomyCraft.getEconomyManager();
+        EconomyManager eco = EconomyCraft.getManager(server);
 
         if (eco.getBalance(buyer.getUUID(), true) < listing.price) {
             buyer.sendSystemMessage(Component.literal("Je hebt niet genoeg saldo!").withStyle(ChatFormatting.RED));
