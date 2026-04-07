@@ -73,31 +73,44 @@ public static void registerEvents() {
         }
     }
 
-    private static void onPlayerJoin(ServerPlayer player) {
-        MinecraftServer server = player.level().getServer();
-        if (server == null) return;
+private static void onPlayerJoin(ServerPlayer player) {
+    MinecraftServer server = player.getServer();
+    if (server == null) return;
 
-        EconomyManager eco = getManager(server);
-        eco.getBestName(player.getUUID()); 
-        eco.getBalance(player.getUUID(), true);
+    EconomyManager eco = getManager(server);
+    
+    eco.getBestName(player.getUUID()); 
+    
+    eco.getBalance(player.getUUID(), true);
 
-        for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
-            cleanItemLore(player.getInventory().getItem(i));
-        }
-
-        if (eco.getOrders().hasDeliveries(player.getUUID()) || eco.getShop().hasDeliveries(player.getUUID())) {
-            ClickEvent ev = ChatCompat.runCommandEvent("/eco orders claim");
-            if (ev != null) {
-                Component msg = Component.literal("Je hebt ongeclaimde items: ")
-                        .withStyle(ChatFormatting.YELLOW)
-                        .append(Component.literal("[Claim]")
-                                .withStyle(s -> s.withUnderlined(true).withColor(ChatFormatting.GREEN).withClickEvent(ev)));
-                player.sendSystemMessage(msg);
-            } else {
-                ChatCompat.sendRunCommandTellraw(player, "Je hebt ongeclaimde items: ", "[Claim]", "/eco orders claim");
-            }
+    for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
+        ItemStack stack = player.getInventory().getItem(i);
+        if (!stack.isEmpty()) {
+            cleanItemLore(stack);
         }
     }
+
+    boolean hasOrders = eco.getOrders().hasDeliveries(player.getUUID());
+    boolean hasShop = eco.getShop().hasDeliveries(player.getUUID());
+
+    if (hasOrders || hasShop) {
+        ClickEvent ev = ChatCompat.runCommandEvent("/eco orders claim");
+        
+        if (ev != null) {
+            Component msg = Component.literal("Je hebt ongeclaimde items: ")
+                    .withStyle(ChatFormatting.YELLOW)
+                    .append(Component.literal("[Claim]")
+                            .withStyle(style -> style
+                                    .withUnderlined(true)
+                                    .withColor(ChatFormatting.GREEN)
+                                    .withClickEvent(ev)
+                            ));
+            player.sendSystemMessage(msg);
+        } else {
+            ChatCompat.sendRunCommandTellraw(player, "Je hebt ongeclaimde items: ", "[Claim]", "/eco orders claim");
+        }
+    }
+}
 
     public static EconomyManager getManager(MinecraftServer server) {
         if (manager == null || lastServer != server) {
