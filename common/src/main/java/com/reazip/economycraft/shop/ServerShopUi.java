@@ -513,10 +513,10 @@ private void handleTrapperKitPurchase() {
         return;
     }
 
-    long cost = 25000L;
+    long cost = 1000000L;
     if (eco.getBalance(uuid, true) < cost) {
         viewer.sendSystemMessage(Component.literal("Je hebt geen ")
-            .append(Component.literal("€25.000").withStyle(ChatFormatting.GOLD))
+            .append(Component.literal("€100.000").withStyle(ChatFormatting.GOLD))
             .append("!").withStyle(ChatFormatting.RED));
         return;
     }
@@ -526,7 +526,7 @@ private void handleTrapperKitPurchase() {
         giveTrapperItems();
         
         viewer.sendSystemMessage(Component.literal("Trapper Kit gekocht voor ")
-            .append(Component.literal("€25.000").withStyle(ChatFormatting.GOLD))
+            .append(Component.literal("€100.000").withStyle(ChatFormatting.GOLD))
             .append("!").withStyle(ChatFormatting.GREEN));
         sendPrivateSound(SoundEvents.EXPERIENCE_ORB_PICKUP);
     }
