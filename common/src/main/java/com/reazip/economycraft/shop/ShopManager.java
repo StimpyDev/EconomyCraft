@@ -6,6 +6,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.mojang.serialization.JsonOps;
 import com.reazip.economycraft.EconomyCraft;
+import com.reazip.economycraft.EconomyManager;
 import com.reazip.economycraft.util.IdentityCompat;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
@@ -42,6 +43,44 @@ public class ShopManager {
         } catch (IOException ignored) {}
         
         load();
+    }
+
+    // --- Core Logic ---
+
+    public boolean buyListing(ServerPlayer buyer, int listingId) {
+        ShopListing listing = getListing(listingId);
+        if (listing == null) return false;
+
+        EconomyManager eco = EconomyCraft.getEconomyManager();
+
+        if (eco.getBalance(buyer.getUUID(), true) < listing.price) {
+            buyer.sendSystemMessage(Component.literal("Je hebt niet genoeg saldo!").withStyle(ChatFormatting.RED));
+            return false;
+        }
+
+        if (listing.seller != null) {
+            if (!eco.tryRecordDailySell(listing.seller, listing.price)) {
+                buyer.sendSystemMessage(Component.literal("Deze verkoper heeft zijn dagelijkse verkooplimiet bereikt!")
+                        .withStyle(ChatFormatting.RED));
+                return false;
+            }
+        }
+
+        if (eco.removeMoney(buyer.getUUID(), listing.price)) {
+            if (listing.seller != null) {
+                eco.addMoney(listing.seller, listing.price);
+                notifySellerSale(listing, buyer);
+            }
+
+            addDelivery(buyer.getUUID(), listing.item);
+            removeListing(listingId);
+
+            buyer.sendSystemMessage(Component.literal("Aankoop succesvol! Gebruik /claim om je items te ontvangen.")
+                    .withStyle(ChatFormatting.GREEN));
+            return true;
+        }
+
+        return false;
     }
 
     public Collection<ShopListing> getListings() {
@@ -98,6 +137,8 @@ public class ShopManager {
         notifyListeners();
         save();
     }
+
+    // --- File IO ---
 
     public void load() {
         if (!Files.exists(file)) return;
