@@ -54,6 +54,7 @@ public class EconomyManager {
 
     public EconomyManager(MinecraftServer server) {
         this.server = server;
+        EconomyConfig.load(server);
         
         Path dataDir = server.getFile("config/economycraft/data");
         try { 
