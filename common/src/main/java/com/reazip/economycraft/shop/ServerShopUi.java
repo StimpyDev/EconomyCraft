@@ -243,37 +243,23 @@ private void updatePage() {
     }
 }
 
-@Override 
-public void clicked(int slot, int dragType, ClickType type, Player player) {
-    if (slot < 0) {
-        super.clicked(slot, dragType, type, player);
-        return;
-    }
-
-    if (type == ClickType.PICKUP || type == ClickType.QUICK_MOVE) {
-        if (slot < navRowStart) {
-            if (slot < slotToIndex.length) {
-                int index = slotToIndex[slot];
-                if (index >= 0 && index < categories.size()) {
-                    open(viewer, eco, categories.get(index));
-                    return;
+        @Override public void clicked(int slot, int dragType, ClickType type, Player player) {
+            if (type == ClickType.PICKUP || type == ClickType.QUICK_MOVE) {
+                if (slot < navRowStart) {
+                    int index = slotToIndex[slot];
+                    if (index >= 0 && index < categories.size()) {
+                        open(viewer, eco, categories.get(index));
+                        return;
+                    }
                 }
+                if (slot == navRowStart + 3 && page > 0) { page--; updatePage(); return; }
+                if (slot == navRowStart + 5 && (page + 1) * itemsPerPage < categories.size()) { page++; updatePage(); return; }
             }
+            super.clicked(slot, dragType, type, player);
         }
-        
-        if (slot == navRowStart + 3 && page > 0) { 
-            page--; 
-            updatePage(); 
-            return; 
-        }
-        if (slot == navRowStart + 5 && (page + 1) * itemsPerPage < categories.size()) { 
-            page++; 
-            updatePage(); 
-            return; 
-        }
+        @Override public boolean stillValid(Player player) { return true; }
+        @Override public ItemStack quickMoveStack(Player player, int index) { return ItemStack.EMPTY; }
     }
-    super.clicked(slot, dragType, type, player);
-}
 
     private static class SubcategoryMenu extends AbstractContainerMenu {
         private final EconomyManager eco;
@@ -349,24 +335,25 @@ public void clicked(int slot, int dragType, ClickType type, Player player) {
             container.setItem(navRowStart + 4, paper);
         }
 
-        @Override public void clicked(int slot, int dragType, ClickType type, Player player) {
-            if (type == ClickType.PICKUP || type == ClickType.QUICK_MOVE) {
-                if (slot < navRowStart) {
-                    int index = page * itemsPerPage + slot;
-                    if (index < subcategories.size()) {
-                        openItems(viewer, eco, topCategory + "." + subcategories.get(index), subcategories.get(index));
-                        return;
-                    }
-                }
-                if (slot == navRowStart + 3 && page > 0) { page--; updatePage(); return; }
-                if (slot == navRowStart + 5 && (page + 1) * itemsPerPage < subcategories.size()) { page++; updatePage(); return; }
-                if (slot == navRowStart + 8) { openRoot(viewer, eco); return; }
-            }
-            super.clicked(slot, dragType, type, player);
-        }
-        @Override public boolean stillValid(Player player) { return true; }
-        @Override public ItemStack quickMoveStack(Player player, int index) { return ItemStack.EMPTY; }
+@Override public void clicked(int slot, int dragType, ClickType type, Player player) {
+    if (slot < 0) {
+        super.clicked(slot, dragType, type, player);
+        return;
     }
+    if (type == ClickType.PICKUP || type == ClickType.QUICK_MOVE) {
+        if (slot < navRowStart) {
+            int index = page * itemsPerPage + slot;
+            if (index < subcategories.size()) {
+                openItems(viewer, eco, topCategory + "." + subcategories.get(index), subcategories.get(index));
+                return;
+            }
+        }
+        if (slot == navRowStart + 3 && page > 0) { page--; updatePage(); return; }
+        if (slot == navRowStart + 5 && (page + 1) * itemsPerPage < subcategories.size()) { page++; updatePage(); return; }
+        if (slot == navRowStart + 8) { openRoot(viewer, eco); return; }
+    }
+    super.clicked(slot, dragType, type, player);
+}
 
     private static class ItemMenu extends AbstractContainerMenu {
         private final EconomyManager eco;
@@ -633,27 +620,25 @@ private void handleKitPurchase() {
     }
 }
 
-private void giveKitItems() {
-    HolderLookup.Provider p = viewer.registryAccess();
-    Inventory inv = viewer.getInventory();
-    
-    inv.add(createEnchanted(Items.NETHERITE_HELMET, p, Map.of(Enchantments.PROTECTION, 4, Enchantments.UNBREAKING, 3, Enchantments.AQUA_AFFINITY, 1, Enchantments.RESPIRATION, 3, Enchantments.MENDING, 1)));
-    inv.add(createEnchanted(Items.NETHERITE_CHESTPLATE, p, Map.of(Enchantments.PROTECTION, 4, Enchantments.UNBREAKING, 3, Enchantments.MENDING, 1)));
-    inv.add(createEnchanted(Items.NETHERITE_LEGGINGS, p, Map.of(Enchantments.PROTECTION, 4, Enchantments.UNBREAKING, 3, Enchantments.MENDING, 1, Enchantments.SWIFT_SNEAK, 3)));
-    inv.add(createEnchanted(Items.NETHERITE_BOOTS, p, Map.of(Enchantments.FEATHER_FALLING, 4, Enchantments.UNBREAKING, 3, Enchantments.MENDING, 1, Enchantments.DEPTH_STRIDER, 3, Enchantments.PROTECTION, 4)));
-    
-    inv.add(createEnchanted(Items.NETHERITE_SWORD, p, Map.of(Enchantments.SHARPNESS, 5, Enchantments.UNBREAKING, 3, Enchantments.MENDING, 1, Enchantments.FIRE_ASPECT, 2, Enchantments.SWEEPING_EDGE, 3, Enchantments.LOOTING, 3)));
-    inv.add(createEnchanted(Items.NETHERITE_AXE, p, Map.of(Enchantments.UNBREAKING, 3, Enchantments.SHARPNESS, 5, Enchantments.MENDING, 1, Enchantments.SILK_TOUCH, 1)));
-    
-    ItemStack spear = createEnchanted(Items.NETHERITE_SPEAR, p, Map.of(
-        Enchantments.SHARPNESS, 5, 
-        Enchantments.MENDING, 1, 
-        Enchantments.UNBREAKING, 3, 
-        Enchantments.KNOCKBACK, 2,
-        Enchantments.LUNGE, 3
-    ));
-    inv.add(spear);
-}
+        private void giveKitItems() {
+            HolderLookup.Provider p = viewer.registryAccess();
+            Inventory inv = viewer.getInventory();
+            inv.add(createEnchanted(Items.NETHERITE_HELMET, p, Map.of(Enchantments.PROTECTION, 4, Enchantments.UNBREAKING, 3, Enchantments.AQUA_AFFINITY, 1, Enchantments.RESPIRATION, 3, Enchantments.MENDING, 1)));
+            inv.add(createEnchanted(Items.NETHERITE_CHESTPLATE, p, Map.of(Enchantments.PROTECTION, 4, Enchantments.UNBREAKING, 3, Enchantments.MENDING, 1)));
+            inv.add(createEnchanted(Items.NETHERITE_LEGGINGS, p, Map.of(Enchantments.PROTECTION, 4, Enchantments.UNBREAKING, 3, Enchantments.MENDING, 1, Enchantments.SWIFT_SNEAK, 3)));
+            inv.add(createEnchanted(Items.NETHERITE_BOOTS, p, Map.of(Enchantments.FEATHER_FALLING, 4, Enchantments.UNBREAKING, 3, Enchantments.MENDING, 1, Enchantments.DEPTH_STRIDER, 3, Enchantments.PROTECTION, 4)));
+            inv.add(createEnchanted(Items.NETHERITE_SWORD, p, Map.of(Enchantments.SHARPNESS, 5, Enchantments.UNBREAKING, 3, Enchantments.MENDING, 1, Enchantments.FIRE_ASPECT, 2, Enchantments.SWEEPING_EDGE, 3, Enchantments.LOOTING, 3)));
+            inv.add(createEnchanted(Items.NETHERITE_AXE, p, Map.of(Enchantments.UNBREAKING, 3, Enchantments.SHARPNESS, 5, Enchantments.MENDING, 1, Enchantments.SILK_TOUCH, 1)));
+            
+            ItemStack spear = createEnchanted(Items.NETHERITE_SPEAR, p, Map.of(
+                Enchantments.SHARPNESS, 5, 
+                Enchantments.MENDING, 1, 
+                Enchantments.UNBREAKING, 3, 
+                Enchantments.KNOCKBACK, 2,
+                Enchantments.LUNGE, 3
+            ));
+            inv.add(spear);
+        }
         
         private void handlePurchase(PriceRegistry.PriceEntry entry, ClickType clickType) {
             if (entry.unitBuy() <= 0) { viewer.sendSystemMessage(Component.literal("Niet te koop.").withStyle(ChatFormatting.RED)); return; }
