@@ -260,6 +260,7 @@ private void updatePage() {
         @Override public boolean stillValid(Player player) { return true; }
         @Override public ItemStack quickMoveStack(Player player, int index) { return ItemStack.EMPTY; }
     }
+}
 
     private static class SubcategoryMenu extends AbstractContainerMenu {
         private final EconomyManager eco;
@@ -502,6 +503,7 @@ private void updatePage() {
             }
             super.clicked(slot, dragType, type, player);
         }
+        
 private void handleTrapperKitPurchase() {
     UUID uuid = viewer.getUUID();
     String kitKey = uuid.toString() + "_trapper";
