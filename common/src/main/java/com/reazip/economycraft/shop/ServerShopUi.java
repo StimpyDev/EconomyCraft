@@ -864,7 +864,7 @@ private static ChatFormatting getCategoryColor(String key) {
     private static ItemStack createBalanceItem(ServerPlayer p) { 
         ItemStack g = new ItemStack(Items.GOLD_INGOT); 
         long bal = EconomyCraft.getManager(((ServerLevel)p.level()).getServer()).getBalance(p.getUUID(), true);
-        g.set(DataComponents.CUSTOM_NAME, Component.literal("Saldo").withStyle(s -> s.withItalic(true).withColor(BALANCE_NAME_COLOR))); 
+        g.set(DataComponents.CUSTOM_NAME, Component.literal("Saldo").withStyle(s -> s.withItalic(false).withBold(true).withColor(BALANCE_NAME_COLOR)));
         g.set(DataComponents.LORE, new ItemLore(List.of(Component.literal(EconomyCraft.formatMoney(bal)).withStyle(s -> s.withItalic(true).withColor(BALANCE_VALUE_COLOR))))); 
         return g;
     }
