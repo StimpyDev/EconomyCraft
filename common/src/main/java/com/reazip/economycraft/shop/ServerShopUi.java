@@ -308,61 +308,76 @@ private void updatePage() {
             for (int c = 0; c < 9; c++) this.addSlot(new Slot(inv, c, 8 + c * 18, y + 58));
         }
 
-        private void updatePage() {
-            container.clearContent();
-            int start = page * itemsPerPage;
-            int totalPages = (int) Math.ceil(subcategories.size() / (double) itemsPerPage);
-            for (int i = 0; i < itemsPerPage; i++) {
-                int idx = start + i;
-                if (idx >= subcategories.size()) break;
-                String sub = subcategories.get(idx);
-                ItemStack icon = createCategoryIcon(sub, topCategory + "." + sub, prices, viewer);
-                if (icon.isEmpty()) continue;
-                icon.set(DataComponents.CUSTOM_NAME, Component.literal(formatCategoryTitle(sub)).withStyle(s -> s.withItalic(false).withColor(ChatFormatting.WHITE).withBold(true)));
-                icon.set(DataComponents.LORE, new ItemLore(List.of(Component.literal("Klik om artikelen te bekijken").withStyle(s -> s.withItalic(false)))));
-                container.setItem(i, icon);
-            }
-            if (page > 0) {
-                ItemStack prev = new ItemStack(Items.ARROW);
-                prev.set(DataComponents.CUSTOM_NAME, Component.literal("Vorige pagina").withStyle(s -> s.withItalic(false)));
-                container.setItem(navRowStart + 3, prev);
-            }
-            if (start + itemsPerPage < subcategories.size()) {
-                ItemStack next = new ItemStack(Items.ARROW);
-                next.set(DataComponents.CUSTOM_NAME, Component.literal("Volgende pagina").withStyle(s -> s.withItalic(false)));
-                container.setItem(navRowStart + 5, next);
-            }
-            ItemStack back = new ItemStack(Items.BARRIER);
-            back.set(DataComponents.CUSTOM_NAME, Component.literal("Terug").withStyle(s -> s.withItalic(false).withColor(ChatFormatting.DARK_RED).withBold(true)));
-            container.setItem(navRowStart + 8, back);
-            container.setItem(navRowStart, createBalanceItem(viewer));
-            ItemStack paper = new ItemStack(Items.PAPER);
-            paper.set(DataComponents.CUSTOM_NAME, Component.literal("Pagina " + (page + 1) + "/" + Math.max(1, totalPages)).withStyle(s -> s.withItalic(false)));
-            container.setItem(navRowStart + 4, paper);
-        }
+private void updatePage() {
+        container.clearContent();
+        int start = page * itemsPerPage;
+        int totalPages = (int) Math.ceil(subcategories.size() / (double) itemsPerPage);
 
-@Override public void clicked(int slot, int dragType, ClickType type, Player player) {
-    if (slot < 0) {
-        super.clicked(slot, dragType, type, player);
-        return;
-    }
-    if (type == ClickType.PICKUP || type == ClickType.QUICK_MOVE) {
-        if (slot < navRowStart) {
-            int index = page * itemsPerPage + slot;
-            if (index < subcategories.size()) {
-                openItems(viewer, eco, topCategory + "." + subcategories.get(index), subcategories.get(index));
-                return;
-            }
+        for (int i = 0; i < itemsPerPage; i++) {
+            int idx = start + i;
+            if (idx >= subcategories.size()) break;
+
+            String sub = subcategories.get(idx);
+            ItemStack icon = createCategoryIcon(sub, topCategory + "." + sub, prices, viewer);
+            
+            if (icon.isEmpty()) continue;
+
+            icon.set(DataComponents.CUSTOM_NAME, Component.literal(formatCategoryTitle(sub))
+                .withStyle(s -> s.withItalic(false).withColor(ChatFormatting.WHITE).withBold(true)));
+            icon.set(DataComponents.LORE, new ItemLore(List.of(Component.literal("Klik om artikelen te bekijken")
+                .withStyle(s -> s.withItalic(false)))));
+            
+            container.setItem(i, icon); 
         }
-        if (slot == navRowStart + 3 && page > 0) { page--; updatePage(); return; }
-        if (slot == navRowStart + 5 && (page + 1) * itemsPerPage < subcategories.size()) { page++; updatePage(); return; }
-        if (slot == navRowStart + 8) { openRoot(viewer, eco); return; }
+    
+        if (page > 0) {
+            ItemStack prev = new ItemStack(Items.ARROW);
+            prev.set(DataComponents.CUSTOM_NAME, Component.literal("Vorige pagina").withStyle(s -> s.withItalic(false)));
+            container.setItem(navRowStart + 3, prev);
+        }
+        if (start + itemsPerPage < subcategories.size()) {
+            ItemStack next = new ItemStack(Items.ARROW);
+            next.set(DataComponents.CUSTOM_NAME, Component.literal("Volgende pagina").withStyle(s -> s.withItalic(false)));
+            container.setItem(navRowStart + 5, next);
+        }
+        
+        ItemStack back = new ItemStack(Items.BARRIER);
+        back.set(DataComponents.CUSTOM_NAME, Component.literal("Terug")
+            .withStyle(s -> s.withItalic(false).withColor(ChatFormatting.DARK_RED).withBold(true)));
+        container.setItem(navRowStart + 8, back);
+        
+        container.setItem(navRowStart, createBalanceItem(viewer));
+        
+        ItemStack paper = new ItemStack(Items.PAPER);
+        paper.set(DataComponents.CUSTOM_NAME, Component.literal("Pagina " + (page + 1) + "/" + Math.max(1, totalPages))
+            .withStyle(s -> s.withItalic(false)));
+        container.setItem(navRowStart + 4, paper);
     }
-    super.clicked(slot, dragType, type, player);
+
+@Override 
+    public void clicked(int slot, int dragType, ClickType type, Player player) {
+        if (slot < 0) {
+            super.clicked(slot, dragType, type, player);
+            return;
+        }
+        if (type == ClickType.PICKUP || type == ClickType.QUICK_MOVE) {
+            if (slot < navRowStart) {
+                int index = page * itemsPerPage + slot;
+                if (index < subcategories.size()) {
+                    openItems(viewer, eco, topCategory + "." + subcategories.get(index), subcategories.get(index));
+                    return;
+                }
+            }
+            if (slot == navRowStart + 3 && page > 0) { page--; updatePage(); return; }
+            if (slot == navRowStart + 5 && (page + 1) * itemsPerPage < subcategories.size()) { page++; updatePage(); return; }
+            if (slot == navRowStart + 8) { openRoot(viewer, eco); return; }
+        }
+        super.clicked(slot, dragType, type, player);
+    }
+
+    @Override public boolean stillValid(Player player) { return true; }
+    @Override public ItemStack quickMoveStack(Player player, int index) { return ItemStack.EMPTY; }
 }
-        @Override public boolean stillValid(Player player) { return true; }
-        @Override public ItemStack quickMoveStack(Player player, int index) { return ItemStack.EMPTY; }
-    }
 
     private static class ItemMenu extends AbstractContainerMenu {
         private final EconomyManager eco;
