@@ -33,8 +33,8 @@ public final class OrdersUi {
     private static final ChatFormatting LABEL_PRIMARY_COLOR = ChatFormatting.GOLD;
     private static final ChatFormatting LABEL_SECONDARY_COLOR = ChatFormatting.AQUA;
     private static final ChatFormatting VALUE_COLOR = ChatFormatting.DARK_PURPLE;
-    private static final ChatFormatting BALANCE_NAME_COLOR = ChatFormatting.YELLOW;
-    private static final ChatFormatting BALANCE_VALUE_COLOR = ChatFormatting.DARK_PURPLE;
+    private static final ChatFormatting BALANCE_NAME_COLOR = ChatFormatting.GOLD;
+    private static final ChatFormatting BALANCE_VALUE_COLOR = ChatFormatting.GOLD;
 
 public static void open(ServerPlayer player, EconomyManager eco) {
     player.openMenu(new MenuProvider() {
@@ -64,8 +64,7 @@ public static void open(ServerPlayer player, EconomyManager eco) {
         ItemStack gold = new ItemStack(Items.GOLD_INGOT);
         long balance = eco.getBalance(playerId, true);
         
-        gold.set(DataComponents.CUSTOM_NAME, 
-            Component.literal("Jouw Saldo").withStyle(s -> s.withItalic(false).withColor(BALANCE_NAME_COLOR)));
+        gold.set(DataComponents.CUSTOM_NAME, Component.literal("Jouw Saldo:").withStyle(s -> s.withItalic(false).withBold(true).withColor(BALANCE_NAME_COLOR)));
         
         gold.set(DataComponents.LORE, new ItemLore(List.of(
             Component.literal(EconomyCraft.formatMoney(balance))
