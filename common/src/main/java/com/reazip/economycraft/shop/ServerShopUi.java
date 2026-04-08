@@ -60,9 +60,9 @@ public final class ServerShopUi {
     private static final ChatFormatting LABEL_PRIMARY_COLOR = ChatFormatting.GOLD;
     private static final ChatFormatting LABEL_SECONDARY_COLOR = ChatFormatting.AQUA;
     private static final ChatFormatting VALUE_COLOR = ChatFormatting.DARK_PURPLE;
-    private static final ChatFormatting BALANCE_NAME_COLOR = ChatFormatting.YELLOW;
+    private static final ChatFormatting BALANCE_NAME_COLOR = ChatFormatting.GOLD;
     private static final ChatFormatting BALANCE_LABEL_COLOR = ChatFormatting.GOLD;
-    private static final ChatFormatting BALANCE_VALUE_COLOR = ChatFormatting.DARK_PURPLE;
+    private static final ChatFormatting BALANCE_VALUE_COLOR = ChatFormatting.GOLD;
 
     private ServerShopUi() {}
 
