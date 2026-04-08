@@ -360,6 +360,8 @@ private void updatePage() {
     }
     super.clicked(slot, dragType, type, player);
 }
+        @Override public boolean stillValid(Player player) { return true; }
+        @Override public ItemStack quickMoveStack(Player player, int index) { return ItemStack.EMPTY; }
     }
 
     private static class ItemMenu extends AbstractContainerMenu {
