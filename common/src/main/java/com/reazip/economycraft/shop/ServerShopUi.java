@@ -243,23 +243,37 @@ private void updatePage() {
     }
 }
 
-        @Override public void clicked(int slot, int dragType, ClickType type, Player player) {
-            if (type == ClickType.PICKUP || type == ClickType.QUICK_MOVE) {
-                if (slot < navRowStart) {
-                    int index = slotToIndex[slot];
-                    if (index >= 0 && index < categories.size()) {
-                        open(viewer, eco, categories.get(index));
-                        return;
-                    }
-                }
-                if (slot == navRowStart + 3 && page > 0) { page--; updatePage(); return; }
-                if (slot == navRowStart + 5 && (page + 1) * itemsPerPage < categories.size()) { page++; updatePage(); return; }
-            }
-            super.clicked(slot, dragType, type, player);
-        }
-        @Override public boolean stillValid(Player player) { return true; }
-        @Override public ItemStack quickMoveStack(Player player, int index) { return ItemStack.EMPTY; }
+@Override 
+public void clicked(int slot, int dragType, ClickType type, Player player) {
+    if (slot < 0) {
+        super.clicked(slot, dragType, type, player);
+        return;
     }
+
+    if (type == ClickType.PICKUP || type == ClickType.QUICK_MOVE) {
+        if (slot < navRowStart) {
+            if (slot < slotToIndex.length) {
+                int index = slotToIndex[slot];
+                if (index >= 0 && index < categories.size()) {
+                    open(viewer, eco, categories.get(index));
+                    return;
+                }
+            }
+        }
+        
+        if (slot == navRowStart + 3 && page > 0) { 
+            page--; 
+            updatePage(); 
+            return; 
+        }
+        if (slot == navRowStart + 5 && (page + 1) * itemsPerPage < categories.size()) { 
+            page++; 
+            updatePage(); 
+            return; 
+        }
+    }
+    super.clicked(slot, dragType, type, player);
+}
 
     private static class SubcategoryMenu extends AbstractContainerMenu {
         private final EconomyManager eco;
@@ -415,7 +429,7 @@ private void updatePage() {
                trapperKit.set(DataComponents.ENCHANTMENT_GLINT_OVERRIDE, true); 
 
                List<Component> trapperLore = new ArrayList<>();
-               trapperLore.add(Component.literal("Prijs: ").withStyle(ChatFormatting.GREEN).append(Component.literal("€100.000").withStyle(ChatFormatting.GOLD)));
+               trapperLore.add(Component.literal("Prijs: ").withStyle(ChatFormatting.GREEN).append(Component.literal("€150.000").withStyle(ChatFormatting.GOLD)));
                trapperLore.add(Component.literal("Cooldown: 1 uur").withStyle(ChatFormatting.RED));
                trapperLore.add(Component.literal("Inhoud:").withStyle(ChatFormatting.GRAY));
                trapperLore.add(Component.literal("- Shulker met 32 TNT Minecarts").withStyle(ChatFormatting.DARK_GRAY));
@@ -513,10 +527,10 @@ private void handleTrapperKitPurchase() {
         return;
     }
 
-    long cost = 1000000L;
+    long cost = 150000L;
     if (eco.getBalance(uuid, true) < cost) {
         viewer.sendSystemMessage(Component.literal("Je hebt geen ")
-            .append(Component.literal("€100.000").withStyle(ChatFormatting.GOLD))
+            .append(Component.literal("€150.000").withStyle(ChatFormatting.GOLD))
             .append("!").withStyle(ChatFormatting.RED));
         return;
     }
@@ -526,7 +540,7 @@ private void handleTrapperKitPurchase() {
         giveTrapperItems();
         
         viewer.sendSystemMessage(Component.literal("Trapper Kit gekocht voor ")
-            .append(Component.literal("€100.000").withStyle(ChatFormatting.GOLD))
+            .append(Component.literal("€150.000").withStyle(ChatFormatting.GOLD))
             .append("!").withStyle(ChatFormatting.GREEN));
         sendPrivateSound(SoundEvents.EXPERIENCE_ORB_PICKUP);
     }
