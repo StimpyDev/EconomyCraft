@@ -243,7 +243,13 @@ private void updatePage() {
     }
 }
 
-        @Override public void clicked(int slot, int dragType, ClickType type, Player player) {
+@Override public void clicked(int slot, int dragType, ClickType type, Player player) {
+
+    if (slot < 0) {
+        super.clicked(slot, dragType, type, player);
+        return;
+    }
+            
             if (type == ClickType.PICKUP || type == ClickType.QUICK_MOVE) {
                 if (slot < navRowStart) {
                     int index = slotToIndex[slot];
@@ -259,7 +265,6 @@ private void updatePage() {
         }
         @Override public boolean stillValid(Player player) { return true; }
         @Override public ItemStack quickMoveStack(Player player, int index) { return ItemStack.EMPTY; }
-    }
 }
 
     private static class SubcategoryMenu extends AbstractContainerMenu {
@@ -355,6 +360,7 @@ private void updatePage() {
     }
     super.clicked(slot, dragType, type, player);
 }
+    }
 
     private static class ItemMenu extends AbstractContainerMenu {
         private final EconomyManager eco;
@@ -477,9 +483,12 @@ private void updatePage() {
             container.setItem(navRowStart + 8, back);
             container.setItem(navRowStart, createBalanceItem(viewer));
         }
-
+        
 @Override public void clicked(int slot, int dragType, ClickType type, Player player) {
-            if (slot < 0 || slot >= navRowStart + 9) { super.clicked(slot, dragType, type, player); return; }
+    if (slot < 0 || slot >= navRowStart + 9) { 
+        super.clicked(slot, dragType, type, player); 
+        return; 
+    }
             if (type == ClickType.PICKUP || type == ClickType.QUICK_MOVE) {
                 
                 if (category.equalsIgnoreCase("kits")) {
