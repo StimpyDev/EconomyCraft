@@ -201,12 +201,11 @@ public final class EconomyCommands {
 
         Component msg;
         if (executor != null && executor.getUUID().equals(target.id())) {
-    msg = Component.literal("Jouw Saldo: " + EconomyCraft.formatMoney(bal))
-            .withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD);
-}
+            msg = Component.literal("Jouw Saldo: " + EconomyCraft.formatMoney(bal))
+                    .withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD);
         } else {
-msg = Component.literal(target.name() + "'s Saldo: " + EconomyCraft.formatMoney(bal))
-        .withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD);
+            msg = Component.literal(target.name() + "'s Saldo: " + EconomyCraft.formatMoney(bal))
+                    .withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD);
         }
 
         if (executor != null) {
@@ -217,7 +216,6 @@ msg = Component.literal(target.name() + "'s Saldo: " + EconomyCraft.formatMoney(
 
         return 1;
     }
-
     private static int balTop(CommandSourceStack source) {
     EconomyManager manager = EconomyCraft.getManager(source.getServer());
     Map<UUID, Long> balances = manager.getBalances();
