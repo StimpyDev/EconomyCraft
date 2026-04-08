@@ -201,11 +201,11 @@ public final class EconomyCommands {
 
         Component msg;
         if (executor != null && executor.getUUID().equals(target.id())) {
-    msg = Component.literal("Jouw saldo: " + EconomyCraft.formatMoney(bal))
+    msg = Component.literal("Jouw Saldo: " + EconomyCraft.formatMoney(bal))
             .withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD);
 }
         } else {
-msg = Component.literal(target.name() + "'s saldo: " + EconomyCraft.formatMoney(bal))
+msg = Component.literal(target.name() + "'s Saldo: " + EconomyCraft.formatMoney(bal))
         .withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD);
         }
 
