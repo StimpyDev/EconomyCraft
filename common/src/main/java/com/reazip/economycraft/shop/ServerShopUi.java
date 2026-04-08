@@ -911,4 +911,5 @@ private static ChatFormatting getCategoryColor(String key) {
         }));
         return order;
     }
+  }
 }
