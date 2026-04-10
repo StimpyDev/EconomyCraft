@@ -415,7 +415,7 @@ private void updatePage() {
                trapperKit.set(DataComponents.ENCHANTMENT_GLINT_OVERRIDE, true); 
 
                List<Component> trapperLore = new ArrayList<>();
-               trapperLore.add(Component.literal("Prijs: ").withStyle(ChatFormatting.GREEN).append(Component.literal("€150.000").withStyle(ChatFormatting.GOLD)));
+               trapperLore.add(Component.literal("Prijs: ").withStyle(ChatFormatting.GREEN).append(Component.literal("€250.000").withStyle(ChatFormatting.GOLD)));
                trapperLore.add(Component.literal("Cooldown: 1 uur").withStyle(ChatFormatting.RED));
                trapperLore.add(Component.literal("Inhoud:").withStyle(ChatFormatting.GRAY));
                trapperLore.add(Component.literal("- Shulker met 32 TNT Minecarts").withStyle(ChatFormatting.DARK_GRAY));
@@ -425,9 +425,9 @@ private void updatePage() {
                container.setItem(6, trapperKit);
 
                 ItemStack kit = new ItemStack(Items.NETHERITE_CHESTPLATE);
-                kit.set(DataComponents.CUSTOM_NAME, Component.literal("Full Netherite Kit").withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD));
+                kit.set(DataComponents.CUSTOM_NAME, Component.literal("Full Netherite Kit").withStyle(ChatFormatting.GRAY, ChatFormatting.BOLD));
                 List<Component> kitLore = new ArrayList<>();
-                kitLore.add(Component.literal("Prijs: ").withStyle(ChatFormatting.GREEN).append(Component.literal("€500.000").withStyle(ChatFormatting.GOLD)));
+                kitLore.add(Component.literal("Prijs: ").withStyle(ChatFormatting.GREEN).append(Component.literal("€750.000").withStyle(ChatFormatting.GOLD)));
                 kitLore.add(Component.literal("Cooldown: 1 uur").withStyle(ChatFormatting.RED));
                 kitLore.add(Component.literal("Inhoud:").withStyle(ChatFormatting.GRAY));
                 kitLore.add(Component.literal("- Full Netherite Kit").withStyle(ChatFormatting.DARK_GRAY));
@@ -513,10 +513,10 @@ private void handleTrapperKitPurchase() {
         return;
     }
 
-    long cost = 150000L;
+    long cost = 250000L;
     if (eco.getBalance(uuid, true) < cost) {
         viewer.sendSystemMessage(Component.literal("Je hebt geen ")
-            .append(Component.literal("€150.000").withStyle(ChatFormatting.GOLD))
+            .append(Component.literal("€250.000").withStyle(ChatFormatting.GOLD))
             .append("!").withStyle(ChatFormatting.RED));
         return;
     }
@@ -526,7 +526,7 @@ private void handleTrapperKitPurchase() {
         giveTrapperItems();
         
         viewer.sendSystemMessage(Component.literal("Trapper Kit gekocht voor ")
-            .append(Component.literal("€150.000").withStyle(ChatFormatting.GOLD))
+            .append(Component.literal("€250.000").withStyle(ChatFormatting.GOLD))
             .append("!").withStyle(ChatFormatting.GREEN));
         sendPrivateSound(SoundEvents.EXPERIENCE_ORB_PICKUP);
     }
@@ -600,10 +600,10 @@ private void handleKitPurchase() {
         return;
     }
 
-    long cost = 500000L;
+    long cost = 750000L;
     if (eco.getBalance(uuid, true) < cost) {
         viewer.sendSystemMessage(Component.literal("Je hebt geen ")
-            .append(Component.literal("€500.000").withStyle(ChatFormatting.GOLD))
+            .append(Component.literal("€750.000").withStyle(ChatFormatting.GOLD))
             .append("!").withStyle(ChatFormatting.RED));
         return;
     }
@@ -613,7 +613,7 @@ private void handleKitPurchase() {
         giveKitItems();
         
         viewer.sendSystemMessage(Component.literal("Netherite Kit gekocht voor ")
-            .append(Component.literal("€500.000").withStyle(ChatFormatting.GOLD))
+            .append(Component.literal("€750.000").withStyle(ChatFormatting.GOLD))
             .append("!").withStyle(ChatFormatting.GREEN));
         sendPrivateSound(SoundEvents.EXPERIENCE_ORB_PICKUP);
     }
