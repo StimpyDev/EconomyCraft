@@ -66,10 +66,7 @@ public static void open(ServerPlayer player, EconomyManager eco) {
         
         gold.set(DataComponents.CUSTOM_NAME, Component.literal("Jouw Saldo:").withStyle(s -> s.withItalic(false).withBold(true).withColor(BALANCE_NAME_COLOR)));
         
-        gold.set(DataComponents.LORE, new ItemLore(List.of(
-            Component.literal(EconomyCraft.formatMoney(balance))
-                     .withStyle(s -> s.withItalic(false).withColor(BALANCE_VALUE_COLOR))
-        )));
+                gold.set(DataComponents.LORE, new ItemLore(List.of(Component.literal(EconomyCraft.formatMoney(bal)).withStyle(s -> s.withItalic(false).withBold(true).withColor(BALANCE_VALUE_COLOR)))));
         
         return gold;
     }
