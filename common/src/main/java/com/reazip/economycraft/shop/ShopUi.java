@@ -68,26 +68,31 @@ public final class ShopUi {
         });
     }
 
-    private static Component createPriceLore(long price, long tax) {
-        StringBuilder value = new StringBuilder(EconomyCraft.formatMoney(price));
-        if (tax > 0) value.append(" (+").append(EconomyCraft.formatMoney(tax)).append(" belasting)");
-        return labeledValue("Prijs", value.toString(), LABEL_PRIMARY_COLOR);
-    }
+private static Component createPriceLore(long price, long tax) {
+    StringBuilder value = new StringBuilder(EconomyCraft.formatMoney(price));
+    if (tax > 0) value.append(" (+").append(EconomyCraft.formatMoney(tax)).append(" belasting)");
+    return labeledValue("Prijs", value.toString(), LABEL_PRIMARY_COLOR);
+}
 
-    private static ItemStack createBalanceItem(ServerPlayer player) {
-        ItemStack gold = new ItemStack(Items.GOLD_INGOT);
-        var server = player.level().getServer();
-        long balance = EconomyCraft.getManager(server).getBalance(player.getUUID(), true);
-        
-        gold.set(DataComponents.CUSTOM_NAME, Component.literal("Jouw Saldo:").withStyle(s -> s.withItalic(false).withBold(true).withColor(BALANCE_NAME_COLOR)));
-        
-        gold.set(DataComponents.LORE, new ItemLore(List.of(
-                Component.literal(EconomyCraft.formatMoney(balance))
-                        .withStyle(s -> s.withItalic(false).withColor(BALANCE_VALUE_COLOR))
-        )));
-        
-        return gold;
-    }
+private static ItemStack createBalanceItem(ServerPlayer player) {
+    ItemStack gold = new ItemStack(Items.GOLD_INGOT);
+    var server = player.level().getServer();
+    long balance = EconomyCraft.getManager(server).getBalance(player.getUUID(), true);
+    
+    gold.set(DataComponents.CUSTOM_NAME, Component.literal("Jouw Saldo:")
+        .withStyle(s -> s.withItalic(false).withBold(true).withColor(BALANCE_NAME_COLOR)));
+    
+    gold.set(DataComponents.LORE, new ItemLore(List.of(
+        Component.literal(EconomyCraft.formatMoney(balance))
+            .withStyle(s -> s
+                .withItalic(false)
+                .withBold(true) 
+                .withColor(BALANCE_VALUE_COLOR)
+            )
+    )));
+    
+    return gold;
+}
 
     private static Component labeledValue(String label, String value, ChatFormatting labelColor) {
         return Component.literal(label + ": ").withStyle(s -> s.withItalic(false).withColor(labelColor))
