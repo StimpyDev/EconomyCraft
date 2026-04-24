@@ -200,9 +200,13 @@ public final class EconomyCommands {
         }
 
         Component msg;
-        if (executor != null && executor.getUUID().equals(target.id())) {
-            msg = Component.literal("Jouw Saldo: " + EconomyCraft.formatMoney(bal))
-                    .withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD);
+     if (executor != null && executor.getUUID().equals(target.id())) {
+    msg = Component.literal("Jouw Saldo: ")
+            .withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD)
+            .append(Component.literal(EconomyCraft.formatMoney(bal))
+                    .withStyle(ChatFormatting.ITALIC)
+                    .withStyle(style -> style.withBold(false)));
+}
         } else {
             msg = Component.literal(target.name() + "'s Saldo: " + EconomyCraft.formatMoney(bal))
                     .withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD);
