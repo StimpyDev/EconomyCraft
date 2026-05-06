@@ -410,24 +410,25 @@ private void updatePage() {
                 
                 container.setItem(2, starterKit);
 
-               ItemStack trapperKit = new ItemStack(Items.TNT_MINECART);
-               trapperKit.set(DataComponents.CUSTOM_NAME, Component.literal("Trapper Kit").withStyle(ChatFormatting.RED, ChatFormatting.BOLD));
-               trapperKit.set(DataComponents.ENCHANTMENT_GLINT_OVERRIDE, true); 
+               ItemStack tntMinecartKit = new ItemStack(Items.TNT_MINECART);
+               tntMinecartKit.set(DataComponents.CUSTOM_NAME, Component.literal("Tnt Minecart Kit").withStyle(ChatFormatting.RED, ChatFormatting.BOLD));
+               tntMinecartKit.set(DataComponents.ENCHANTMENT_GLINT_OVERRIDE, true); 
 
-               List<Component> trapperLore = new ArrayList<>();
-               trapperLore.add(Component.literal("Prijs: ").withStyle(ChatFormatting.GREEN).append(Component.literal("€250.000").withStyle(ChatFormatting.GOLD)));
-               trapperLore.add(Component.literal("Cooldown: 1 uur").withStyle(ChatFormatting.RED));
-               trapperLore.add(Component.literal("Inhoud:").withStyle(ChatFormatting.GRAY));
-               trapperLore.add(Component.literal("- Shulker met 32 TNT Minecarts").withStyle(ChatFormatting.DARK_GRAY));
-               trapperLore.add(Component.literal("- Redstone, Rails & Observers").withStyle(ChatFormatting.DARK_GRAY));
+               List<Component> tntMinecartLore = new ArrayList<>();
+               tntMinecartLore.add(Component.literal("Prijs: ").withStyle(ChatFormatting.GREEN).append(Component.literal("€600.000").withStyle(ChatFormatting.GOLD)));
+               tntMinecartLore.add(Component.literal("Cooldown: 1 uur").withStyle(ChatFormatting.RED));
+               tntMinecartLore.add(Component.literal("Inhoud:").withStyle(ChatFormatting.GRAY));
+               tntMinecartLore.add(Component.literal("- Shulker met 27 TNT Minecarts").withStyle(ChatFormatting.DARK_GRAY));
+               tntMinecartLore.add(Component.literal("- Enchanted bow & crossbow").withStyle(ChatFormatting.DARK_GRAY));
+               tntMinecartLore.add(Component.literal("- 64 Powered rails & 64 normale rails").withStyle(ChatFormatting.DARK_GRAY));
 
-               trapperKit.set(DataComponents.LORE, new ItemLore(trapperLore));
-               container.setItem(6, trapperKit);
+               tntMinecartKit.set(DataComponents.LORE, new ItemLore(tntMinecartLore));
+               container.setItem(6, tntMinecartKit);
 
                 ItemStack kit = new ItemStack(Items.NETHERITE_CHESTPLATE);
                 kit.set(DataComponents.CUSTOM_NAME, Component.literal("Full Netherite Kit").withStyle(ChatFormatting.GRAY, ChatFormatting.BOLD));
                 List<Component> kitLore = new ArrayList<>();
-                kitLore.add(Component.literal("Prijs: ").withStyle(ChatFormatting.GREEN).append(Component.literal("€750.000").withStyle(ChatFormatting.GOLD)));
+                kitLore.add(Component.literal("Prijs: ").withStyle(ChatFormatting.GREEN).append(Component.literal("€1.000.000").withStyle(ChatFormatting.GOLD)));
                 kitLore.add(Component.literal("Cooldown: 1 uur").withStyle(ChatFormatting.RED));
                 kitLore.add(Component.literal("Inhoud:").withStyle(ChatFormatting.GRAY));
                 kitLore.add(Component.literal("- Full Netherite Kit").withStyle(ChatFormatting.DARK_GRAY));
@@ -483,7 +484,7 @@ private void updatePage() {
                 if (category.equalsIgnoreCase("kits")) {
                     if (slot == 2) { handleStarterKitPurchase(); return; }
                     if (slot == 4) { handleKitPurchase(); return; }
-                    if (slot == 6) { handleTrapperKitPurchase(); return; }
+                    if (slot == 6) { handleTntMinecartKitPurchase(); return; }
                 }
 
                 if (slot < navRowStart && !category.equalsIgnoreCase("kits")) {
@@ -501,55 +502,72 @@ private void updatePage() {
             }
             super.clicked(slot, dragType, type, player);
         }
-private void handleTrapperKitPurchase() {
+private void handleTntMinecartKitPurchase() {
     UUID uuid = viewer.getUUID();
-    String kitKey = uuid.toString() + "_trapper";
+    String kitKey = uuid.toString() + "_tntminecart";
     long now = System.currentTimeMillis();
     
     if (KIT_COOLDOWNS.getOrDefault(kitKey, 0L) > now) {
         long waitMinutes = (KIT_COOLDOWNS.get(kitKey) - now) / 60000;
-        viewer.sendSystemMessage(Component.literal("Wacht nog " + waitMinutes + " minuten voor de Trapper Kit.")
+        viewer.sendSystemMessage(Component.literal("Wacht nog " + waitMinutes + " minuten voor de Tnt minecart Kit.")
             .withStyle(ChatFormatting.RED));
         return;
     }
 
-    long cost = 250000L;
+    long cost = 600000L;
     if (eco.getBalance(uuid, true) < cost) {
         viewer.sendSystemMessage(Component.literal("Je hebt geen ")
-            .append(Component.literal("€250.000").withStyle(ChatFormatting.GOLD))
+            .append(Component.literal("€600.000").withStyle(ChatFormatting.GOLD))
             .append("!").withStyle(ChatFormatting.RED));
         return;
     }
 
     if (eco.removeMoney(uuid, cost)) {
         KIT_COOLDOWNS.put(kitKey, now + 3600000L); 
-        giveTrapperItems();
+        giveTntMinecartKitItems();
         
-        viewer.sendSystemMessage(Component.literal("Trapper Kit gekocht voor ")
-            .append(Component.literal("€250.000").withStyle(ChatFormatting.GOLD))
+        viewer.sendSystemMessage(Component.literal("Tnt minecart kit gekocht voor ")
+            .append(Component.literal("€600.000").withStyle(ChatFormatting.GOLD))
             .append("!").withStyle(ChatFormatting.GREEN));
         sendPrivateSound(SoundEvents.EXPERIENCE_ORB_PICKUP);
     }
 }
-
-private void giveTrapperItems() {
+        
+private void giveTntMinecartKitItems() {
     Inventory inv = viewer.getInventory();
     
     List<ItemStack> shulkerItems = new ArrayList<>();
-    shulkerItems.add(new ItemStack(Items.TNT_MINECART, 32));
+    shulkerItems.add(new ItemStack(Items.TNT_MINECART, 27));
 
     ItemStack shulker = new ItemStack(Items.RED_SHULKER_BOX);
-    
     shulker.set(DataComponents.CONTAINER, net.minecraft.world.item.component.ItemContainerContents.fromItems(shulkerItems));
-    
     inv.add(shulker);
-    
-    inv.add(new ItemStack(Items.REDSTONE, 64));
-    inv.add(new ItemStack(Items.REPEATER, 12));
+
     inv.add(new ItemStack(Items.POWERED_RAIL, 64));
-    inv.add(new ItemStack(Items.STONE, 64));
-    inv.add(new ItemStack(Items.OBSERVER, 12));
     inv.add(new ItemStack(Items.RAIL, 64));
+
+    ItemStack flintAndSteel = new ItemStack(Items.FLINT_AND_STEEL);
+    flintAndSteel.set(DataComponents.ENCHANTMENTS, ItemEnchantments.builder()
+        .with(Enchantments.UNBREAKING, 3)
+        .with(Enchantments.MENDING, 1)
+        .build());
+    inv.add(flintAndSteel);
+
+    ItemStack crossbow = new ItemStack(Items.CROSSBOW);
+    crossbow.set(DataComponents.ENCHANTMENTS, ItemEnchantments.builder()
+            .with(Enchantments.QUICK_CHARGE, 3)
+            .with(Enchantments.UNBREAKING, 3)
+            .with(Enchantments.MENDING, 1)
+            .build());
+    inv.add(crossbow);
+
+    ItemStack bow = new ItemStack(Items.BOW);
+    bow.set(DataComponents.ENCHANTMENTS, ItemEnchantments.builder()
+            .with(Enchantments.UNBREAKING, 3)
+            .with(Enchantments.FLAME, 1)
+            .with(Enchantments.INFINITY, 1)
+            .build());
+    inv.add(bow);
 }
 
 private void handleStarterKitPurchase() {
@@ -600,26 +618,26 @@ private void handleKitPurchase() {
         return;
     }
 
-    long cost = 750000L;
+    long cost = 1000000L;
     if (eco.getBalance(uuid, true) < cost) {
         viewer.sendSystemMessage(Component.literal("Je hebt geen ")
-            .append(Component.literal("€750.000").withStyle(ChatFormatting.GOLD))
+            .append(Component.literal("€1.000.000").withStyle(ChatFormatting.GOLD))
             .append("!").withStyle(ChatFormatting.RED));
         return;
     }
 
     if (eco.removeMoney(uuid, cost)) {
         KIT_COOLDOWNS.put(kitKey, now + KIT_COOLDOWN_TIME);
-        giveKitItems();
+        giveNetheriteKitItems();
         
         viewer.sendSystemMessage(Component.literal("Netherite Kit gekocht voor ")
-            .append(Component.literal("€750.000").withStyle(ChatFormatting.GOLD))
+            .append(Component.literal("€1.000.000").withStyle(ChatFormatting.GOLD))
             .append("!").withStyle(ChatFormatting.GREEN));
         sendPrivateSound(SoundEvents.EXPERIENCE_ORB_PICKUP);
     }
 }
 
-        private void giveKitItems() {
+        private void giveNetheriteKitItems() {
             HolderLookup.Provider p = viewer.registryAccess();
             Inventory inv = viewer.getInventory();
             inv.add(createEnchanted(Items.NETHERITE_HELMET, p, Map.of(Enchantments.PROTECTION, 4, Enchantments.UNBREAKING, 3, Enchantments.AQUA_AFFINITY, 1, Enchantments.RESPIRATION, 3, Enchantments.MENDING, 1)));
