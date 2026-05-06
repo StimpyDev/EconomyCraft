@@ -403,9 +403,9 @@ private void updatePage() {
                 starterLore.add(Component.literal("Prijs: ").withStyle(ChatFormatting.GREEN).append(Component.literal("GRATIS").withStyle(ChatFormatting.GOLD)));
                 starterLore.add(Component.literal("Cooldown: Eenmalig Gebruik").withStyle(ChatFormatting.RED));
                 starterLore.add(Component.literal("Inhoud:").withStyle(ChatFormatting.GRAY));
-                starterLore.add(Component.literal("- Full Diamond Kit (Prot 1)").withStyle(ChatFormatting.DARK_GRAY));
+                starterLore.add(Component.literal("- Diamond Kit (Prot 1)").withStyle(ChatFormatting.DARK_GRAY));
                 starterLore.add(Component.literal("- Diamond Tools (Sharp 1 / Eff 1)").withStyle(ChatFormatting.DARK_GRAY));
-                starterLore.add(Component.literal("- Shield & 32 Steak").withStyle(ChatFormatting.DARK_GRAY));
+                starterLore.add(Component.literal("- Shield & 32 Cooked Steak").withStyle(ChatFormatting.DARK_GRAY));
                 starterKit.set(DataComponents.LORE, new ItemLore(starterLore));
                 
                 container.setItem(2, starterKit);
@@ -421,18 +421,19 @@ private void updatePage() {
                tntMinecartLore.add(Component.literal("- Shulker met 27 TNT Minecarts").withStyle(ChatFormatting.DARK_GRAY));
                tntMinecartLore.add(Component.literal("- Enchanted bow & crossbow").withStyle(ChatFormatting.DARK_GRAY));
                tntMinecartLore.add(Component.literal("- 64 Powered rails & 64 normale rails").withStyle(ChatFormatting.DARK_GRAY));
+                tntMinecartLore.add(Component.literal("- 64 Arrows").withStyle(ChatFormatting.DARK_GRAY));
 
                tntMinecartKit.set(DataComponents.LORE, new ItemLore(tntMinecartLore));
                container.setItem(6, tntMinecartKit);
 
                 ItemStack kit = new ItemStack(Items.NETHERITE_CHESTPLATE);
-                kit.set(DataComponents.CUSTOM_NAME, Component.literal("Full Netherite Kit").withStyle(ChatFormatting.GRAY, ChatFormatting.BOLD));
+                kit.set(DataComponents.CUSTOM_NAME, Component.literal("Netherite Kit").withStyle(ChatFormatting.GRAY, ChatFormatting.BOLD));
                 List<Component> kitLore = new ArrayList<>();
                 kitLore.add(Component.literal("Prijs: ").withStyle(ChatFormatting.GREEN).append(Component.literal("€1.000.000").withStyle(ChatFormatting.GOLD)));
                 kitLore.add(Component.literal("Cooldown: 1 uur").withStyle(ChatFormatting.RED));
                 kitLore.add(Component.literal("Inhoud:").withStyle(ChatFormatting.GRAY));
-                kitLore.add(Component.literal("- Full Netherite Kit").withStyle(ChatFormatting.DARK_GRAY));
-                kitLore.add(Component.literal("- Netherite Spear").withStyle(ChatFormatting.DARK_GRAY));
+                kitLore.add(Component.literal("- Netherite Kit").withStyle(ChatFormatting.DARK_GRAY));
+                kitLore.add(Component.literal("- Netherite Speer").withStyle(ChatFormatting.DARK_GRAY));
                 kitLore.add(Component.literal("- Netherite Zwaard").withStyle(ChatFormatting.DARK_GRAY));
                 kitLore.add(Component.literal("- Netherite Axe").withStyle(ChatFormatting.DARK_GRAY));
                 kit.set(DataComponents.LORE, new ItemLore(kitLore));
@@ -509,7 +510,7 @@ private void handleTntMinecartKitPurchase() {
     
     if (KIT_COOLDOWNS.getOrDefault(kitKey, 0L) > now) {
         long waitMinutes = (KIT_COOLDOWNS.get(kitKey) - now) / 60000;
-        viewer.sendSystemMessage(Component.literal("Wacht nog " + waitMinutes + " minuten voor de Tnt minecart Kit.")
+        viewer.sendSystemMessage(Component.literal("Wacht nog " + waitMinutes + " minuten voor de Tnt Minecart Kit.")
             .withStyle(ChatFormatting.RED));
         return;
     }
@@ -547,27 +548,29 @@ private void giveTntMinecartKitItems() {
     inv.add(new ItemStack(Items.RAIL, 64));
 
     ItemStack flintAndSteel = new ItemStack(Items.FLINT_AND_STEEL);
-    flintAndSteel.set(DataComponents.ENCHANTMENTS, ItemEnchantments.builder()
-        .with(Enchantments.UNBREAKING, 3)
-        .with(Enchantments.MENDING, 1)
-        .build());
+    flintAndSteel.set(DataComponents.ENCHANTMENTS, new ItemEnchantments.Mutable(ItemEnchantments.EMPTY)
+            .with(Enchantments.UNBREAKING, 3)
+            .with(Enchantments.MENDING, 1)
+            .toImmutable());
     inv.add(flintAndSteel);
 
     ItemStack crossbow = new ItemStack(Items.CROSSBOW);
-    crossbow.set(DataComponents.ENCHANTMENTS, ItemEnchantments.builder()
+    crossbow.set(DataComponents.ENCHANTMENTS, new ItemEnchantments.Mutable(ItemEnchantments.EMPTY)
             .with(Enchantments.QUICK_CHARGE, 3)
             .with(Enchantments.UNBREAKING, 3)
             .with(Enchantments.MENDING, 1)
-            .build());
+            .toImmutable());
     inv.add(crossbow);
 
     ItemStack bow = new ItemStack(Items.BOW);
-    bow.set(DataComponents.ENCHANTMENTS, ItemEnchantments.builder()
+    bow.set(DataComponents.ENCHANTMENTS, new ItemEnchantments.Mutable(ItemEnchantments.EMPTY)
             .with(Enchantments.UNBREAKING, 3)
             .with(Enchantments.FLAME, 1)
             .with(Enchantments.INFINITY, 1)
-            .build());
+            .toImmutable());
     inv.add(bow);
+
+    inv.add(new ItemStack(Items.ARROW, 64));
 }
 
 private void handleStarterKitPurchase() {
