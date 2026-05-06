@@ -184,41 +184,47 @@ public final class EconomyCommands {
                                         LongArgumentType.getLong(ctx, "amount"), ctx.getSource()))));
     }
 
-    private static int showBalance(IdentityCompat.PlayerRef target, CommandSourceStack source) {
-        EconomyManager manager = EconomyCraft.getManager(source.getServer());
-        Long bal = manager.getBalance(target.id(), false);
-        if (bal == null) {
-            source.sendFailure(Component.literal("Onbekende speler!").withStyle(ChatFormatting.RED));
-            return 0;
-        }
-
-        ServerPlayer executor;
-        try {
-            executor = source.getPlayerOrException();
-        } catch (Exception e) {
-            executor = null;
-        }
-
-        Component msg;
-        if (executor != null && executor.getUUID().equals(target.id())) {
-            msg = Component.literal("Jouw Saldo: ")
-                    .withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD)
-                    .append(Component.literal(EconomyCraft.formatMoney(bal))
-                            .withStyle(ChatFormatting.ITALIC)
-                            .withStyle(style -> style.withBold(false)));
-        } else {
-            msg = Component.literal(target.name() + "'s Saldo: " + EconomyCraft.formatMoney(bal))
-                    .withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD);
-        }
-
-        if (executor != null) {
-            executor.sendSystemMessage(msg);
-        } else {
-            source.sendSuccess(() -> msg, false);
-        }
-
-        return 1;
+private static int showBalance(IdentityCompat.PlayerRef target, CommandSourceStack source) {
+    EconomyManager manager = EconomyCraft.getManager(source.getServer());
+    Long bal = manager.getBalance(target.id(), false);
+    
+    if (bal == null) {
+        source.sendFailure(Component.literal("Onbekende speler!").withStyle(ChatFormatting.RED));
+        return 0;
     }
+
+    ServerPlayer executor;
+    try {
+        executor = source.getPlayerOrException();
+    } catch (Exception e) {
+        executor = null;
+    }
+
+    MutableComponent finalMsg = Component.literal("\n\n\n");
+    
+    Component balanceContent;
+    if (executor != null && executor.getUUID().equals(target.id())) {
+        balanceContent = Component.literal("Jouw Saldo: ")
+                .withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD)
+                .append(Component.literal(EconomyCraft.formatMoney(bal))
+                        .withStyle(style -> style.withBold(true)));
+    } else {
+        balanceContent = Component.literal(target.name() + "'s Saldo: ")
+                .withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD)
+                .append(Component.literal(EconomyCraft.formatMoney(bal))
+                        .withStyle(style -> style.withBold(true)));
+    }
+
+    finalMsg.append(balanceContent).append(Component.literal("\n\n\n"));
+
+    if (executor != null) {
+        executor.sendSystemMessage(finalMsg);
+    } else {
+        source.sendSuccess(() -> finalMsg, false);
+    }
+
+    return 1;
+}
     private static int balTop(CommandSourceStack source) {
     EconomyManager manager = EconomyCraft.getManager(source.getServer());
     Map<UUID, Long> balances = manager.getBalances();
