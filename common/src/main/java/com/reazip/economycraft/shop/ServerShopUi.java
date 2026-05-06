@@ -535,6 +535,7 @@ private void handleTntMinecartKitPurchase() {
 }
         
 private void giveTntMinecartKitItems() {
+    HolderLookup.Provider p = viewer.registryAccess();
     Inventory inv = viewer.getInventory();
     
     List<ItemStack> shulkerItems = new ArrayList<>();
@@ -547,28 +548,22 @@ private void giveTntMinecartKitItems() {
     inv.add(new ItemStack(Items.POWERED_RAIL, 64));
     inv.add(new ItemStack(Items.RAIL, 64));
 
-    ItemStack flintAndSteel = new ItemStack(Items.FLINT_AND_STEEL);
-    flintAndSteel.set(DataComponents.ENCHANTMENTS, new ItemEnchantments.Mutable(ItemEnchantments.EMPTY)
-            .with(Enchantments.UNBREAKING, 3)
-            .with(Enchantments.MENDING, 1)
-            .toImmutable());
-    inv.add(flintAndSteel);
+    inv.add(createEnchanted(Items.FLINT_AND_STEEL, p, Map.of(
+            Enchantments.UNBREAKING, 3,
+            Enchantments.MENDING, 1
+    )));
 
-    ItemStack crossbow = new ItemStack(Items.CROSSBOW);
-    crossbow.set(DataComponents.ENCHANTMENTS, new ItemEnchantments.Mutable(ItemEnchantments.EMPTY)
-            .with(Enchantments.QUICK_CHARGE, 3)
-            .with(Enchantments.UNBREAKING, 3)
-            .with(Enchantments.MENDING, 1)
-            .toImmutable());
-    inv.add(crossbow);
+    inv.add(createEnchanted(Items.CROSSBOW, p, Map.of(
+            Enchantments.QUICK_CHARGE, 3,
+            Enchantments.UNBREAKING, 3,
+            Enchantments.MENDING, 1
+    )));
 
-    ItemStack bow = new ItemStack(Items.BOW);
-    bow.set(DataComponents.ENCHANTMENTS, new ItemEnchantments.Mutable(ItemEnchantments.EMPTY)
-            .with(Enchantments.UNBREAKING, 3)
-            .with(Enchantments.FLAME, 1)
-            .with(Enchantments.INFINITY, 1)
-            .toImmutable());
-    inv.add(bow);
+    inv.add(createEnchanted(Items.BOW, p, Map.of(
+            Enchantments.UNBREAKING, 3,
+            Enchantments.FLAME, 1,
+            Enchantments.INFINITY, 1
+    )));
 
     inv.add(new ItemStack(Items.ARROW, 64));
 }
