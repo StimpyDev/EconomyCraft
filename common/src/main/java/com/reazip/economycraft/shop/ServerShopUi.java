@@ -288,19 +288,29 @@ private void updatePage() {
             updatePage();
         }
 
-        private void setupSlots(Inventory inv) {
-            for (int i = 0; i < rows * 9; i++) {
-                int r = i / 9, c = i % 9;
-                this.addSlot(new Slot(container, i, 8 + c * 18, 18 + r * 18) {
-                    @Override public boolean mayPickup(Player player) { return false; }
-                    @Override public boolean mayPlace(ItemStack stack) { return false; }
-                });
-            }
-            int y = 18 + rows * 18 + 14;
-            for (int r = 0; r < 3; r++) for (int c = 0; c < 9; c++) 
-                this.addSlot(new Slot(inv, c + r * 9 + 9, 8 + c * 18, y + r * 18));
-            for (int c = 0; c < 9; c++) this.addSlot(new Slot(inv, c, 8 + c * 18, y + 58));
+private void setupSlots(Inventory inv) {
+    for (int i = 0; i < container.getContainerSize(); i++) {
+        int r = i / 9;
+        int c = i % 9;
+        this.addSlot(new Slot(container, i, 8 + c * 18, 18 + r * 18) {
+            @Override public boolean mayPickup(Player player) { return false; }
+            @Override public boolean mayPlace(ItemStack stack) { return false; }
+        });
+    }
+
+    int playerInvStartTop = 18 + (rows * 18) + 14;
+
+    for (int r = 0; r < 3; r++) {
+        for (int c = 0; c < 9; c++) {
+            this.addSlot(new Slot(inv, c + r * 9 + 9, 8 + c * 18, playerInvStartTop + r * 18));
         }
+    }
+
+    int hotbarTop = playerInvStartTop + 58;
+    for (int c = 0; c < 9; c++) {
+        this.addSlot(new Slot(inv, c, 8 + c * 18, hotbarTop));
+    }
+}
 
         private void updatePage() {
             container.clearContent();
