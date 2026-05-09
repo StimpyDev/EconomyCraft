@@ -194,16 +194,24 @@ public final class ServerShopUi {
 private void updatePage() {
     container.clearContent();
     java.util.Arrays.fill(slotToIndex, -1);
+    List<String> currentCategories = new java.util.ArrayList<>(categories);
+    
+    if (currentCategories.remove("Drops")) {
+        currentCategories.remove("Redstone");
+        currentCategories.add("Drops");
+        currentCategories.add("Redstone");
+    }
+
     int start = page * itemsPerPage;
-    int totalPages = (int) Math.ceil(categories.size() / (double) itemsPerPage);
+    int totalPages = (int) Math.ceil(currentCategories.size() / (double) itemsPerPage);
     int filledCount = 0;
 
-    for (int i = 0; i < categories.size(); i++) {
+    for (int i = 0; i < currentCategories.size(); i++) {
         if (filledCount >= itemsPerPage) break;
         int idx = start + i;
-        if (idx >= categories.size()) break;
+        if (idx >= currentCategories.size()) break;
 
-        String cat = categories.get(idx);
+        String cat = currentCategories.get(idx);
         ItemStack icon = createCategoryIcon(cat, cat, prices, viewer);
         
         if (icon.isEmpty() || icon.is(Items.AIR)) continue;
@@ -211,7 +219,7 @@ private void updatePage() {
         icon.set(DataComponents.CUSTOM_NAME, Component.literal(formatCategoryTitle(cat))
             .withStyle(s -> s.withItalic(false).withColor(getCategoryColor(cat)).withBold(true)));
         icon.set(DataComponents.LORE, new ItemLore(List.of(Component.literal("Klik om artikelen te bekijken").withStyle(s -> s.withItalic(false)))));
-        
+
         int slot = STAR_SLOT_ORDER.get(filledCount);
         container.setItem(slot, icon);
         slotToIndex[slot] = idx;
@@ -223,7 +231,7 @@ private void updatePage() {
         prev.set(DataComponents.CUSTOM_NAME, Component.literal("Vorige pagina").withStyle(s -> s.withItalic(false)));
         container.setItem(navRowStart + 3, prev);
     }
-    if (start + itemsPerPage < categories.size()) {
+    if (start + itemsPerPage < currentCategories.size()) {
         ItemStack next = new ItemStack(Items.ARROW);
         next.set(DataComponents.CUSTOM_NAME, Component.literal("Volgende pagina").withStyle(s -> s.withItalic(false)));
         container.setItem(navRowStart + 5, next);
@@ -906,13 +914,13 @@ private static ChatFormatting getCategoryColor(String key) {
     public static void clearPlayerCooldowns(UUID uuid) {
     KIT_COOLDOWNS.remove(uuid);
 }
-
+    
 private static List<Integer> buildStarSlotOrder(int rows) {
     List<Integer> order = new ArrayList<>();
     int centerX = 4;
-    int centerY = 3;
+    int centerY = 2; 
 
-    for (int i = 9; i < 54; i++) {
+    for (int i = 0; i < 54; i++) {
         order.add(i);
     }
 
@@ -921,6 +929,7 @@ private static List<Integer> buildStarSlotOrder(int rows) {
         int y = slot / 9;
         return Math.abs(x - centerX) + Math.abs(y - centerY);
     }));
+    
     return order;
     }
 }
