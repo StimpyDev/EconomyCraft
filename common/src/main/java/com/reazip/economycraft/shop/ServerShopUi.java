@@ -922,4 +922,5 @@ private static List<Integer> buildStarSlotOrder(int rows) {
         return Math.abs(x - centerX) + Math.abs(y - centerY);
     }));
     return order;
+    }
 }
