@@ -907,18 +907,19 @@ private static ChatFormatting getCategoryColor(String key) {
     KIT_COOLDOWNS.remove(uuid);
 }
 
-    private static List<Integer> buildStarSlotOrder(int rows) {
-        List<Integer> order = new ArrayList<>();
-        int centerX = 4;
-        int centerY = 2;
-        for (int i = 0; i < 45; i++) {
-            order.add(i);
-        }
-        order.sort(Comparator.comparingInt(slot -> {
-            int x = slot % 9;
-            int y = slot / 9;
-            return Math.abs(x - centerX) + Math.abs(y - centerY);
-        }));
-        return order;
+private static List<Integer> buildStarSlotOrder(int rows) {
+    List<Integer> order = new ArrayList<>();
+    int centerX = 4;
+    int centerY = 3;
+
+    for (int i = 9; i < 54; i++) {
+        order.add(i);
     }
+
+    order.sort(Comparator.comparingInt(slot -> {
+        int x = slot % 9;
+        int y = slot / 9;
+        return Math.abs(x - centerX) + Math.abs(y - centerY);
+    }));
+    return order;
 }
