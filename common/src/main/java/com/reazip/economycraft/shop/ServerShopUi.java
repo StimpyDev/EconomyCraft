@@ -393,52 +393,67 @@ private void updatePage() {
             for (int c = 0; c < 9; c++) this.addSlot(new Slot(inv, c, 8 + c * 18, y + 58));
         }
         
-        private void updatePage() {
-            container.clearContent();
-            if (category.equalsIgnoreCase("kits")) {
-                ItemStack starterKit = new ItemStack(Items.DIAMOND_CHESTPLATE);
-                starterKit.set(DataComponents.CUSTOM_NAME, Component.literal("Starter Kit").withStyle(ChatFormatting.AQUA, ChatFormatting.BOLD));
-                starterKit.set(DataComponents.ENCHANTMENT_GLINT_OVERRIDE, true);          
-                List<Component> starterLore = new ArrayList<>();
-                starterLore.add(Component.literal("Prijs: ").withStyle(ChatFormatting.GREEN).append(Component.literal("GRATIS").withStyle(ChatFormatting.GOLD)));
-                starterLore.add(Component.literal("Cooldown: Eenmalig Gebruik").withStyle(ChatFormatting.RED));
-                starterLore.add(Component.literal("Inhoud:").withStyle(ChatFormatting.GRAY));
-                starterLore.add(Component.literal("- Diamond Kit (Prot 1)").withStyle(ChatFormatting.DARK_GRAY));
-                starterLore.add(Component.literal("- Diamond Tools (Sharp 1 / Eff 1)").withStyle(ChatFormatting.DARK_GRAY));
-                starterLore.add(Component.literal("- Shield & 32 Cooked Steak").withStyle(ChatFormatting.DARK_GRAY));
-                starterKit.set(DataComponents.LORE, new ItemLore(starterLore));
-                
-                container.setItem(2, starterKit);
+private void updatePage() {
+    container.clearContent();
+    if (category.equalsIgnoreCase("kits")) {
+        // --- STARTER KIT ---
+        ItemStack starterKit = new ItemStack(Items.DIAMOND_CHESTPLATE);
+        starterKit.set(DataComponents.CUSTOM_NAME, Component.literal("Starter Kit")
+            .withStyle(ChatFormatting.AQUA, ChatFormatting.BOLD)
+            .withStyle(style -> style.withItalic(false)));
+        starterKit.set(DataComponents.ENCHANTMENT_GLINT_OVERRIDE, true);          
+        
+        List<Component> starterLore = new ArrayList<>();
+        starterLore.add(Component.literal("Prijs: ").withStyle(ChatFormatting.GREEN).withStyle(s -> s.withItalic(false))
+            .append(Component.literal("GRATIS").withStyle(ChatFormatting.GOLD).withStyle(s -> s.withItalic(false))));
+        starterLore.add(Component.literal("Cooldown: Eenmalig Gebruik").withStyle(ChatFormatting.RED, ChatFormatting.ITALIC.set(false)));
+        starterLore.add(Component.literal("Inhoud:").withStyle(ChatFormatting.GRAY).withStyle(s -> s.withItalic(false)));
+        starterLore.add(Component.literal("- Diamond Kit (Prot 1)").withStyle(ChatFormatting.DARK_GRAY).withStyle(s -> s.withItalic(false)));
+        starterLore.add(Component.literal("- Diamond Tools (Sharp 1 / Eff 1)").withStyle(ChatFormatting.DARK_GRAY).withStyle(s -> s.withItalic(false)));
+        starterLore.add(Component.literal("- Shield & 32 Cooked Steak").withStyle(ChatFormatting.DARK_GRAY).withStyle(s -> s.withItalic(false)));
+        starterKit.set(DataComponents.LORE, new ItemLore(starterLore));
+        
+        container.setItem(2, starterKit);
 
-               ItemStack tntMinecartKit = new ItemStack(Items.TNT_MINECART);
-               tntMinecartKit.set(DataComponents.CUSTOM_NAME, Component.literal("Tnt Minecart Kit").withStyle(ChatFormatting.RED, ChatFormatting.BOLD));
-               tntMinecartKit.set(DataComponents.ENCHANTMENT_GLINT_OVERRIDE, true); 
+        // --- TNT MINECART KIT ---
+        ItemStack tntMinecartKit = new ItemStack(Items.TNT_MINECART);
+        tntMinecartKit.set(DataComponents.CUSTOM_NAME, Component.literal("Tnt Minecart Kit")
+            .withStyle(ChatFormatting.RED, ChatFormatting.BOLD)
+            .withStyle(s -> s.withItalic(false)));
+        tntMinecartKit.set(DataComponents.ENCHANTMENT_GLINT_OVERRIDE, true); 
 
-               List<Component> tntMinecartLore = new ArrayList<>();
-               tntMinecartLore.add(Component.literal("Prijs: ").withStyle(ChatFormatting.GREEN).append(Component.literal("€600.000").withStyle(ChatFormatting.GOLD)));
-               tntMinecartLore.add(Component.literal("Cooldown: 1 uur").withStyle(ChatFormatting.RED));
-               tntMinecartLore.add(Component.literal("Inhoud:").withStyle(ChatFormatting.GRAY));
-               tntMinecartLore.add(Component.literal("- Shulker met 27 TNT Minecarts").withStyle(ChatFormatting.DARK_GRAY));
-               tntMinecartLore.add(Component.literal("- Enchanted bow & crossbow").withStyle(ChatFormatting.DARK_GRAY));
-               tntMinecartLore.add(Component.literal("- 64 Powered rails & 64 normale rails").withStyle(ChatFormatting.DARK_GRAY));
-                tntMinecartLore.add(Component.literal("- 64 Arrows").withStyle(ChatFormatting.DARK_GRAY));
+        List<Component> tntMinecartLore = new ArrayList<>();
+        tntMinecartLore.add(Component.literal("Prijs: ").withStyle(ChatFormatting.GREEN).withStyle(s -> s.withItalic(false))
+            .append(Component.literal("€600.000").withStyle(ChatFormatting.GOLD).withStyle(s -> s.withItalic(false))));
+        tntMinecartLore.add(Component.literal("Cooldown: 1 uur").withStyle(ChatFormatting.RED).withStyle(s -> s.withItalic(false)));
+        tntMinecartLore.add(Component.literal("Inhoud:").withStyle(ChatFormatting.GRAY).withStyle(s -> s.withItalic(false)));
+        tntMinecartLore.add(Component.literal("- Shulker met 27 TNT Minecarts").withStyle(ChatFormatting.DARK_GRAY).withStyle(s -> s.withItalic(false)));
+        tntMinecartLore.add(Component.literal("- Enchanted bow & crossbow").withStyle(ChatFormatting.DARK_GRAY).withStyle(s -> s.withItalic(false)));
+        tntMinecartLore.add(Component.literal("- 64 Powered rails & 64 normale rails").withStyle(ChatFormatting.DARK_GRAY).withStyle(s -> s.withItalic(false)));
+        tntMinecartLore.add(Component.literal("- 64 Arrows").withStyle(ChatFormatting.DARK_GRAY).withStyle(s -> s.withItalic(false)));
 
-               tntMinecartKit.set(DataComponents.LORE, new ItemLore(tntMinecartLore));
-               container.setItem(6, tntMinecartKit);
+        tntMinecartKit.set(DataComponents.LORE, new ItemLore(tntMinecartLore));
+        container.setItem(6, tntMinecartKit);
 
-                ItemStack kit = new ItemStack(Items.NETHERITE_CHESTPLATE);
-                kit.set(DataComponents.CUSTOM_NAME, Component.literal("Netherite Kit").withStyle(ChatFormatting.GRAY, ChatFormatting.BOLD));
-                List<Component> kitLore = new ArrayList<>();
-                kitLore.add(Component.literal("Prijs: ").withStyle(ChatFormatting.GREEN).append(Component.literal("€1.000.000").withStyle(ChatFormatting.GOLD)));
-                kitLore.add(Component.literal("Cooldown: 1 uur").withStyle(ChatFormatting.RED));
-                kitLore.add(Component.literal("Inhoud:").withStyle(ChatFormatting.GRAY));
-                kitLore.add(Component.literal("- Netherite Kit").withStyle(ChatFormatting.DARK_GRAY));
-                kitLore.add(Component.literal("- Netherite Speer").withStyle(ChatFormatting.DARK_GRAY));
-                kitLore.add(Component.literal("- Netherite Zwaard").withStyle(ChatFormatting.DARK_GRAY));
-                kitLore.add(Component.literal("- Netherite Axe").withStyle(ChatFormatting.DARK_GRAY));
-                kit.set(DataComponents.LORE, new ItemLore(kitLore));
-                kit.set(DataComponents.ENCHANTMENT_GLINT_OVERRIDE, true);
-                container.setItem(4, kit);
+        // --- NETHERITE KIT ---
+        ItemStack kit = new ItemStack(Items.NETHERITE_CHESTPLATE);
+        kit.set(DataComponents.CUSTOM_NAME, Component.literal("Netherite Kit")
+            .withStyle(ChatFormatting.GRAY, ChatFormatting.BOLD)
+            .withStyle(s -> s.withItalic(false)));
+        
+        List<Component> kitLore = new ArrayList<>();
+        kitLore.add(Component.literal("Prijs: ").withStyle(ChatFormatting.GREEN).withStyle(s -> s.withItalic(false))
+            .append(Component.literal("€1.000.000").withStyle(ChatFormatting.GOLD).withStyle(s -> s.withItalic(false))));
+        kitLore.add(Component.literal("Cooldown: 1 uur").withStyle(ChatFormatting.RED).withStyle(s -> s.withItalic(false)));
+        kitLore.add(Component.literal("Inhoud:").withStyle(ChatFormatting.GRAY).withStyle(s -> s.withItalic(false)));
+        kitLore.add(Component.literal("- Netherite Kit").withStyle(ChatFormatting.DARK_GRAY).withStyle(s -> s.withItalic(false)));
+        kitLore.add(Component.literal("- Netherite Speer").withStyle(ChatFormatting.DARK_GRAY).withStyle(s -> s.withItalic(false)));
+        kitLore.add(Component.literal("- Netherite Zwaard").withStyle(ChatFormatting.DARK_GRAY).withStyle(s -> s.withItalic(false)));
+        kitLore.add(Component.literal("- Netherite Axe").withStyle(ChatFormatting.DARK_GRAY).withStyle(s -> s.withItalic(false)));
+        
+        kit.set(DataComponents.LORE, new ItemLore(kitLore));
+        kit.set(DataComponents.ENCHANTMENT_GLINT_OVERRIDE, true);
+        container.setItem(4, kit);
             } else {
                 int start = page * itemsPerPage;
                 int totalPages = (int) Math.ceil(entries.size() / (double) itemsPerPage);
