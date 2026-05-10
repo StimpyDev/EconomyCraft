@@ -486,7 +486,7 @@ private void updatePage() {
             }
             
             List<Component> nonItalicLore = lore.stream()
-                .map(comp -> comp.copy().withStyle(s -> s.withItalic(false)))
+                .map(comp -> (Component) comp.copy().withStyle(s -> s.withItalic(false)))
                 .toList();
 
             display.set(DataComponents.LORE, new ItemLore(nonItalicLore));
