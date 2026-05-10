@@ -395,6 +395,7 @@ private void updatePage() {
         
 private void updatePage() {
     container.clearContent();
+    
     if (category.equalsIgnoreCase("kits")) {
         // --- STARTER KIT ---
         ItemStack starterKit = new ItemStack(Items.DIAMOND_CHESTPLATE);
@@ -406,7 +407,11 @@ private void updatePage() {
         List<Component> starterLore = new ArrayList<>();
         starterLore.add(Component.literal("Prijs: ").withStyle(ChatFormatting.GREEN).withStyle(s -> s.withItalic(false))
             .append(Component.literal("GRATIS").withStyle(ChatFormatting.GOLD).withStyle(s -> s.withItalic(false))));
-        starterLore.add(Component.literal("Cooldown: Eenmalig Gebruik").withStyle(ChatFormatting.RED, ChatFormatting.ITALIC.set(false)));
+
+        starterLore.add(Component.literal("Cooldown: Eenmalig Gebruik")
+            .withStyle(ChatFormatting.RED)
+            .withStyle(s -> s.withItalic(false)));
+            
         starterLore.add(Component.literal("Inhoud:").withStyle(ChatFormatting.GRAY).withStyle(s -> s.withItalic(false)));
         starterLore.add(Component.literal("- Diamond Kit (Prot 1)").withStyle(ChatFormatting.DARK_GRAY).withStyle(s -> s.withItalic(false)));
         starterLore.add(Component.literal("- Diamond Tools (Sharp 1 / Eff 1)").withStyle(ChatFormatting.DARK_GRAY).withStyle(s -> s.withItalic(false)));
@@ -454,44 +459,69 @@ private void updatePage() {
         kit.set(DataComponents.LORE, new ItemLore(kitLore));
         kit.set(DataComponents.ENCHANTMENT_GLINT_OVERRIDE, true);
         container.setItem(4, kit);
-            } else {
-                int start = page * itemsPerPage;
-                int totalPages = (int) Math.ceil(entries.size() / (double) itemsPerPage);
-                for (int i = 0; i < itemsPerPage; i++) {
-                    int idx = start + i;
-                    if (idx >= entries.size()) break;
-                    PriceRegistry.PriceEntry entry = entries.get(idx);
-                    ItemStack display = createDisplayStack(entry, viewer);
-                    if (display.isEmpty()) continue;
-                    int stackSize = Math.max(1, entry.stack());
-                    List<Component> lore = new ArrayList<>();
-                    lore.add(labeledValue("Koop", EconomyCraft.formatMoney(entry.unitBuy()), LABEL_PRIMARY_COLOR));
-                    Long stackPrice = safeMultiply(entry.unitBuy(), stackSize);
-                    if (stackSize > 1 && stackPrice != null) lore.add(labeledValue("Stack (" + stackSize + ")", EconomyCraft.formatMoney(stackPrice), LABEL_PRIMARY_COLOR));
-                    lore.add(labeledValue("Linker muis", "Koop 1", LABEL_SECONDARY_COLOR));
-                    if (stackSize > 1) lore.add(labeledValue("Shift-klik", "Koop " + stackSize, LABEL_SECONDARY_COLOR));
-                    display.set(DataComponents.LORE, new ItemLore(lore));
-                    container.setItem(i, display);
-                }
-                ItemStack paper = new ItemStack(Items.PAPER);
-                paper.set(DataComponents.CUSTOM_NAME, Component.literal("Pagina " + (page + 1) + "/" + Math.max(1, totalPages)).withStyle(s -> s.withItalic(false)));
-                container.setItem(navRowStart + 4, paper);
+
+    } else {
+        int start = page * itemsPerPage;
+        int totalPages = (int) Math.ceil(entries.size() / (double) itemsPerPage);
+        for (int i = 0; i < itemsPerPage; i++) {
+            int idx = start + i;
+            if (idx >= entries.size()) break;
+            PriceRegistry.PriceEntry entry = entries.get(idx);
+            ItemStack display = createDisplayStack(entry, viewer);
+            if (display.isEmpty()) continue;
+            
+            int stackSize = Math.max(1, entry.stack());
+            List<Component> lore = new ArrayList<>();
+            
+            lore.add(labeledValue("Koop", EconomyCraft.formatMoney(entry.unitBuy()), LABEL_PRIMARY_COLOR));
+            
+            Long stackPrice = safeMultiply(entry.unitBuy(), stackSize);
+            if (stackSize > 1 && stackPrice != null) {
+                lore.add(labeledValue("Stack (" + stackSize + ")", EconomyCraft.formatMoney(stackPrice), LABEL_PRIMARY_COLOR));
             }
-            if (page > 0) {
-                ItemStack prev = new ItemStack(Items.ARROW);
-                prev.set(DataComponents.CUSTOM_NAME, Component.literal("Vorige pagina").withStyle(s -> s.withItalic(false)));
-                container.setItem(navRowStart + 3, prev);
+            
+            lore.add(labeledValue("Linker muis", "Koop 1", LABEL_SECONDARY_COLOR));
+            if (stackSize > 1) {
+                lore.add(labeledValue("Shift-klik", "Koop " + stackSize, LABEL_SECONDARY_COLOR));
             }
-            if (!category.equalsIgnoreCase("kits") && (page + 1) * itemsPerPage < entries.size()) {
-                ItemStack next = new ItemStack(Items.ARROW);
-                next.set(DataComponents.CUSTOM_NAME, Component.literal("Volgende pagina").withStyle(s -> s.withItalic(false)));
-                container.setItem(navRowStart + 5, next);
-            }
-            ItemStack back = new ItemStack(Items.BARRIER);
-            back.set(DataComponents.CUSTOM_NAME, Component.literal("Terug").withStyle(s -> s.withItalic(false).withColor(ChatFormatting.DARK_RED).withBold(true)));
-            container.setItem(navRowStart + 8, back);
-            container.setItem(navRowStart, createBalanceItem(viewer));
+            
+            List<Component> nonItalicLore = lore.stream()
+                .map(comp -> comp.copy().withStyle(s -> s.withItalic(false)))
+                .toList();
+
+            display.set(DataComponents.LORE, new ItemLore(nonItalicLore));
+            container.setItem(i, display);
         }
+
+        ItemStack paper = new ItemStack(Items.PAPER);
+        paper.set(DataComponents.CUSTOM_NAME, Component.literal("Pagina " + (page + 1) + "/" + Math.max(1, totalPages))
+            .withStyle(s -> s.withItalic(false)));
+        container.setItem(navRowStart + 4, paper);
+    }
+
+    if (page > 0) {
+        ItemStack prev = new ItemStack(Items.ARROW);
+        prev.set(DataComponents.CUSTOM_NAME, Component.literal("Vorige pagina")
+            .withStyle(s -> s.withItalic(false)));
+        container.setItem(navRowStart + 3, prev);
+    }
+
+    if (!category.equalsIgnoreCase("kits") && (page + 1) * itemsPerPage < entries.size()) {
+        ItemStack next = new ItemStack(Items.ARROW);
+        next.set(DataComponents.CUSTOM_NAME, Component.literal("Volgende pagina")
+            .withStyle(s -> s.withItalic(false)));
+        container.setItem(navRowStart + 5, next);
+    }
+
+    ItemStack back = new ItemStack(Items.BARRIER);
+    back.set(DataComponents.CUSTOM_NAME, Component.literal("Terug")
+        .withStyle(s -> s.withItalic(false)
+            .withColor(ChatFormatting.DARK_RED)
+            .withBold(true)));
+    container.setItem(navRowStart + 8, back);
+
+    container.setItem(navRowStart, createBalanceItem(viewer));
+}
 
 @Override public void clicked(int slot, int dragType, ClickType type, Player player) {
             if (slot < 0 || slot >= navRowStart + 9) { super.clicked(slot, dragType, type, player); return; }
