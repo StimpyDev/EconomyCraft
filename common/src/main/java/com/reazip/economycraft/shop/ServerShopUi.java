@@ -194,25 +194,16 @@ public final class ServerShopUi {
 private void updatePage() {
     container.clearContent();
     java.util.Arrays.fill(slotToIndex, -1);
-    
-    List<String> currentCategories = new java.util.ArrayList<>(categories);
-
-    currentCategories.remove("Redstone");
-    currentCategories.remove("Drops");
-
-    currentCategories.add(0, "Redstone");
-    currentCategories.add(1, "Drops");
-
     int start = page * itemsPerPage;
-    int totalPages = (int) Math.ceil(currentCategories.size() / (double) itemsPerPage);
+    int totalPages = (int) Math.ceil(categories.size() / (double) itemsPerPage);
     int filledCount = 0;
 
-    for (int i = 0; i < currentCategories.size(); i++) {
+    for (int i = 0; i < categories.size(); i++) {
         if (filledCount >= itemsPerPage) break;
         int idx = start + i;
-        if (idx >= currentCategories.size()) break;
+        if (idx >= categories.size()) break;
 
-        String cat = currentCategories.get(idx);
+        String cat = categories.get(idx);
         ItemStack icon = createCategoryIcon(cat, cat, prices, viewer);
         
         if (icon.isEmpty() || icon.is(Items.AIR)) continue;
@@ -220,7 +211,7 @@ private void updatePage() {
         icon.set(DataComponents.CUSTOM_NAME, Component.literal(formatCategoryTitle(cat))
             .withStyle(s -> s.withItalic(false).withColor(getCategoryColor(cat)).withBold(true)));
         icon.set(DataComponents.LORE, new ItemLore(List.of(Component.literal("Klik om artikelen te bekijken").withStyle(s -> s.withItalic(false)))));
-
+        
         int slot = STAR_SLOT_ORDER.get(filledCount);
         container.setItem(slot, icon);
         slotToIndex[slot] = idx;
@@ -232,12 +223,11 @@ private void updatePage() {
         prev.set(DataComponents.CUSTOM_NAME, Component.literal("Vorige pagina").withStyle(s -> s.withItalic(false)));
         container.setItem(navRowStart + 3, prev);
     }
-    if (start + itemsPerPage < currentCategories.size()) {
+    if (start + itemsPerPage < categories.size()) {
         ItemStack next = new ItemStack(Items.ARROW);
         next.set(DataComponents.CUSTOM_NAME, Component.literal("Volgende pagina").withStyle(s -> s.withItalic(false)));
         container.setItem(navRowStart + 5, next);
     }
-    
     container.setItem(navRowStart, createBalanceItem(viewer));
     ItemStack paper = new ItemStack(Items.PAPER);
     paper.set(DataComponents.CUSTOM_NAME, Component.literal("Pagina " + (page + 1) + "/" + Math.max(1, totalPages)).withStyle(s -> s.withItalic(false)));
@@ -298,29 +288,19 @@ private void updatePage() {
             updatePage();
         }
 
-private void setupSlots(Inventory inv) {
-    for (int i = 0; i < container.getContainerSize(); i++) {
-        int r = i / 9;
-        int c = i % 9;
-        this.addSlot(new Slot(container, i, 8 + c * 18, 18 + r * 18) {
-            @Override public boolean mayPickup(Player player) { return false; }
-            @Override public boolean mayPlace(ItemStack stack) { return false; }
-        });
-    }
-
-    int playerInvStartTop = 18 + (rows * 18) + 14;
-
-    for (int r = 0; r < 3; r++) {
-        for (int c = 0; c < 9; c++) {
-            this.addSlot(new Slot(inv, c + r * 9 + 9, 8 + c * 18, playerInvStartTop + r * 18));
+        private void setupSlots(Inventory inv) {
+            for (int i = 0; i < rows * 9; i++) {
+                int r = i / 9, c = i % 9;
+                this.addSlot(new Slot(container, i, 8 + c * 18, 18 + r * 18) {
+                    @Override public boolean mayPickup(Player player) { return false; }
+                    @Override public boolean mayPlace(ItemStack stack) { return false; }
+                });
+            }
+            int y = 18 + rows * 18 + 14;
+            for (int r = 0; r < 3; r++) for (int c = 0; c < 9; c++) 
+                this.addSlot(new Slot(inv, c + r * 9 + 9, 8 + c * 18, y + r * 18));
+            for (int c = 0; c < 9; c++) this.addSlot(new Slot(inv, c, 8 + c * 18, y + 58));
         }
-    }
-
-    int hotbarTop = playerInvStartTop + 58;
-    for (int c = 0; c < 9; c++) {
-        this.addSlot(new Slot(inv, c, 8 + c * 18, hotbarTop));
-    }
-}
 
         private void updatePage() {
             container.clearContent();
@@ -916,22 +896,19 @@ private static ChatFormatting getCategoryColor(String key) {
     public static void clearPlayerCooldowns(UUID uuid) {
     KIT_COOLDOWNS.remove(uuid);
 }
-    
-private static List<Integer> buildStarSlotOrder(int rows) {
-    List<Integer> order = new ArrayList<>();
-    int centerX = 4;
-    int centerY = 2; 
 
-    for (int i = 0; i < 54; i++) {
-        order.add(i);
-    }
-
-    order.sort(Comparator.comparingInt(slot -> {
-        int x = slot % 9;
-        int y = slot / 9;
-        return Math.abs(x - centerX) + Math.abs(y - centerY);
-    }));
-    
-    return order;
+    private static List<Integer> buildStarSlotOrder(int rows) {
+        List<Integer> order = new ArrayList<>();
+        int centerX = 4;
+        int centerY = 2;
+        for (int i = 0; i < 45; i++) {
+            order.add(i);
+        }
+        order.sort(Comparator.comparingInt(slot -> {
+            int x = slot % 9;
+            int y = slot / 9;
+            return Math.abs(x - centerX) + Math.abs(y - centerY);
+        }));
+        return order;
     }
 }
