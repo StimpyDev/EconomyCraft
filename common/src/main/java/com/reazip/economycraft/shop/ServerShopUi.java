@@ -194,13 +194,14 @@ public final class ServerShopUi {
 private void updatePage() {
     container.clearContent();
     java.util.Arrays.fill(slotToIndex, -1);
-    List<String> currentCategories = new java.util.ArrayList<>(categories);
     
-    if (currentCategories.remove("Drops")) {
-        currentCategories.remove("Redstone");
-        currentCategories.add("Drops");
-        currentCategories.add("Redstone");
-    }
+    List<String> currentCategories = new java.util.ArrayList<>(categories);
+
+    currentCategories.remove("Redstone");
+    currentCategories.remove("Drops");
+
+    currentCategories.add(0, "Redstone");
+    currentCategories.add(1, "Drops");
 
     int start = page * itemsPerPage;
     int totalPages = (int) Math.ceil(currentCategories.size() / (double) itemsPerPage);
@@ -236,6 +237,7 @@ private void updatePage() {
         next.set(DataComponents.CUSTOM_NAME, Component.literal("Volgende pagina").withStyle(s -> s.withItalic(false)));
         container.setItem(navRowStart + 5, next);
     }
+    
     container.setItem(navRowStart, createBalanceItem(viewer));
     ItemStack paper = new ItemStack(Items.PAPER);
     paper.set(DataComponents.CUSTOM_NAME, Component.literal("Pagina " + (page + 1) + "/" + Math.max(1, totalPages)).withStyle(s -> s.withItalic(false)));
