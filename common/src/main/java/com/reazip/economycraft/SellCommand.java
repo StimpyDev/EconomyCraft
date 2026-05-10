@@ -162,8 +162,13 @@ public final class SellCommand {
 
         ClickEvent ev = ChatCompat.runCommandEvent("/sell all confirm");
         if (ev != null) {
-            player.sendSystemMessage(base.append(Component.literal("[KLIK HIER OM TE BEVESTIGEN]")
-                    .withStyle(s -> s.withUnderlined(true).withColor(ChatFormatting.GREEN).withClickEvent(ev))));
+player.sendSystemMessage(base.append(Component.literal("[BEVESTIGEN]")
+    .withStyle(s -> s
+        .withUnderlined(true)
+        .withColor(ChatFormatting.GREEN)
+        .withClickEvent(ev)
+        .withBold(true)
+    )));
         } else {
             player.sendSystemMessage(base.append(Component.literal("Typ /sell all confirm om te bevestigen.")));
         }
