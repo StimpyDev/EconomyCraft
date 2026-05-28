@@ -10,6 +10,8 @@ import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.MenuProvider;
 import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.entity.player.Inventory;
@@ -254,19 +256,31 @@ public final class ShopUi {
                             shop.addDelivery(sp.getUUID(), stack);
                             sendClaimMessage(sp);
                         }
-                        sp.sendSystemMessage(Component.literal("Item gekocht!").withStyle(ChatFormatting.GREEN));
+
+                        String itemName = current.item.getHoverName().getString();
+                        int count = current.item.getCount();
+                        String priceFormatted = EconomyCraft.formatMoney(current.price);
+
+                        Component buyerNotification = Component.literal("Gekocht ")
+                                .withStyle(ChatFormatting.GREEN)
+                                .append(Component.literal(count + "x " + itemName).withStyle(ChatFormatting.YELLOW))
+                                .append(Component.literal(" voor ").withStyle(ChatFormatting.GREEN))
+                                .append(Component.literal(priceFormatted).withStyle(ChatFormatting.GOLD))
+                                .append(Component.literal(" op AH.").withStyle(ChatFormatting.GREEN));
+                        
+                        sp.sendSystemMessage(buyerNotification);
+
+                        sp.level().playSound(null, sp.getX(), sp.getY(), sp.getZ(), 
+                                SoundEvents.EXPERIENCE_ORB_PICKUP, SoundSource.PLAYERS, 1.0F, 1.0F);
 
                         ServerPlayer sellerPlayer = server.getPlayerList().getPlayer(current.seller);
                         if (sellerPlayer != null) {
                             String buyerName = IdentityCompat.of(sp).name();
-                            String itemName = current.item.getHoverName().getString();
-                            int count = current.item.getCount();
-                            String priceFormatted = EconomyCraft.formatMoney(current.price);
 
                             Component notification = Component.literal(buyerName)
                                     .withStyle(ChatFormatting.YELLOW)
                                     .append(Component.literal(" heeft jouw ").withStyle(ChatFormatting.GREEN))
-                                    .append(Component.literal(count + "x " + itemName).withStyle(ChatFormatting.AQUA))
+                                    .append(Component.literal(count + "x " + itemName).withStyle(ChatFormatting.YELLOW))
                                     .append(Component.literal(" op AH gekocht voor ").withStyle(ChatFormatting.GREEN))
                                     .append(Component.literal(priceFormatted).withStyle(ChatFormatting.GOLD))
                                     .append(Component.literal("!").withStyle(ChatFormatting.GREEN));
