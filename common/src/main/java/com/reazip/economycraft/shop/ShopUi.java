@@ -36,19 +36,19 @@ public final class ShopUi {
     private static final ChatFormatting BALANCE_VALUE_COLOR = ChatFormatting.GOLD;
 
     public static void open(ServerPlayer player, ShopManager shop) {
-    player.openMenu(new MenuProvider() {
-        @Override 
-        public Component getDisplayName() { 
-            return Component.literal("ᴠᴇɪʟɪɴɢꜱʜᴜɪꜱ")
-                    .withStyle(s -> s.withColor(ChatFormatting.AQUA).withItalic(false)); 
-        }
-        
-        @Override 
-        public AbstractContainerMenu createMenu(int id, Inventory inv, Player p) {
-            return new ShopMenu(id, inv, shop, (ServerPlayer) p);
-        }
-    });
-}
+        player.openMenu(new MenuProvider() {
+            @Override 
+            public Component getDisplayName() { 
+                return Component.literal("ᴠᴇɪʟɪɴɢꜱʜᴜɪꜱ")
+                        .withStyle(s -> s.withColor(ChatFormatting.AQUA).withItalic(false)); 
+            }
+            
+            @Override 
+            public AbstractContainerMenu createMenu(int id, Inventory inv, Player p) {
+                return new ShopMenu(id, inv, shop, (ServerPlayer) p);
+            }
+        });
+    }
 
     static void openConfirm(ServerPlayer player, ShopManager shop, ShopListing listing) {
         player.openMenu(new MenuProvider() {
@@ -68,31 +68,31 @@ public final class ShopUi {
         });
     }
 
-private static Component createPriceLore(long price, long tax) {
-    StringBuilder value = new StringBuilder(EconomyCraft.formatMoney(price));
-    if (tax > 0) value.append(" (+").append(EconomyCraft.formatMoney(tax)).append(" belasting)");
-    return labeledValue("Prijs", value.toString(), LABEL_PRIMARY_COLOR);
-}
+    private static Component createPriceLore(long price, long tax) {
+        StringBuilder value = new StringBuilder(EconomyCraft.formatMoney(price));
+        if (tax > 0) value.append(" (+").append(EconomyCraft.formatMoney(tax)).append(" belasting)");
+        return labeledValue("Prijs", value.toString(), LABEL_PRIMARY_COLOR);
+    }
 
-private static ItemStack createBalanceItem(ServerPlayer player) {
-    ItemStack gold = new ItemStack(Items.GOLD_INGOT);
-    var server = player.level().getServer();
-    long balance = EconomyCraft.getManager(server).getBalance(player.getUUID(), true);
-    
-    gold.set(DataComponents.CUSTOM_NAME, Component.literal("Jouw Saldo:")
-        .withStyle(s -> s.withItalic(false).withBold(true).withColor(BALANCE_NAME_COLOR)));
-    
-    gold.set(DataComponents.LORE, new ItemLore(List.of(
-        Component.literal(EconomyCraft.formatMoney(balance))
-            .withStyle(s -> s
-                .withItalic(false)
-                .withBold(true) 
-                .withColor(BALANCE_VALUE_COLOR)
-            )
-    )));
-    
-    return gold;
-}
+    private static ItemStack createBalanceItem(ServerPlayer player) {
+        ItemStack gold = new ItemStack(Items.GOLD_INGOT);
+        var server = player.level().getServer();
+        long balance = EconomyCraft.getManager(server).getBalance(player.getUUID(), true);
+        
+        gold.set(DataComponents.CUSTOM_NAME, Component.literal("Jouw Saldo:")
+            .withStyle(s -> s.withItalic(false).withBold(true).withColor(BALANCE_NAME_COLOR)));
+        
+        gold.set(DataComponents.LORE, new ItemLore(List.of(
+            Component.literal(EconomyCraft.formatMoney(balance))
+                .withStyle(s -> s
+                    .withItalic(false)
+                    .withBold(true) 
+                    .withColor(BALANCE_VALUE_COLOR)
+                )
+        )));
+        
+        return gold;
+    }
 
     private static Component labeledValue(String label, String value, ChatFormatting labelColor) {
         return Component.literal(label + ": ").withStyle(s -> s.withItalic(false).withColor(labelColor))
@@ -131,7 +131,7 @@ private static ItemStack createBalanceItem(ServerPlayer player) {
         }
 
         private void updatePage() {
-            listings = new ArrayList<>(shop.getListings());
+            listings = new ArrayList<>(shop.getListings()).reversed();
             container.clearContent();
             int start = page * 45;
             int totalPages = (int) Math.ceil(listings.size() / 45.0);
@@ -237,7 +237,8 @@ private static ItemStack createBalanceItem(ServerPlayer player) {
                         return;
                     }
 
-                    EconomyManager eco = EconomyCraft.getManager(sp.level().getServer());
+                    var server = sp.level().getServer();
+                    EconomyManager eco = EconomyCraft.getManager(server);
                     long total = current.price + Math.round(current.price * EconomyConfig.get().taxRate);
 
                     if (eco.getBalance(sp.getUUID(), true) < total) {
@@ -254,6 +255,25 @@ private static ItemStack createBalanceItem(ServerPlayer player) {
                             sendClaimMessage(sp);
                         }
                         sp.sendSystemMessage(Component.literal("Item gekocht!").withStyle(ChatFormatting.GREEN));
+
+                        ServerPlayer sellerPlayer = server.getPlayerList().getPlayer(current.seller);
+                        if (sellerPlayer != null) {
+                            String buyerName = IdentityCompat.of(sp).name();
+                            String itemName = current.item.getHoverName().getString();
+                            int count = current.item.getCount();
+                            String priceFormatted = EconomyCraft.formatMoney(current.price);
+
+                            Component notification = Component.literal(buyerName)
+                                    .withStyle(ChatFormatting.YELLOW)
+                                    .append(Component.literal(" heeft jouw ").withStyle(ChatFormatting.GREEN))
+                                    .append(Component.literal(count + "x " + itemName).withStyle(ChatFormatting.AQUA))
+                                    .append(Component.literal(" op AH gekocht voor ").withStyle(ChatFormatting.GREEN))
+                                    .append(Component.literal(priceFormatted).withStyle(ChatFormatting.GOLD))
+                                    .append(Component.literal("!").withStyle(ChatFormatting.GREEN));
+
+                            sellerPlayer.sendSystemMessage(notification);
+                        }
+
                         sp.containerMenu.broadcastChanges();
                         ShopUi.open(sp, shop);
                     }
