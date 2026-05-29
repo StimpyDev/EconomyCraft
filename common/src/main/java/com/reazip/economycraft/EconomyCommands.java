@@ -905,31 +905,19 @@ private static int showBalance(IdentityCompat.PlayerRef target, CommandSourceSta
     return id.toString().substring(0, 8); 
 }
 
-    private static CompletableFuture<Suggestions> suggestPlayers(CommandSourceStack source, SuggestionsBuilder builder) {
+private static CompletableFuture<Suggestions> suggestPlayers(CommandSourceStack source, SuggestionsBuilder builder) {
         var server = source.getServer();
-        var manager = EconomyCraft.getManager(server);
         Set<String> suggestions = new java.util.HashSet<>();
 
         for (ServerPlayer p : server.getPlayerList().getPlayers()) {
             suggestions.add(IdentityCompat.of(p).name());
         }
-
-        for (UUID id : manager.getBalances().keySet()) {
-            String name = manager.getBestName(id);
-            if (name != null && !name.isBlank()) {
-                suggestions.add(name);
-            }
-        }
-
-        suggestions.forEach(builder::suggest);
-        return builder.buildFuture();
+    
+        return net.minecraft.commands.SharedSuggestionProvider.suggest(suggestions, builder);
     }
 
-    private static CompletableFuture<Suggestions> suggestServerShopCategories(CommandSourceStack source, SuggestionsBuilder builder) {
+private static CompletableFuture<Suggestions> suggestServerShopCategories(CommandSourceStack source, SuggestionsBuilder builder) {
         PriceRegistry prices = EconomyCraft.getManager(source.getServer()).getPrices();
-        for (String cat : prices.buyCategories()) {
-            builder.suggest(cat);
-        }
-        return builder.buildFuture();
+        return net.minecraft.commands.SharedSuggestionProvider.suggest(prices.buyCategories(), builder);
     }
 }
